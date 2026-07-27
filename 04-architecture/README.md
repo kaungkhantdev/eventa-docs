@@ -1,24 +1,34 @@
 # Stage 4 — Architecture
 
-The technical blueprint: system architecture, data model, and API design that satisfy the
-requirements.
+The technical blueprint: the software architecture plus the data model that satisfy the requirements.
 
 ## Documents
-- **[entities.md](entities.md)** — the relational **data dictionary**: 44 PostgreSQL tables
-  across 11 bounded contexts, with columns/types/keys/constraints/indexes, enumerated types,
-  junction tables, and a full relationship summary. Multi-tenant (`organization_id`), money as
-  integer satang, audit & soft-delete columns, order→ticket commerce model.
-- **[erd.md](erd.md)** — the **Entity Relationship Diagram**: a master crow's-foot Mermaid
-  diagram plus 11 per-domain views and a 76-row relationship matrix, derived directly from
-  `entities.md`.
+- **[software-architecture.md](software-architecture.md)** — the **baseline Software Architecture
+  Document (SAD)**: goals & constraints, principles, C4 context & container views, the NestJS
+  **module (bounded-context)** design, the **event-driven** topology (RabbitMQ + a NestJS consumer
+  tier + the **transactional outbox**), runtime views (the **synchronous, transactional checkout**
+  boundary; reliable eventing), deployment, cross-cutting concerns (payments/PCI, multi-tenancy,
+  concurrency & overselling, PDPA, observability, security), the technology stack, **13 ADRs**, and
+  an NFR → mechanism mapping.
+- **[entities.md](entities.md)** — the **data architecture**: relational data dictionary, 47
+  PostgreSQL tables across 11 bounded contexts, with keys, constraints, indexes, enums, junction
+  tables. Multi-tenant, money-as-satang, order→ticket commerce model.
+- **[erd.md](erd.md)** — the **Entity Relationship Diagram**: master crow's-foot Mermaid diagram +
+  11 domain views + a 76-row relationship matrix, derived from `entities.md`.
 
-The data model is grounded in the SRS domain model — see
-[§1 Domain Data Model](../01-requirements-and-features/functional-requirements.md#sec-01-domain-data-model).
+## Stack (baseline)
+React (SPA + SSR) · **NestJS** API (modular monolith) · **RabbitMQ** eventing + NestJS consumers ·
+**transactional outbox** · PostgreSQL (+ RLS, FTS) · Redis (cache/sessions/idempotency) ·
+Stripe + PromptPay · object storage/CDN. Checkout/inventory is **synchronous & transactional**;
+side effects are **asynchronous** via RabbitMQ.
+
+## How it relates
+`software-architecture.md` (the *how the system is built*) sits on top of `entities.md`/`erd.md`
+(the *how the data is shaped*), both realising the [product backlog](../01-requirements-and-features/functional-requirements.md)
+and the [quality requirements](../01-requirements-and-features/non-functional-requirements.md).
 
 ## What still belongs here (optional)
-- **System / deployment architecture** diagram (front-end, API, datastore, integrations).
-- **API design** — REST/GraphQL endpoint catalog mapped to `FR-*` requirements.
-- **Tech-stack decisions** / ADRs (architecture decision records).
-- **Security architecture** (authN/authZ, PCI via Stripe, PDPA).
+- A detailed **API endpoint catalogue** (resources mapped to `US-*` / `FR-*`).
+- Per-decision **ADR files** (the SAD summarises them; each can become its own record).
 
-Status: ✅ Data model & ERD drafted. System/API architecture: ⬜ not yet.
+Status: ✅ Baseline software architecture + data model & ERD.

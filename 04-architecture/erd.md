@@ -20,8 +20,8 @@
 > `ENUM` types, integer-satang money, `timestamptz` in UTC, 3NF normalization,
 > row-level tenant isolation via `organization_id`.
 >
-> **Scale.** 44 tables · 76 catalogued relationships (65 domain foreign keys plus
-> the tenant `organization_id` edge shared by 39 tenant-owned tables).
+> **Scale.** 47 tables · 83 catalogued relationships (69 domain foreign keys plus
+> the tenant `organization_id` edge shared by 42 tenant-owned tables).
 
 ---
 
@@ -66,7 +66,7 @@ associative entity. In the diagrams a junction sits between its two parents with
 solid, identifying `||--o{` edge to each; the conceptual M:N is annotated in the
 Relationship matrix as `}o--o{`.
 
-**Tenancy edge.** Almost every table carries `organization_id` (39 of 44 tables).
+**Tenancy edge.** Almost every table carries `organization_id` (42 of 47 tables).
 To keep the domain views legible, that shared edge is drawn explicitly only in the
 Master ERD and the *Identity & Access* view; in the other domain views the tenant
 column is listed as an attribute (`bigint organization_id FK`) and its edge to
@@ -78,7 +78,7 @@ column is listed as an attribute (`bigint organization_id FK`) and its edge to
 
 ## Master ERD
 
-The single canonical picture: **all 44 entities** and **all** their foreign-key
+The single canonical picture: **all 47 entities** and **all** their foreign-key
 relationships, including the tenant `organization_id` fan from `ORGANIZATIONS`.
 Attributes are trimmed to the primary key, the salient foreign keys, and one to
 three defining columns per table — the domain views below carry fuller attribute
@@ -382,6 +382,30 @@ erDiagram
         uuid actor_user_id FK
         audit_type type
     }
+    OUTBOX_EVENTS {
+        bigint id PK
+        bigint organization_id FK
+        text aggregate_type
+        text routing_key
+        timestamptz published_at
+    }
+    SEAT_HOLDS {
+        bigint id PK
+        bigint organization_id FK
+        uuid event_id FK
+        uuid order_id FK
+        uuid ticket_type_id FK
+        bigint seat_id FK
+        hold_status status
+        timestamptz expires_at
+    }
+    WEBHOOK_EVENTS {
+        bigint id PK
+        bigint organization_id FK
+        text provider UK
+        text provider_event_id UK
+        webhook_status status
+    }
 
     ORGANIZATIONS ||--o{ USERS : "owns"
     ORGANIZATIONS ||--o{ ROLES : "owns"
@@ -421,6 +445,9 @@ erDiagram
     ORGANIZATIONS ||--o{ SURVEY_ANSWERS : "owns"
     ORGANIZATIONS ||--o{ MEETINGS : "owns"
     ORGANIZATIONS ||--o{ AUDIT_EVENTS : "records"
+    ORGANIZATIONS ||--o{ OUTBOX_EVENTS : "owns"
+    ORGANIZATIONS ||--o{ SEAT_HOLDS : "owns"
+    ORGANIZATIONS |o--o{ WEBHOOK_EVENTS : "receives"
 
     ATTENDEES |o--o| USERS : "portal login"
     USERS ||--o{ MEMBERSHIPS : "member via"
@@ -497,6 +524,11 @@ erDiagram
     ANNOUNCEMENTS |o--o{ MESSAGE_DELIVERIES : "delivers"
     USERS |o--o{ ANNOUNCEMENTS : "authors"
     USERS |o--o{ MEETINGS : "organizes"
+
+    EVENTS ||--o{ SEAT_HOLDS : "holds"
+    ORDERS |o--o{ SEAT_HOLDS : "reserves"
+    TICKET_TYPES |o--o{ SEAT_HOLDS : "held for"
+    SEATS |o--o{ SEAT_HOLDS : "held as"
 ```
 
 ---
@@ -1377,6 +1409,95 @@ erDiagram
   uniquely `ON DELETE RESTRICT` (the trail must survive), and `actor_user_id` is
   `SET NULL` (anonymous or failed sign-ins have no actor).
 
+### Platform & Infrastructure
+
+The Platform bounded context: the transactional `outbox_events` relay that
+publishes domain events to RabbitMQ, the short-lived `seat_holds` that reserve
+inventory during checkout, and the inbound `webhook_events` log for
+signature-verified, idempotent provider callbacks. `outbox_events` and
+`webhook_events` are high-volume, append-mostly infrastructure logs.
+
+```mermaid
+erDiagram
+    OUTBOX_EVENTS {
+        bigint id PK
+        bigint organization_id FK
+        text aggregate_type
+        text aggregate_id
+        text routing_key
+        jsonb payload
+        timestamptz created_at
+        timestamptz published_at
+        integer attempts
+        timestamptz available_at
+    }
+    SEAT_HOLDS {
+        bigint id PK
+        bigint organization_id FK
+        uuid event_id FK
+        uuid order_id FK
+        uuid ticket_type_id FK
+        bigint seat_id FK
+        integer quantity
+        hold_status status
+        timestamptz expires_at
+        timestamptz created_at
+    }
+    WEBHOOK_EVENTS {
+        bigint id PK
+        text provider UK
+        text provider_event_id UK
+        text event_type
+        jsonb payload
+        timestamptz received_at
+        timestamptz processed_at
+        webhook_status status
+        bigint organization_id FK
+    }
+    ORGANIZATIONS {
+        bigint id PK
+        text name
+    }
+    EVENTS {
+        uuid id PK
+        text name
+    }
+    ORDERS {
+        uuid id PK
+        text reference
+    }
+    TICKET_TYPES {
+        uuid id PK
+        text name
+    }
+    SEATS {
+        bigint id PK
+        text seat_number
+    }
+
+    ORGANIZATIONS ||--o{ OUTBOX_EVENTS : "owns"
+    ORGANIZATIONS ||--o{ SEAT_HOLDS : "owns"
+    ORGANIZATIONS |o--o{ WEBHOOK_EVENTS : "receives"
+    EVENTS ||--o{ SEAT_HOLDS : "holds"
+    ORDERS |o--o{ SEAT_HOLDS : "reserves"
+    TICKET_TYPES |o--o{ SEAT_HOLDS : "held for"
+    SEATS |o--o{ SEAT_HOLDS : "held as"
+```
+
+- `outbox_events` is written in the same transaction as its aggregate change; a
+  relay polls the partial `ix_outbox_unpublished` index and publishes to RabbitMQ,
+  then stamps `published_at` (with `attempts`/`available_at` driving backoff).
+  `organization_id` is `CASCADE`.
+- `seat_holds` is a short-lived checkout reservation; the partial unique
+  `uq_seat_hold_active (seat_id) WHERE status = 'active'` permits at most one active
+  hold per seat, and an expiry sweeper releases rows past `expires_at`.
+  `event_id`/`ticket_type_id`/`seat_id` are `CASCADE`; `order_id` is `SET NULL`
+  (a hold may be cart-only). `events`, `orders`, `ticket_types`, `seats` are defined
+  in their own views.
+- `webhook_events` gives exactly-once processing via
+  `UNIQUE (provider, provider_event_id)`; its nullable `organization_id` is the
+  resolved tenant (`SET NULL`).
+
 ---
 
 ## Relationship matrix
@@ -1399,7 +1520,7 @@ merely-referential = No).
 | 7 | organizations | payouts | `\|\|--o{` | payouts.organization_id | CASCADE | No |
 | 8 | organizations | tax_periods | `\|\|--o{` | tax_periods.organization_id | CASCADE | No |
 | 9 | organizations | audit_events | `\|\|--o{` | audit_events.organization_id | RESTRICT | No |
-| 10 | organizations | *(all 39 tenant-owned tables)* | `\|\|--o{` | `organization_id` | CASCADE (RESTRICT for audit_events) | No |
+| 10 | organizations | *(all 42 tenant-owned tables)* | `\|\|--o{` | `organization_id` | CASCADE (RESTRICT for audit_events, SET NULL for webhook_events) | No |
 | 11 | users | memberships | `\|\|--o{` | memberships.user_id | CASCADE | Yes |
 | 12 | roles | memberships | `\|\|--o{` | memberships.role_id | RESTRICT | No |
 | 13 | roles | role_permissions | `\|\|--o{` | role_permissions.role_id | CASCADE | Yes |
@@ -1466,6 +1587,13 @@ merely-referential = No).
 | 74 | users | check_ins | `\|o--o{` | check_ins.scanned_by | SET NULL | No |
 | 75 | events | check_ins | `\|o--o{` | check_ins.other_event_id | SET NULL | No |
 | 76 | users | meetings | `\|o--o{` | meetings.created_by | SET NULL | No |
+| 77 | organizations | outbox_events | `\|\|--o{` | outbox_events.organization_id | CASCADE | No |
+| 78 | organizations | seat_holds | `\|\|--o{` | seat_holds.organization_id | CASCADE | No |
+| 79 | organizations | webhook_events | `\|o--o{` | webhook_events.organization_id | SET NULL | No |
+| 80 | events | seat_holds | `\|\|--o{` | seat_holds.event_id | CASCADE | Yes |
+| 81 | orders | seat_holds | `\|o--o{` | seat_holds.order_id | SET NULL | No |
+| 82 | ticket_types | seat_holds | `\|o--o{` | seat_holds.ticket_type_id | CASCADE | No |
+| 83 | seats | seat_holds | `\|o--o{` | seat_holds.seat_id | CASCADE | No |
 
 > **Note on rows 15/16/42/47/61/65.** These are the *conceptual* M:N edges named
 > in the catalog; each is physically realized by its junction table's two
@@ -1489,14 +1617,16 @@ time**, not stored as duplicated fact — the few stored counters (`ticket_types
 `discount_codes.used`) are guarded atomic denormalizations kept for hot-path
 booking checks, with `CHECK` constraints (`sold BETWEEN 0 AND total`).
 
-**Multi-tenancy via `organization_id`.** 39 of 44 tables carry
-`organization_id bigint NOT NULL REFERENCES organizations(id)`, and every
-read/write is filtered by the caller's org (row-level tenant isolation). The five
-exceptions are the root `organizations`, the globally-seeded lookups `permissions`
-and `landing_templates` (shared across tenants), and the sub-children
-`recovery_codes` and `role_permissions` (isolated transitively through their
-parents). Tenant tables cascade from `organizations` on delete, except
-`audit_events`, which is `RESTRICT` so the compliance trail cannot be dropped.
+**Multi-tenancy via `organization_id`.** 42 of 47 tables carry
+`organization_id … REFERENCES organizations(id)` (NOT NULL except the inbound
+`webhook_events` log, whose tenant is resolved after signature verification), and
+every read/write is filtered by the caller's org (row-level tenant isolation). The
+five tables with no tenant column are the root `organizations`, the globally-seeded
+lookups `permissions` and `landing_templates` (shared across tenants), and the
+sub-children `recovery_codes` and `role_permissions` (isolated transitively through
+their parents). Tenant tables cascade from `organizations` on delete, except
+`audit_events` (`RESTRICT`, so the compliance trail cannot be dropped) and
+`webhook_events` (`SET NULL`).
 
 **Order→ticket commerce model.** The "registration" is modeled as a commerce
 **order** (`orders`, `REG-YYYY-NNNNNN`) that is the aggregate root for a booking.

@@ -126,6 +126,8 @@ One PostgreSQL `ENUM` type per row. Values are listed in wire form (as stored).
 | `locale` | `en`, `th` | `organizations.locale`, `users.locale` | `format.ts` / SRS §5.5 |
 | `two_factor_method` | `totp` | `two_factors.method` | `security.ts` (authenticator app) |
 | `api_key_status` | `active`, `revoked` | `api_keys.status` | production (`setIntegrations` / apikey audit) |
+| `hold_status` | `active`, `converted`, `expired`, `released` | `seat_holds.status` | production (checkout seat-hold lifecycle) |
+| `webhook_status` | `received`, `processed`, `failed` | `webhook_events.status` | production (inbound webhook processing) |
 
 > **Casing rule.** Lowercase tokens (`onsale`, `sent`, `email`) are wire/DB
 > values. Title-cased enum members that the source authored that way
@@ -1183,6 +1185,67 @@ Append-only, immutable security/finance audit trail. Never hard- or soft-deleted
 - **FOREIGN KEYS** `organization_id`→`organizations(id)` **ON DELETE RESTRICT**; `actor_user_id`→`users(id)` **ON DELETE SET NULL**
 - **INDEXES** `ix_audit_events_org_time` (`organization_id`, `occurred_at`), `ix_audit_events_type` (`type`), `ix_audit_events_actor` (`actor_user_id`)
 
+#### `outbox_events`
+Transactional outbox: a domain event written in the same DB transaction as its aggregate change; an outbox relay publishes it to RabbitMQ. High-volume, append-mostly Platform infrastructure.
+
+| Column | Type | Null | Key | Default | Notes |
+|---|---|---|---|---|---|
+| `id` | bigint identity | no | PK | | |
+| `organization_id` | bigint | no | FK→organizations.id, IX | | Tenant. |
+| `aggregate_type` | text | no | | | Aggregate root kind (e.g. `order`, `payment`). |
+| `aggregate_id` | text | no | IX | | Id of the changed aggregate. |
+| `routing_key` | text | no | IX | | AMQP routing key (e.g. `order.confirmed`). |
+| `payload` | jsonb | no | | | Serialized event body. |
+| `created_at` | timestamptz | no | | `now()` | Written in the aggregate's transaction. |
+| `published_at` | timestamptz | yes | IX | | Null until the relay publishes. |
+| `attempts` | integer | no | | `0` | Publish attempts (retry counter). |
+| `available_at` | timestamptz | no | | `now()` | Next eligible publish time (backoff). |
+
+- **PRIMARY KEY** (`id`)
+- **FOREIGN KEY** `organization_id`→`organizations(id)` **ON DELETE CASCADE**
+- **INDEXES** partial `ix_outbox_unpublished` (`published_at`) WHERE `published_at IS NULL` (relay poll), `ix_outbox_aggregate` (`aggregate_type`, `aggregate_id`)
+
+#### `seat_holds`
+Short-lived checkout reservation that expires and releases inventory if the buyer doesn't pay in time. Platform infrastructure.
+
+| Column | Type | Null | Key | Default | Notes |
+|---|---|---|---|---|---|
+| `id` | bigint identity | no | PK | | |
+| `organization_id` | bigint | no | FK→organizations.id, IX | | Tenant. |
+| `event_id` | uuid | no | FK→events.id, IX | | |
+| `order_id` | uuid | yes | FK→orders.id, IX | | Pending order this hold backs; null while cart-only. |
+| `ticket_type_id` | uuid | yes | FK→ticket_types.id | | For GA quantity holds. |
+| `seat_id` | bigint | yes | FK→seats.id, UK | | For reserved-seat holds; one row per seat. |
+| `quantity` | integer | no | | `1` | Seats/units held. |
+| `status` | `hold_status` | no | | `'active'` | active/converted/expired/released. |
+| `expires_at` | timestamptz | no | IX | | Hold TTL. |
+| `created_at` | timestamptz | no | | `now()` | |
+
+- **PRIMARY KEY** (`id`)
+- **FOREIGN KEYS** `organization_id`→`organizations(id)` **ON DELETE CASCADE**; `event_id`→`events(id)` **ON DELETE CASCADE**; `order_id`→`orders(id)` **ON DELETE SET NULL**; `ticket_type_id`→`ticket_types(id)` **ON DELETE CASCADE**; `seat_id`→`seats(id)` **ON DELETE CASCADE**
+- **UNIQUE** partial `uq_seat_hold_active` (`seat_id`) WHERE `status = 'active'` — a seat has at most one active hold
+- **INDEXES** partial `ix_seat_holds_expiry` (`expires_at`) WHERE `status = 'active'` (expiry sweeper), `ix_seat_holds_order` (`order_id`)
+
+#### `webhook_events`
+Inbound provider webhook log used for signature-verified, idempotent (exactly-once) processing. High-volume, append-mostly Platform infrastructure.
+
+| Column | Type | Null | Key | Default | Notes |
+|---|---|---|---|---|---|
+| `id` | bigint identity | no | PK | | |
+| `provider` | text | no | UK | | `stripe` \| `promptpay` \| `email` \| `sms`. |
+| `provider_event_id` | text | no | UK | | Provider's event id (dedup key). |
+| `event_type` | text | no | | | Provider event type. |
+| `payload` | jsonb | no | | | Raw signature-verified body. |
+| `received_at` | timestamptz | no | | `now()` | |
+| `processed_at` | timestamptz | yes | IX | | Null until handled. |
+| `status` | `webhook_status` | no | | `'received'` | received/processed/failed. |
+| `organization_id` | bigint | yes | FK→organizations.id, IX | | Resolved tenant if known. |
+
+- **PRIMARY KEY** (`id`)
+- **FOREIGN KEY** `organization_id`→`organizations(id)` **ON DELETE SET NULL**
+- **UNIQUE** (`provider`, `provider_event_id`) — the dedup guarantee
+- **INDEXES** partial `ix_webhook_unprocessed` (`processed_at`) WHERE `processed_at IS NULL`
+
 ---
 
 ## Relationship summary
@@ -1268,3 +1331,10 @@ Type is read parent→child. "Via" names the FK column or junction table.
 | users | check_ins | 1:N | check_ins.scanned_by | Staff scanner; SET NULL. |
 | events | check_ins | 1:N | check_ins.other_event_id | `wrong`-event scans; SET NULL. |
 | meetings | users | N:1 | meetings.created_by | Organizer. |
+| organizations | outbox_events | 1:N | outbox_events.organization_id | Transactional outbox; CASCADE. |
+| organizations | seat_holds | 1:N | seat_holds.organization_id | CASCADE. |
+| events | seat_holds | 1:N | seat_holds.event_id | CASCADE. |
+| orders | seat_holds | 1:N | seat_holds.order_id | Null while cart-only; SET NULL. |
+| ticket_types | seat_holds | 1:N | seat_holds.ticket_type_id | GA quantity holds; CASCADE. |
+| seats | seat_holds | 1:N | seat_holds.seat_id | Reserved-seat holds; CASCADE. |
+| organizations | webhook_events | 1:N | webhook_events.organization_id | Resolved tenant; SET NULL. |

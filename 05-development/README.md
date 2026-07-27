@@ -1,18 +1,19 @@
 # Stage 5 — Development
 
-Implementation: turning the architecture into working code.
+Implementation — turning the architecture into working code.
 
-## What belongs here
-- **Coding standards & conventions** (see also `../../eventa-web/CONVENTIONS.md`).
-- **Module / component breakdown** and ownership.
-- **Environment setup** and local-run instructions.
-- **Branching & PR workflow.**
-- **API implementation notes**, migration scripts, seed data.
+## Document
+- **[development-guide.md](development-guide.md)** — the engineering handbook: the recommended
+  **polyrepo** layout (separate `eventa-web` / `eventa-api` / `eventa-worker` repos; no shared
+  package — OpenAPI codegen for web↔api, Pact contract tests for api↔worker), **local setup**
+  (docker-compose), **coding standards**, the **"build a feature" playbook** (synchronous-checkout
+  vs outbox boundary, tenant scoping, idempotency), **migrations** (expand/contract), API & messaging
+  conventions, **Git workflow**, Definition of Done, and shift-left security & observability.
 
 ## Already exists
-- **Front-end prototype**: `../../eventa-web` — React 19 + TypeScript + Vite + Tailwind v4,
-  feature-based structure, 58 screens. Currently uses in-memory demo data (no backend).
-- Backend, persistence, real auth, and payment integration are **not yet built** — these map to
-  the **Must** stories in the [product backlog](../01-requirements-and-features/functional-requirements.md).
+- **[`../../eventa-web`](../../eventa-web)** — the React front-end prototype (runs today); its
+  `CONVENTIONS.md` holds the frontend conventions.
+- The backend (NestJS) is specified in [Stage 4](../04-architecture/software-architecture.md) and is
+  built per this guide; delivery is scheduled in the [project plan](../02-project-plan/project-plan.md).
 
-Status: 🟡 Front-end prototype only.
+Status: ✅ Development guide written (front-end prototype in place; backend to be built).

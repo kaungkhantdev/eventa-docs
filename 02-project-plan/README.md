@@ -1,18 +1,18 @@
 # Stage 2 — Project Plan
 
-Turns the requirements into an executable plan: scope, phases, milestones, timeline, and
-resourcing.
+Turns the requirements into an executable plan: scope, phases, sprint schedule, milestones,
+resourcing, dependencies, and risk — owned by the Project Manager.
 
-## What belongs here
-- **Scope statement** — in-scope vs out-of-scope, derived from the SRS.
-- **Roadmap / phases** — e.g. MVP → Phase 2 → Phase 3, each phase a set of `FR-*` IDs.
-- **Milestones & timeline** — target dates per phase.
-- **Team & responsibilities** — roles, ownership.
-- **Risks & assumptions.**
+## Document
+- **[project-plan.md](project-plan.md)** — the delivery plan built from the
+  [product backlog](../01-requirements-and-features/functional-requirements.md):
+  - **Phased release plan** — Phase 0 Foundations → Phase 1 **MVP** (88 Must) → Phase 2 Growth
+    (58 Should) → Phase 3 Polish (15 Could).
+  - **Dated milestones** — kickoff 2026-08-03 · 🚀 **MVP launch 2026-12-08** · 🏁 **v1.0 GA 2027-03-16**.
+  - **15-sprint schedule** (2-week sprints) with a Gantt timeline and dependency-driven sequencing.
+  - **Team & RACI**, **risk register**, **Definition of Done / release criteria**, and governance cadence.
 
-Suggested seed: group the 219 requirements from
-[Stage 1](../01-requirements-and-features/functional-requirements.md) into an MVP that covers
-the core attendee flow (discover → register → ticket → check-in) plus organizer event creation,
-and defer finance/insights/engagement depth to later phases.
+Stories are tracked by their `US-*` IDs from the backlog, giving traceability through to
+[Stage 6 — Testing](../06-testing/).
 
-Status: ⬜ Not started.
+Status: ✅ Drafted.

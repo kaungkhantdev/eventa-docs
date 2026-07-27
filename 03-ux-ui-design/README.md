@@ -1,21 +1,22 @@
 # Stage 3 — UX / UI Design
 
-Defines how the product looks and feels: user flows, wireframes, high-fidelity mockups, and the
-design system.
+The UX/UI design is delivered as a **working prototype** (design-in-code), not static mockups.
 
-## What belongs here
-- **User flows** — attendee (discover → register → checkout → ticket) and organizer (create
-  event → manage → check-in) journeys.
-- **Wireframes / mockups.**
-- **Design system** — colors, typography, spacing, components, light/dark theme.
-- **Accessibility notes** — WCAG 2.1 AA (see the non-functional requirements).
+## Document
+- **[design-reference.md](design-reference.md)** — a thin **map/index** of the design: where it
+  lives, a full screen inventory (grouped by area, routed, tagged to backlog epics), the key user
+  flows, and a pointer to the design system. It indexes the prototype rather than re-documenting it.
 
-## Already exists
-A working, pixel-fidelity **prototype** implements the intended design:
-- React app: `../../eventa-web` (58 screens across the portal, landing pages, and admin console).
-- Static HTML/Tailwind kit: `../../eventa-ui-kit`.
+## Where the design lives
+- **[`../../eventa-web`](../../eventa-web)** — the React implementation: the full clickable screen
+  set across the attendee portal, public landing pages, and admin console, with light/dark theming.
+  This is the high-fidelity, interactive design spec.
+- **[`../../eventa-ui-kit`](../../eventa-ui-kit)** — the static HTML/Tailwind design kit (visual
+  source of truth: colours, typography, components).
 
-These serve as the de-facto UI spec; formal design artifacts (Figma, flow diagrams) can be
-captured here.
+To view it live, run `eventa-web` (`pnpm dev`, port 5180) and browse the routes in the reference.
 
-Status: 🟡 Prototype exists; formal design docs not captured.
+**Maintenance rule:** the prototype is authoritative — update the code; keep `design-reference.md` as
+a lightweight index so it never drifts.
+
+Status: ✅ Documented (design delivered as the prototype; reference doc indexes it).

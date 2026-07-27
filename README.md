@@ -8,17 +8,23 @@ guide — one folder per stage.
 | # | Stage | Folder | Purpose | Status |
 |---|-------|--------|---------|--------|
 | 1 | Requirements & Features | [`01-requirements-and-features/`](01-requirements-and-features/) | *What* the software must do + *how* users interact | ✅ Drafted |
-| 2 | Project Plan | [`02-project-plan/`](02-project-plan/) | Phases, milestones, scope, timeline | ⬜ Not started |
-| 3 | UX / UI Design | [`03-ux-ui-design/`](03-ux-ui-design/) | Wireframes, mockups, design system, user flows | 🟡 Prototype exists in `../eventa-web` |
-| 4 | Architecture | [`04-architecture/`](04-architecture/) | System & data architecture, ERD, API design | ✅ Data model drafted |
-| 5 | Development | [`05-development/`](05-development/) | Coding standards, module breakdown, build notes | 🟡 Front-end prototype in `../eventa-web` |
-| 6 | Testing | [`06-testing/`](06-testing/) | Test plan, test cases, QA, traceability to FR-IDs | ⬜ Not started |
-| 7 | Deployment | [`07-deployment/`](07-deployment/) | Release plan, environments, CI/CD, infra | ⬜ Not started |
-| 8 | Maintenance | [`08-maintenance/`](08-maintenance/) | Monitoring, support, iteration, changelog | ⬜ Not started |
+| 2 | Project Plan | [`02-project-plan/`](02-project-plan/) | Phases, milestones, scope, timeline | ✅ Drafted |
+| 3 | UX / UI Design | [`03-ux-ui-design/`](03-ux-ui-design/) | Wireframes, mockups, design system, user flows | ✅ Documented (prototype = `../eventa-web`) |
+| 4 | Architecture | [`04-architecture/`](04-architecture/) | System & data architecture, ERD, API design | ✅ Architecture + data model |
+| 5 | Development | [`05-development/`](05-development/) | Coding standards, module breakdown, build notes | ✅ Dev guide (prototype in `../eventa-web`) |
+| 6 | Testing | [`06-testing/`](06-testing/) | Test plan, test cases, QA, traceability to FR-IDs | ✅ Plan + 333 cases designed |
+| 7 | Deployment | [`07-deployment/`](07-deployment/) | Release plan, environments, CI/CD, infra | ✅ DevOps: CI/CD + IaC + overview |
+| 8 | Maintenance | [`08-maintenance/`](08-maintenance/) | Monitoring, support, iteration, changelog | ✅ Observability / SRE / DevSecOps |
 
 ## Current contents
 - **Stage 1** — `functional-requirements.md` (Product Owner backlog: 161 user stories across 13 epics, MoSCoW), `non-functional-requirements.md` (46 quality requirements).
-- **Stage 4** — `entities.md` (relational data dictionary, 44 tables), `erd.md` (crow's-foot ERD).
+- **Stage 2** — `project-plan.md` (phased delivery plan, 15-sprint schedule, milestones, risks; MVP launch Dec 2026, v1.0 GA Mar 2027).
+- **Stage 3** — `design-reference.md` (screen inventory, user flows & design-system index pointing at the `../eventa-web` prototype + `../eventa-ui-kit`).
+- **Stage 4** — `software-architecture.md` (baseline SAD: NestJS modular monolith + RabbitMQ event-driven consumers + transactional outbox, synchronous checkout, C4 views, 13 ADRs), `entities.md` (relational data dictionary, 47 tables), `erd.md` (crow's-foot ERD).
+- **Stage 5** — `development-guide.md` (monorepo layout, local setup, coding standards, build-a-feature playbook, Git workflow, DoD).
+- **Stage 6** — `test-plan.md` (7-step cycle: strategy, environment, defect process, closure), `test-cases.md` (333 test cases across 13 epics, traced to all 161 user stories).
+- **Stage 7** — `devops-architecture.md` (DevOps overview: CALMS/Three Ways/DORA), `devops-ci-cd.md` (CI/CD & release, GitOps + canary), `devops-infrastructure.md` (Terraform/Helm/Argo CD, Kubernetes).
+- **Stage 8** — `devops-observability-sre.md` (observability, SLOs, incident mgmt, DevSecOps, DR).
 
 The implemented **React front-end prototype** lives in the sibling folder `../eventa-web`; the
 static HTML kit in `../eventa-ui-kit`. This `sdlc/` folder holds the *documentation* only.
