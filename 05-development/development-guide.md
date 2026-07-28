@@ -214,4 +214,87 @@ NFRs · no known S1/S2 defects · PO-accepted in staging. (Matches the [project 
 
 ---
 
+## Appendix A — Engineering standards (house rules)
+
+The enforced standard for all backend code (`eventa-api` + `eventa-worker`); mirrored in each repo's
+`CLAUDE.md`. Built for long-term maintainability — **priority order: Correctness → Maintainability →
+Readability → Testability → Performance → Developer Experience.** Never sacrifice architecture for
+short-term speed. Stack-adapted: **Drizzle ORM** + Postgres (not TypeORM), **RabbitMQ** for events/jobs,
+**pino** logging, `ConfigService` (zod) for config, `DomainException`/`ErrorCode` for errors.
+
+### A.1 SOLID
+- **Single Responsibility** — one job per class: controller = HTTP; service = orchestration; repository =
+  DB; mapper (`toXResponse`) = DTO conversion; DTO/validator = validation; guard/policy = authz + business
+  rules; factory = construction; (worker) handler = decode/validate/delegate/ack. Never mix.
+- **Dependency Inversion** — depend on interfaces / injection tokens, not concrete implementations, wherever
+  a seam is valuable (repositories, providers, clock).
+- **Open/Closed** — extend via Strategy / polymorphism instead of long `if/else`; don't modify working
+  business logic when you can extend it.
+
+### A.2 Architecture & structure
+- **Feature-first** — organize by business feature (`src/modules/<feature>/`), never by technical layer.
+- **Thin controllers** — validate · authenticate · authorize · call service · return. No business logic.
+- **Services orchestrate** — no SQL, HTTP, email, or storage code; delegate to dedicated services.
+- **Repository pattern** — all DB access in repositories exposing **descriptive** methods (`findActive`,
+  `findPending`, `findExpired`, `findValidSession`); no query builders in services.
+- **DTOs everywhere** — never expose ORM row/schema types: Request DTO → domain → Response DTO.
+- **Separation of concerns** — business logic must never directly depend on AWS / email / DB / external
+  APIs; infrastructure lives in dedicated adapters/services.
+- Target module layout as a feature grows (DB schema is centralized in `src/db/schema`, Drizzle):
+  ```
+  src/modules/<feature>/
+    <feature>.controller.ts   dto/   repositories/   services/
+    validators/   policies/   mappers/   events/   listeners/   interfaces/   use-cases/
+  ```
+
+### A.3 Domain & correctness
+- **Business rules** belong in a Policy / Domain service / Validator — never scattered.
+- **Custom, meaningful exceptions** — named, via `DomainException.notFound()/.forbidden()/.conflict()/
+  .validation()` with a stable `ErrorCode`.
+- **Enums over magic strings** (`pgEnum`, `ErrorCode`); **constants over magic numbers**.
+- **Transactions** for any operation affecting multiple tables (`withTenant` / `db.transaction`).
+- **Domain events for side effects** — e.g. `OrderConfirmed`, `PaymentSucceeded`; the worker's listeners
+  handle email / notification / ERP-sync / audit. Emit via the **transactional outbox** (never dual-write).
+- **Background jobs** — move expensive work (email, PDF, S3, external APIs, report generation) to the queue
+  (RabbitMQ → worker), off the request path.
+
+### A.4 Cross-cutting
+- **Configuration** — never read `process.env` directly; always `ConfigService` (zod-validated `Env`).
+- **Logging** — never `console.log`; use the `Logger`. Include correlation/request id, user id, module,
+  timing. **Never log passwords/tokens/PANs** (redact).
+- **Dependency injection** — a class with more than ~6 injected deps is a smell; split responsibilities.
+- **No circular dependencies** — extract shared logic into another service or publish an event.
+
+### A.5 Methods, TypeScript, naming
+- **Small methods** — house target **≤ 10 lines**, ~40 hard ceiling; extract private methods over giant
+  functions; **one level of abstraction** per method.
+- **TypeScript** — strict mode; `readonly` where possible; async/await; optional chaining; nullish
+  coalescing. Avoid `any`, `@ts-ignore`, nested ternaries, deep nesting.
+- **Naming** — explicit (`PurchaseRepository`, `PurchasePolicy`, `PurchaseValidator`, `PurchaseFactory`);
+  avoid `Helper` / `Util` / `Manager` / `CommonService` / `GeneralService`.
+
+### A.6 API, data, security
+- **API** — RESTful naming; versioned (`/api/v1`); consistent response format; correct HTTP status codes.
+- **Postgres/Drizzle** — explicit relations/FKs; **pagination** for list endpoints; indexes for searchable
+  columns; transactions for multi-table writes. Never: N+1 queries, business logic in schema, exposing
+  schema types.
+- **Security** — validate + sanitize input; parameterized queries; enforce authorization server-side; never
+  expose secrets; never log passwords/tokens.
+- **Performance** — prefer pagination, batching, lazy loading, and caching only when justified; avoid
+  premature optimization.
+
+### A.7 Testing, docs & review
+- **Testing** — unit + integration + e2e; new behaviour ships with tests (this codebase mandates TDD — §9).
+- **Documentation** — clear public method names; concise comments on complex logic explaining **why**, not what.
+- **Review checklist** — before finishing: SRP respected · SOLID followed · no duplicated code · no magic
+  strings/numbers · DTOs used · validation added · logging where useful · exceptions meaningful · repository
+  pattern respected · no business logic in controllers · tenant scoping + idempotency on money paths · tests
+  updated if behaviour changed.
+
+### A.8 When unsure
+Prefer maintainability over clever code. **Ask before making architectural changes.** Don't refactor
+unrelated code while implementing a feature.
+
+---
+
 _Living document — evolve it as the codebase and conventions mature._
