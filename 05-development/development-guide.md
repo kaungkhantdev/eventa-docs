@@ -270,6 +270,13 @@ short-term speed. Stack-adapted: **Drizzle ORM** + Postgres (not TypeORM), **Rab
 - **Custom, meaningful exceptions** — named, via `DomainException.notFound()/.forbidden()/.conflict()/
   .validation()` with a stable `ErrorCode`.
 - **Enums over magic strings** (`pgEnum`, `ErrorCode`); **constants over magic numbers**.
+- **No hard-coding** — never inline a literal that has a canonical home. Magic strings → enums; magic
+  numbers / limits / timeouts → module-level `const`; env, hosts, ports, URLs, secrets, credentials,
+  feature flags → `ConfigService` (zod `Env`), never `process.env` or a literal in app code; money & tax
+  rates (VAT, service fee) and quotas → the org-settings row or a named constant. **Derive enumerations
+  from their single source of truth** — Swagger `enum` and DTO validators from the Drizzle
+  `pgEnum().enumValues`; the worker's routing keys and payload field names from the producer's event
+  contract. A literal that repeats or carries domain meaning → name it once.
 - **Transactions** for any operation affecting multiple tables (`withTenant` / `db.transaction`).
 - **Domain events for side effects** — e.g. `OrderConfirmed`, `PaymentSucceeded`; the worker's listeners
   handle email / notification / ERP-sync / audit. Emit via the **transactional outbox** (never dual-write).
