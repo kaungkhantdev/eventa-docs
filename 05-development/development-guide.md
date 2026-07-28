@@ -16,7 +16,7 @@ restate the architecture (see the SAD) — it tells you how to build against it.
 |---|---|---|
 | Frontend | React 19 · TypeScript · Vite · Tailwind v4 (existing `../../eventa-web`, built from `../../eventa-ui-kit`) | [Design reference](../03-ux-ui-design/design-reference.md) |
 | Backend | **NestJS** (TypeScript) — modular monolith; REST | [SAD §5–6](../04-architecture/software-architecture.md) |
-| Data | PostgreSQL 15+ (migrations + a query layer), Redis | [entities.md](../04-architecture/entities.md) |
+| Data | PostgreSQL 15+ · **Drizzle ORM** (SQL-first, typed) · Redis | [entities.md](../04-architecture/entities.md) |
 | Messaging | RabbitMQ (consumer + outbox relay) | [SAD §6.3, §7.2](../04-architecture/software-architecture.md) |
 | Language baseline | TypeScript **strict**, ESLint + Prettier, end-to-end | §4 |
 
@@ -39,6 +39,7 @@ eventa-api/
 ├── src/
 │   ├── main.ts                     # HTTP entrypoint (also the check-in pool image)
 │   ├── relay.ts                    # outbox publisher
+│   ├── db/                         # Drizzle: schema/ · migrations/ (SQL) · meta/
 │   ├── modules/
 │   │   ├── identity/  organization/  events/  ticketing/
 │   │   ├── registration/
@@ -132,15 +133,25 @@ From a backlog story to shipped, every time:
 9. **PR** with acceptance criteria verified in the preview env (§11).
 
 ## 6. Database & migrations
-- **Migration-first** (Prisma or TypeORM; raw SQL where RLS or performance needs it). The schema of
-  record is [entities.md](../04-architecture/entities.md)/[erd.md](../04-architecture/erd.md).
+- **ORM: Drizzle** (SQL-first, fully typed) — chosen because the money path needs first-class row
+  locking (`.for('update')` → `SELECT … FOR UPDATE`) and multi-tenant **RLS**
+  (`SET LOCAL app.current_org` via a raw `sql` fragment), both of which Drizzle does cleanly while
+  keeping inferred types. The schema of record is [entities.md](../04-architecture/entities.md)/[erd.md](../04-architecture/erd.md); `eventa-api` owns it.
+- **Migration workflow** — the schema lives in TS (`src/db/schema`); `drizzle-kit` diffs it into **plain
+  SQL** migration files (reviewed in the PR):
+  - `pnpm drizzle-kit generate --name <change>` → emits `NNNN_<change>.sql` + a `meta/` snapshot.
+  - `pnpm drizzle-kit migrate` → applies pending migrations (tracked in `__drizzle_migrations`).
+  - Non-diffable SQL (RLS **policies**, functions) goes in a **custom** migration:
+    `drizzle-kit generate --custom --name enable_rls`, then hand-write `CREATE POLICY …`.
 - **Expand/contract** for zero-downtime: add columns/tables (expand) → deploy code that writes both →
   backfill → switch reads → remove old (contract). Never edit a shipped migration — add a new one.
-- **Row-level security** + tenant-scoped data layer as defence-in-depth.
+- **Row-level security**: policies in a migration + `SET LOCAL app.current_org` per transaction + a
+  tenant-scoped data layer (defence-in-depth).
 - **Seed data** for local/test: ≥2 tenants, events across states, ticket types, test cards, sandbox PromptPay.
 
 ## 7. API conventions
-- **REST/JSON**, versioned `/api/v1`, authenticated by the session cookie, tenant-scoped (SAD §6.4).
+- **REST/JSON**, versioned `/api/v1`, authenticated by a **Bearer JWT** access token (short-lived;
+  refresh via `POST /auth/refresh`, revocable through `auth_sessions`), tenant-scoped (SAD §6.4).
 - **DTO validation** on every input; consistent pagination, filtering, sorting.
 - **Standard error envelope**; correct status codes; `403` for authz denial (enforced **server-side**, not just hidden UI).
 - **Webhooks** (Stripe/PromptPay) land on the API, are **signature-verified and idempotent** (dedupe via `webhook_events`).

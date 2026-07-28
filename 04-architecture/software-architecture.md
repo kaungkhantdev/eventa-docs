@@ -163,13 +163,13 @@ interfaces — no cross-module table access.
 Interfaces are the defined interaction points between components — each a contract that hides the
 component's internals.
 
-**Client ↔ API — REST/JSON over HTTPS.** Versioned (`/api/v1`), authenticated by the session cookie,
-tenant-scoped. Resource groups map to modules (representative, not exhaustive — a full endpoint
+**Client ↔ API — REST/JSON over HTTPS.** Versioned (`/api/v1`), authenticated by a Bearer JWT access
+token, tenant-scoped. Resource groups map to modules (representative, not exhaustive — a full endpoint
 catalogue is a follow-up artifact):
 
 | Resource group | Module | Example endpoints |
 |---|---|---|
-| Auth & session | Identity & Access | `POST /auth/login`, `/auth/2fa/verify`, `DELETE /session` |
+| Auth & session | Identity & Access | `POST /auth/login`, `/auth/refresh`, `/auth/2fa/verify`, `DELETE /session` |
 | Events & program | Events & Program | `GET/POST /events`, `POST /events/:id/publish`, `POST /events/:id/sessions` |
 | Ticketing | Ticketing | `GET/POST /events/:id/ticket-types`, `POST /discounts` |
 | Discovery (public) | Events | `GET /discover`, `GET /events/:slug` |
@@ -307,9 +307,11 @@ flowchart LR
 - **Concurrency & inventory integrity** — capacity/seat changes only inside DB transactions with row
   locks / conditional updates; **short-lived seat holds** during checkout; idempotency keys on order
   create & confirm; unique constraints on QR tokens and discount redemptions.
-- **AuthN/AuthZ** — server-side sessions (httpOnly, Secure, SameSite cookies; Redis-backed);
-  **two separate identity realms** (attendee vs workspace member); TOTP 2FA; OAuth social sign-in;
-  **RBAC** (12 permissions × 4 roles) enforced server-side on every mutating endpoint.
+- **AuthN/AuthZ** — **JWT**: short-lived access tokens (`Authorization: Bearer`, verified statelessly)
+  plus long-lived **refresh tokens** persisted in `auth_sessions` so logout / compromise is revocable
+  (a short access-TTL bounds the revocation window); **two separate identity realms** (attendee vs
+  workspace member); TOTP 2FA; OAuth social sign-in; **RBAC** (12 permissions × 4 roles) enforced
+  server-side on every mutating endpoint.
 - **Payments & PCI** — Stripe hosted fields + PromptPay; platform is **SAQ-A** (never stores PANs/bank
   numbers); Connect for payouts; webhooks reconcile the ledger.
 - **Privacy / PDPA** — SG/TH region; consent capture; documented retention & deletion (supports
@@ -353,9 +355,9 @@ flowchart LR
 | **ADR-3** | **Transactional outbox** for publishing | Eliminates dual-write loss. |
 | **ADR-4** | **Checkout/inventory is synchronous & transactional**; async only for eventually-consistent side effects | Prevents oversell/double-charge. *Alt: fully event-sourced checkout — too risky for MVP.* |
 | **ADR-5** | Shared PostgreSQL, multi-tenant `organization_id` + RLS | Strong isolation, low ops. *Alt: DB-per-tenant — overhead.* |
-| **ADR-6** | Redis for cache/sessions/rate-limit/idempotency (separate from RabbitMQ) | Right tool per job. |
+| **ADR-6** | Redis for cache/rate-limit/idempotency (separate from RabbitMQ) | Right tool per job. Sessions are stateless JWTs; refresh state lives in `auth_sessions`. |
 | **ADR-7** | Stripe + PromptPay; SAQ-A; webhooks as truth | Minimal PCI scope. |
-| **ADR-8** | Server-side sessions + dual realms + TOTP 2FA; server-side RBAC | Safer than JS-held tokens; persona separation. |
+| **ADR-8** | **JWT access + refresh** (Bearer) + dual realms + TOTP 2FA; server-side RBAC | Stateless access checks; refresh tokens persisted in `auth_sessions` keep revocation (logout/compromise); persona separation. *Revised from server-side sessions.* |
 | **ADR-9** | SSR/prerender public pages; SPA for portal/admin | SEO & speed where needed. |
 | **ADR-10** | Postgres FTS (bilingual) for MVP search | Avoids extra infra now. |
 | **ADR-11** | Host SG/TH region | Latency + PDPA residency. |

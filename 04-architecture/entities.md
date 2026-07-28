@@ -273,11 +273,14 @@ Associates a user with an organization and the role they hold there. Carries the
 - **INDEXES** `ix_memberships_org` (`organization_id`), `ix_memberships_user` (`user_id`), `ix_memberships_role` (`role_id`)
 
 #### `auth_sessions`
-Active sign-in sessions / devices. Append-mostly (revoke sets timestamp).
+Refresh sessions / devices for JWT auth (ADR-8). One row per sign-in; the JWT **refresh** token carries
+this row's `id` as its `sid` claim, and refresh is only honoured while the row is live (not revoked, not
+expired) — this is what makes logout/compromise revocable. Access tokens are stateless JWTs and are not
+stored. Append-mostly (revoke sets a timestamp).
 
 | Column | Type | Null | Key | Default | Notes |
 |---|---|---|---|---|---|
-| `id` | uuid | no | PK | `gen_random_uuid()` | Opaque session token id. |
+| `id` | uuid | no | PK | `gen_random_uuid()` | Refresh-session id (the JWT `sid` claim). |
 | `organization_id` | bigint | no | FK→organizations.id, IX | | |
 | `user_id` | uuid | no | FK→users.id, IX | | Owner. |
 | `device` | text | no | | | Device/browser label (`Session.device`). |
