@@ -167,7 +167,11 @@ From a backlog story to shipped, every time:
 - **REST/JSON**, versioned `/api/v1`, authenticated by a **Bearer JWT** access token (short-lived;
   refresh via `POST /auth/refresh`, revocable through `auth_sessions`), tenant-scoped (SAD §6.4).
 - **DTO validation** on every input; consistent pagination, filtering, sorting.
-- **Standard error envelope**; correct status codes; `403` for authz denial (enforced **server-side**, not just hidden UI).
+- **Consistent envelope**: success = `{ data }` (or `{ data, meta }` for paginated lists); errors =
+  `{ error: { code, message, details, correlationId } }`. Correct status codes; `403` for authz denial
+  (enforced **server-side**, not just hidden UI).
+- **Auth** — passport-jwt: `JwtStrategy` verifies the Bearer access token statelessly; a global guard
+  honours a `@Public` opt-out and stamps tenant context.
 - **Webhooks** (Stripe/PromptPay) land on the API, are **signature-verified and idempotent** (dedupe via `webhook_events`).
 
 ## 8. Async & messaging in code
