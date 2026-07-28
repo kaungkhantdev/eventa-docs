@@ -106,6 +106,20 @@ folder structure.
 > land. Web regenerates its API client from `eventa-api`'s `openapi.json` in CI.
 
 ## 4. Coding standards & conventions
+
+**Design principles (all backend code):**
+- **Feature-first, not layer-first** — organize by bounded context (a module owns its
+  controller/service/repository/dto/events), never by technical layer (`controllers/`, `services/`, …).
+- **SOLID, especially Single Responsibility & Dependency Inversion** — one reason to change per unit;
+  depend on abstractions (service interfaces, repositories, injected providers), not concretions.
+- **Thin controllers, orchestration-focused services, and repositories dedicated to data access.**
+- **Separate domain/business logic from infrastructure** (database, email, external APIs, queues) — reach
+  infrastructure only through injected ports.
+- **Side effects via events & background jobs** — emit to the **outbox**; the worker performs
+  email/SMS/projections, keeping core business workflows focused and easier to evolve.
+- **Small functions (≤ 10 lines) with one level of abstraction each** — extract helpers rather than nesting.
+
+**Baseline conventions:**
 - **TypeScript strict** everywhere; no `any` without justification. ESLint + Prettier enforced in CI.
 - **Frontend** — keep the existing **feature-based** structure and `components/ui` primitives; follow
   `../../eventa-web/CONVENTIONS.md`; Tailwind utilities, class-based light/dark.
