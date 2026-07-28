@@ -167,9 +167,23 @@ From a backlog story to shipped, every time:
 - **REST/JSON**, versioned `/api/v1`, authenticated by a **Bearer JWT** access token (short-lived;
   refresh via `POST /auth/refresh`, revocable through `auth_sessions`), tenant-scoped (SAD §6.4).
 - **DTO validation** on every input; consistent pagination, filtering, sorting.
-- **Consistent envelope**: success = `{ data }` (or `{ data, meta }` for paginated lists); errors =
-  `{ error: { code, message, details, correlationId } }`. Correct status codes; `403` for authz denial
-  (enforced **server-side**, not just hidden UI).
+- **Response envelope — one shape for every endpoint.** HTTP status codes carry the result; the body
+  holds business data only; validation errors are structured `{ field, message }`; pagination `meta` is
+  always identical; internal errors / stack / SQL / secrets are **never** exposed. `403` for authz denial
+  (server-side, not just hidden UI). The `correlationId` rides the `x-correlation-id` header, not the body;
+  health probes are raw (opt out).
+
+  ```jsonc
+  // success
+  { "success": true, "statusCode": 200, "message": "…", "data": { … }, "timestamp": "…" }
+  // list + pagination (data is the array; meta is always this shape)
+  { "success": true, "statusCode": 200, "message": "…", "data": [ … ],
+    "meta": { "page": 1, "limit": 20, "total": 325, "totalPages": 17, "hasNext": true, "hasPrevious": false },
+    "timestamp": "…" }
+  // failure (validation 400 adds errors[])
+  { "success": false, "statusCode": 400, "message": "Validation failed.",
+    "errors": [ { "field": "email", "message": "Email is invalid." } ], "timestamp": "…" }
+  ```
 - **Auth** — passport-jwt: `JwtStrategy` verifies the Bearer access token statelessly; a global guard
   honours a `@Public` opt-out and stamps tenant context.
 - **Webhooks** (Stripe/PromptPay) land on the API, are **signature-verified and idempotent** (dedupe via `webhook_events`).
