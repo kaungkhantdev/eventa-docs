@@ -7,7 +7,7 @@ guide — one folder per stage.
 
 | # | Stage | Folder | Purpose | Status |
 |---|-------|--------|---------|--------|
-| 1 | Requirements & Features | [`01-requirements-and-features/`](01-requirements-and-features/) | *What* the software must do + *how* users interact | ✅ Drafted |
+| 1 | Requirements & Features | [`01-requirements-and-features/`](01-requirements-and-features/) | *What* the software must do + *how* users interact | ✅ Backlog + story map |
 | 2 | Project Plan | [`02-project-plan/`](02-project-plan/) | Phases, milestones, scope, timeline | ✅ Drafted |
 | 3 | UX / UI Design | [`03-ux-ui-design/`](03-ux-ui-design/) | Wireframes, mockups, design system, user flows | ✅ Documented (prototype = `../eventa-web`) |
 | 4 | Architecture | [`04-architecture/`](04-architecture/) | System & data architecture, ERD, API design | ✅ Architecture + data model |
@@ -17,7 +17,7 @@ guide — one folder per stage.
 | 8 | Maintenance | [`08-maintenance/`](08-maintenance/) | Monitoring, support, iteration, changelog | ✅ Observability / SRE / DevSecOps |
 
 ## Current contents
-- **Stage 1** — `functional-requirements.md` (Product Owner backlog: 161 user stories across 13 epics, MoSCoW), `non-functional-requirements.md` (46 quality requirements).
+- **Stage 1** — `functional-requirements.md` (Product Owner backlog: 161 user stories across 13 epics, MoSCoW), `non-functional-requirements.md` (46 quality requirements), `user-story-map.md` (the backlog re-cut as a 16-activity journey backbone × 3 release bands; walking-skeleton check).
 - **Stage 2** — `project-plan.md` (phased delivery plan, 15-sprint schedule, milestones, risks; MVP launch Dec 2026, v1.0 GA Mar 2027).
 - **Stage 3** — `design-reference.md` (screen inventory, user flows & design-system index pointing at the `../eventa-web` prototype + `../eventa-ui-kit`).
 - **Stage 4** — `software-architecture.md` (baseline SAD: NestJS modular monolith + RabbitMQ event-driven consumers + transactional outbox, synchronous checkout, C4 views, 13 ADRs), `entities.md` (relational data dictionary, 47 tables), `erd.md` (crow's-foot ERD).
@@ -26,7 +26,22 @@ guide — one folder per stage.
 - **Stage 7** — `devops-architecture.md` (DevOps overview: CALMS/Three Ways/DORA), `devops-ci-cd.md` (CI/CD & release, GitOps + canary), `devops-infrastructure.md` (Terraform/Helm/Argo CD, Kubernetes).
 - **Stage 8** — `devops-observability-sre.md` (observability, SLOs, incident mgmt, DevSecOps, DR).
 
+## Editable diagrams (`.tldr`)
+
+Every document containing Mermaid diagrams has a **tldraw companion of the same name** in the same
+folder — `04-architecture/erd.md` → `04-architecture/erd.tldr` — with **one page per diagram**
+(33 diagrams across 11 files). Open them offline at [tldraw.com](https://tldraw.com) (drag the file
+in) or in any current tldraw app to edit the diagrams on a canvas.
+
+Flowcharts and ERDs are real, editable shapes — boxes, labels, and arrows bound to their boxes, so
+dragging a box keeps its connections. Gantt, sequence and state diagrams have no shape equivalent, so
+those pages embed the rendering as an image instead.
+
+> The `.tldr` files are **generated from the Markdown**, which stays the source of truth. They do not
+> update automatically when a ```mermaid fence changes, and edits made on the canvas do not flow back.
+> They require tldraw v5 or newer.
+
 The implemented **React front-end prototype** lives in the sibling folder `../eventa-web`; the
 static HTML kit in `../eventa-ui-kit`. This `sdlc/` folder holds the *documentation* only.
 
-_Last updated: 2026-07-23._
+_Last updated: 2026-07-30._

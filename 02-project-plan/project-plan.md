@@ -61,7 +61,10 @@ order is the lever (cut **Could** first). This statement exists to prevent scope
 ## 3. Work breakdown structure (WBS)
 
 The project decomposes into deliverables (WBS level 2) and work packages (level 3), each mapping to
-backlog epics / `US-*` stories for traceability.
+backlog epics / `US-*` stories for traceability. Where an epic is **split across phases**, the split is
+named at story level so the phase boundary is unambiguous — see the
+[user story map](../01-requirements-and-features/user-story-map.md) for the full story-to-release
+placement.
 
 | WBS | Deliverable / work package | Backlog | Phase |
 |-----|----------------------------|---------|-------|
@@ -76,15 +79,16 @@ backlog epics / `US-*` stories for traceability.
 | 3.2 | Ticket types (Must) | E6 | 1 |
 | 3.3 | Public event pages & discovery/search | E2, E1 | 1 |
 | 3.4 | Registration & checkout (card/PromptPay), QR ticket | E1 | 1 |
-| 3.5 | Payments, invoices, payouts (Must) | E10 | 1 |
-| 3.6 | Registration management, waitlist, check-in tool | E8 | 1 |
-| 3.7 | Event program (agenda & speakers) | E7 | 1 |
-| 3.8 | Organizer home & dashboard | E4 | 1 |
-| 3.9 | Accounts, settings, org & team | E3, E13 | 1 |
+| 3.5 | Transactional messaging — confirmation + ticket, receipt, reminder (`US-MSG-01`) | E12 (Must) | 1 |
+| 3.6 | Payments, invoices, payouts (Must) | E10 | 1 |
+| 3.7 | Registration management, waitlist, check-in tool | E8 (+ `US-REG-04`) | 1 |
+| 3.8 | Event program (agenda & speakers) | E7 | 1 |
+| 3.9 | Organizer home & dashboard | E4 | 1 |
+| 3.10 | Accounts, settings, org & team | E3, E13 | 1 |
 | **4.0** | **Growth** | | 2 |
 | 4.1 | Insights & reports | E11 | 2 |
-| 4.2 | Engagement (templates, announcements, delivery log, feedback) | E12 | 2 |
-| 4.3 | Meetings | E9 | 2 |
+| 4.2 | Engagement — templates, announcements, delivery log, feedback (`US-MSG-02`…`10`) | E12 (rest) | 2 |
+| 4.3 | Meetings — **incl. 6 deferred Must stories**, see §4.1 note | E9 | 2 |
 | 4.4 | Advanced ticketing/discounts & finance (Should) | E6, E10 | 2 |
 | **5.0** | **Polish & v1.0** — Could stories, accessibility & i18n | Could | 3 |
 | **6.0** | **Quality & testing** — test plan, automation, regression, UAT | see [Stage 6](../06-testing/) | all |
@@ -101,10 +105,30 @@ refinement, review/demo + retro (last day). Sequencing is dependency-driven (§4
 |---|---|---|---|
 | **M0** | Project kickoff | **2026-08-03** | Team onboarded, environments provisioned |
 | **M1** | Foundations complete | **2026-08-28** | Auth, data model, CI/CD, Stripe/PromptPay in test |
-| **M2** | MVP feature-complete | **2026-11-20** | All 88 Must stories built & QA-passed in staging |
+| **M2** | MVP feature-complete | **2026-11-20** | **82 of 88** Must stories built & QA-passed in staging (all except the 6 deferred E9 Meetings stories — see note) |
 | **M3** | 🚀 **MVP public launch (GA)** | **2026-12-08** | Beta hardening done; launch NFRs met; real payments live |
-| **M4** | Growth release | **2027-02-16** | 58 Should stories delivered |
+| **M4** | Growth release | **2027-02-16** | 58 Should stories + the 6 deferred Must stories delivered |
 | **M5** | 🏁 **v1.0 GA** | **2027-03-16** | Could stories + full accessibility/performance/PDPA sign-off |
+
+**Note — Must stories deferred past M2 (recorded decision).** Six Must stories in **E9 Coordinate
+Meetings** (`US-MTG-01`…`05`, `07`) are scheduled in Phase 2 (sprint 11), *after* M2. They are
+organizer-internal logistics and sit off the core money path, so deferring them does not block the
+M3 launch. M2's exit criterion is scoped accordingly rather than claiming all 88.
+
+Two consequences of this that are **also** deliberate, and are called out here so they are choices
+rather than arithmetic accidents:
+
+- **`US-MSG-01` is not deferred.** It delivers the confirmation message carrying the attendee's
+  ticket on successful payment, which the MVP definition ends in ("…get a QR ticket"). It is pulled
+  into Phase 1 (WBS 3.5, sprint 5) alongside checkout and QR issuance. The other nine E12 stories
+  stay in Phase 2.
+- **`US-REG-04` (waitlist, priority Should) is pulled forward** into Phase 1 (WBS 3.7). `US-DISC-01`
+  (Must) already shows a "Waitlist" badge on sold-out events, so the organizer-side waitlist has to
+  exist at launch for that to mean anything.
+
+At M3 the product ships with **no promotion tooling and no reporting** — every story in those two
+activities is Should or Could. See the [user story map](../01-requirements-and-features/user-story-map.md)
+§"Holes in the MVP slice" for what that means operationally.
 
 ```mermaid
 gantt
@@ -117,7 +141,7 @@ gantt
     M1 Foundations complete           :milestone, 2026-08-28, 0d
     section Phase 1 · MVP
     Events · Ticketing (Must)         :m1, 2026-08-31, 4w
-    Public pages · Discover · Register:m2, after m1, 4w
+    Register · checkout · ticket email:m2, after m1, 4w
     Payments · Finance (Must)         :m3, 2026-10-26, 2w
     Registrations · Check-in · Program:m4, after m3, 2w
     Accounts · Dashboard · Settings   :m5, 2026-11-09, 2w
@@ -125,7 +149,7 @@ gantt
     M3 MVP public launch              :milestone, 2026-12-08, 0d
     section Phase 2 · Growth
     Reports · Engagement (Should)     :g1, 2026-12-07, 4w
-    Meetings · advanced ticketing/fin :g2, 2027-01-05, 6w
+    Meetings (defer. Must) · tkt/fin  :g2, 2027-01-05, 6w
     M4 Growth release                 :milestone, 2027-02-16, 0d
     section Phase 3 · Polish
     Could-stories · hardening sweep   :p1, 2027-02-15, 4w
@@ -135,8 +159,9 @@ gantt
 ### 4.2 Sprint plan & dependencies
 
 Sequencing: **accounts + data model** unlock everything; **events** precede **tickets**; **tickets**
-precede **registration**; **registration + payment** precede **check-in** and **finance**; **reporting**
-needs live transactional data.
+precede **registration**; **registration + payment** precede **check-in** and **finance**;
+**payment** precedes **ticket delivery** (`US-MSG-01` ships with checkout, not with the rest of E12);
+**reporting** needs live transactional data.
 
 | Sprint | Dates | Focus | Epics |
 |---|---|---|---|
@@ -145,14 +170,14 @@ needs live transactional data.
 | 2 | Aug 31–Sep 11 | Create & manage events; categories | E5 |
 | 3 | Sep 14–25 | Ticket types (Must); public event pages | E6, E2 |
 | 4 | Sep 28–Oct 09 | Discover, search; guest registration | E1 |
-| 5 | Oct 12–23 | Checkout (card/PromptPay); QR ticket issuance | E1, E10 |
+| 5 | Oct 12–23 | Checkout (card/PromptPay); QR ticket issuance + **confirmation/ticket delivery (`US-MSG-01`)** | E1, E10, E12 (Must) |
 | 6 | Oct 26–Nov 06 | Payments, invoices, payouts (Must); attendee account | E10, E1 |
-| 7 | Nov 09–20 | Registrations mgmt, check-in, program, dashboard, settings | E8, E7, E4, E13 |
-| 8 | Nov 23–Dec 04 | MVP hardening, beta, load/security/PDPA checks | all Must |
+| 7 | Nov 09–20 | Registrations mgmt, **waitlist (`US-REG-04`)**, check-in, program, dashboard, settings | E8, E7, E4, E13 |
+| 8 | Nov 23–Dec 04 | MVP hardening, beta, load/security/PDPA checks | all Phase-1 Must |
 | — | **Dec 08** | 🚀 **MVP launch** | — |
 | 9 | Dec 07–18 | Insights & reports | E11 |
-| 10 | Jan 05–15 | Engagement: templates, announcements, log, feedback | E12 |
-| 11 | Jan 18–29 | Meetings; advanced ticketing/discounts (Should) | E9, E6 |
+| 10 | Jan 05–15 | Engagement: templates, announcements, log, feedback | E12 (rest) |
+| 11 | Jan 18–29 | Meetings (**incl. 6 deferred Must**); advanced ticketing/discounts (Should) | E9, E6 |
 | 12 | Feb 01–12 | Advanced finance/registration/dashboard (Should) | E10, E8, E4 |
 | — | **Feb 16** | Growth release | — |
 | 13 | Feb 15–26 | Could stories; accessibility & i18n polish | Could |

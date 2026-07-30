@@ -19,6 +19,17 @@ committed checker):
 - **Mermaid diagrams** (```mermaid fences) — C4 container/context, crow's-foot ERDs, state machines,
   sequence, gantt, flowcharts. They render on GitHub / VS Code. After editing one, sanity-check that
   entity/attribute braces balance and the diagram header is valid.
+- **`.tldr` companions** — every `.md` holding Mermaid has a sibling tldraw file of the same stem
+  (`erd.md` → `erd.tldr`), one **page per diagram**, for editing the diagrams on a canvas offline.
+  Flowcharts and ERDs are real tldraw shapes (boxes, labels, arrows bound to their boxes) laid out at
+  mermaid's computed coordinates; gantt/sequence/state have no shape equivalent and embed the
+  rendering as a base64 SVG instead. Files target **tldraw v5** (current) — older tldraw cannot open
+  them, newer will migrate them up.
+  **These are derived artifacts and will silently go stale**: editing a ```mermaid fence does *not*
+  update the `.tldr`, and editing a `.tldr` does *not* update the Markdown. The Markdown is the
+  source of truth; regenerate rather than hand-reconciling. There is no committed generator (this
+  repo has no build tooling) — the conversion is a throwaway script, so budget for rebuilding it if
+  the diagrams change substantially.
 - **Cross-links** — relative paths between docs (e.g. `../04-architecture/entities.md`) plus
   **in-document anchors** in the large consolidated files. When you move or rename a doc, fix the
   inbound relative links **and** the `README.md` index.
@@ -37,6 +48,14 @@ Change one link and the others should follow. Some specifics that require readin
 - **Requirements are a product backlog, not a flat list.** `01-.../functional-requirements.md` holds
   **13 epics (`E1`–`E13`) → 161 user stories** in Product-Owner voice (`As a … I want … so that …`) with
   MoSCoW priorities; `non-functional-requirements.md` holds the quality requirements (`NFR-*`).
+- **`01-.../user-story-map.md` is a derived view of that backlog** — the same stories re-cut by a
+  **16-activity journey backbone** (4 acts, both personas, organizer→attendee handoff) × **3 release
+  bands** tied to the plan's M3/M4/M5 gates. Its invariant: **every `US-*` appears exactly once**
+  (the doc carries the `diff` command that checks this — run it after touching the backlog). It
+  deliberately stores no story titles, dates or MoSCoW totals, so it is *not* another place counts
+  can drift; only add/remove/re-prioritise forces an edit. Two release-vs-priority exceptions are
+  recorded in both the map and `02-.../project-plan.md` §4.1 (`US-REG-04` Should→R1;
+  six E9 Must stories→R2) — change one, change the other.
 - **Architecture is layered:** `software-architecture.md` is the baseline SAD (NestJS modular monolith +
   RabbitMQ consumers + **transactional outbox**, synchronous checkout; C4 views + **ADRs**). `entities.md`
   is the schema **source of truth** (47 tables); `erd.md` is **derived from it** — keep them consistent
