@@ -40,17 +40,21 @@ eventa-api/
 │   ├── main.ts                     # HTTP entrypoint (also the check-in pool image)
 │   ├── relay.ts                    # outbox publisher
 │   ├── db/                         # Drizzle: schema/ · migrations/ (SQL) · meta/
-│   ├── modules/
-│   │   ├── identity/  organization/  events/  ticketing/
-│   │   ├── registration/
-│   │   │   ├── registration.controller.ts   # DTOs → drive OpenAPI
+│   ├── modules/                     # FLAT siblings — never nest one inside another
+│   │   ├── auth/  users/  auth-signup/  auth-password/  access/
+│   │   ├── events/  event-categories/  event-program/  event-seating/
+│   │   ├── event-sharing/  event-monitoring/  event-duplication/
+│   │   ├── ticketing/
+│   │   ├── registration/            # seat-hold money path
+│   │   │   ├── registration.module.ts
 │   │   │   ├── registration.service.ts
 │   │   │   ├── registration.repository.ts
 │   │   │   ├── dto/
 │   │   │   └── events/order-confirmed.event.ts   # producer owns its payload
-│   │   ├── attendance/  payments/  engagement/
-│   │   └── meetings/  platform/     # outbox, idempotency, audit, jobs
-│   └── common/                      # guards, interceptors, filters, tenancy
+│   │   ├── registration-stats/      # read model behind EventStatsPort
+│   │   └── platform/                # outbox, idempotency, audit, jobs
+│   └── common/                      # guards/ decorators/ interceptors/ filters/
+│                                    # http/ util/ tenancy — anything >1 module uses
 ├── test/contract/                   # Pact PROVIDER verification
 └── openapi.json                     # generated → consumed by web
 ```
@@ -60,7 +64,9 @@ eventa-api/
 eventa-worker/
 ├── src/
 │   ├── main.ts                      # consumer bootstrap
-│   ├── modules/                     # mirror the api's domains
+│   ├── modules/                     # mirror the api's module names, 1:1
+│   │   ├── auth/  auth-signup/  auth-password/   # the identity.* consumers
+│   │   ├── events/                  # the events.* family
 │   │   ├── registration/
 │   │   │   ├── order-confirmed.handler.ts
 │   │   │   └── order-confirmed.schema.ts     # zod: the shape it expects
@@ -82,9 +88,14 @@ eventa-web/
     └── lib/
 ```
 
-A NestJS **module = a bounded context** (SAD §6.2); modules depend on each other's **service
-interface**, never on another module's tables. The **worker mirrors the api's domain modules** (same
-names), with channel clients (email/sms/calendar) injected from `common/providers` — never used as the
+A NestJS **module = one responsibility**, and a bounded context (SAD §6.2) may be delivered by
+**several prefix-grouped sibling modules** — `auth` + `auth-signup` + `auth-password` + `users` + `access`
+together implement Accounts; `events` + the six `event-*` modules implement Create & Manage Events. Split
+whenever describing a module needs the word "and". Modules are **flat** under `src/modules/` — never a
+sub-feature folder nested inside another module — and depend on each other's **exported service
+interface**, never on another module's tables *or repository*. Cross-cutting code (guards, decorators,
+shared utils) lives in `src/common/`, never in a domain module. The **worker mirrors the api's module
+names** 1:1, with channel clients (email/sms/calendar) injected from `common/providers` — never used as the
 folder structure.
 
 **Contract safety (no shared package):**
@@ -108,8 +119,10 @@ folder structure.
 ## 4. Coding standards & conventions
 
 **Design principles (all backend code):**
-- **Feature-first, not layer-first** — organize by bounded context (a module owns its
+- **Feature-first, not layer-first** — organize by feature (a module owns its
   controller/service/repository/dto/events), never by technical layer (`controllers/`, `services/`, …).
+  One module = one responsibility; file names mirror class names (`event-categories.service.ts` →
+  `EventCategoriesService`); related modules share a name prefix. See Appendix A.2 for the full layout.
 - **SOLID, especially Single Responsibility & Dependency Inversion** — one reason to change per unit;
   depend on abstractions (service interfaces, repositories, injected providers), not concretions.
 - **Thin controllers, orchestration-focused services, and repositories dedicated to data access.**
@@ -250,7 +263,12 @@ short-term speed. Stack-adapted: **Drizzle ORM** + Postgres (not TypeORM), **Rab
   business logic when you can extend it.
 
 ### A.2 Architecture & structure
-- **Feature-first** — organize by business feature (`src/modules/<feature>/`), never by technical layer.
+- **Feature-first** — organize by business feature (`src/modules/<name>/`), never by technical layer.
+  **One module = one responsibility**; if describing it needs the word "and", it is two modules. Modules are
+  **flat siblings** — never a sub-feature folder nested inside another module — and related ones share a
+  **name prefix** (`auth`, `auth-signup`, `auth-password` · `events`, `event-categories`, `event-program`, …)
+  so they sort together. **File names mirror the module name, class names mirror the file name**
+  (`event-categories.service.ts` → `EventCategoriesService`); no `index.ts` barrels.
 - **Thin controllers** — validate · authenticate · authorize · call service · return. No business logic.
 - **Services orchestrate** — no SQL, HTTP, email, or storage code; delegate to dedicated services.
 - **Repository pattern** — all DB access in repositories exposing **descriptive** methods (`findActive`,
@@ -258,12 +276,33 @@ short-term speed. Stack-adapted: **Drizzle ORM** + Postgres (not TypeORM), **Rab
 - **DTOs everywhere** — never expose ORM row/schema types: Request DTO → domain → Response DTO.
 - **Separation of concerns** — business logic must never directly depend on AWS / email / DB / external
   APIs; infrastructure lives in dedicated adapters/services.
-- Target module layout as a feature grows (DB schema is centralized in `src/db/schema`, Drizzle):
+- **Cross-cutting code lives in `src/common/`, never in a domain module** — a guard, decorator, pipe or
+  helper used by more than one module belongs in `common/guards/`, `common/decorators/`, `common/util/` …
+  so a controller never imports from an unrelated domain module just to annotate a route.
+- **A module is a black box** — depend on another module's **exported service**, never on its repository,
+  its tables or its internals. If a service needs another module's rows, call that module's service. Invert
+  cross-context *reads* with a **consumer-owned port**: the consumer declares an abstract class in its own
+  `ports/`, the owner implements it as an adapter and binds it
+  (`{ provide: EventStatsPort, useClass: RegistrationStatsAdapter }`). Use `forwardRef` **only** for a
+  genuine bidirectional dependency, never to paper over a bad boundary.
+- Target module layout (DB schema is centralized in `src/db/schema`, Drizzle):
   ```
-  src/modules/<feature>/
-    <feature>.controller.ts   dto/   repositories/   services/
-    validators/   policies/   mappers/   events/   listeners/   interfaces/   use-cases/
+  src/modules/<name>/
+    <name>.module.ts       # wiring only: imports, controllers, providers, exports
+    <name>.controller.ts   # thin HTTP: validate · authorize · call service · return
+    <name>.service.ts      # the rules (orchestration; no SQL, HTTP, email)
+    <name>.repository.ts   # all DB access, descriptive method names
+    <name>.mapper.ts       # row → response DTO, when non-trivial
+    <name>.types.ts        # internal domain types (never API shapes)
+    dto/   events/   ports/
+    (as it grows: validators/ · policies/ · listeners/ · interfaces/ · use-cases/)
   ```
+  A module may hold **extra, descriptively-named** services when they are facets of the same concern
+  (`event-program/` has `sessions.service.ts` + `speakers.service.ts`; `events/` splits writes from reads
+  as `events.service.ts` + `events-query.service.ts`). That is SRP at the class level inside one boundary —
+  the alternative, a sibling module, would have to reach into this module's repository.
+- **The e2e suite is what proves the DI graph resolves — a green `tsc` does not.** A module that injects
+  another module's provider compiles fine and fails at boot.
 
 ### A.3 Domain & correctness
 - **Business rules** belong in a Policy / Domain service / Validator — never scattered.

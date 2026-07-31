@@ -49,7 +49,7 @@ technology, runtime behaviour, deployment, and cross-cutting concerns.
 4. **No event is ever lost** — domain change and its event are written in one DB transaction via the **transactional outbox**.
 5. **Idempotency everywhere money, inventory, or a message is processed** — safe under retries and at-least-once delivery.
 6. **One tenant can never see another's data** — enforced at the data layer, not just the UI.
-7. **Modular now, splittable later** — NestJS modules = bounded contexts; extract services only on a real driver.
+7. **Modular now, splittable later** — NestJS modules align to bounded contexts (one module per responsibility, several per context — §6.2); extract services only on a real driver.
 
 ## 4. Context & scope
 
@@ -150,6 +150,13 @@ Identity & Access · Organization · Events & Program · Ticketing · **Registra
 (owns the synchronous checkout) · Attendance · Payments & Finance · Engagement · Meetings ·
 **Platform** (outbox, idempotency, audit, jobs). Modules own their tables and talk through
 interfaces — no cross-module table access.
+
+A context is the *architectural* unit; in code it may be delivered by **several flat, prefix-grouped
+NestJS modules**, one per responsibility — Identity & Access ships as `auth` + `auth-signup` +
+`auth-password` + `users` + `access`, Events & Program as `events` + `event-categories` + `event-program`
++ `event-seating` + `event-sharing` + `event-monitoring` + `event-duplication`. The boundary rule is
+unchanged and applies between *modules*, not just contexts: depend on another module's exported service,
+never on its tables or repository. See the development guide §2 and Appendix A.2 for the folder layout.
 
 ### 6.3 RabbitMQ topology
 - **Exchange:** `eventa.events` (topic). Routing keys like `order.confirmed`, `payment.succeeded`,
