@@ -13,650 +13,28 @@
 
 | # | Epic (test cases) | Stories covered | Test cases | High | Med | Low |
 |---|------|:---:|:---:|:---:|:---:|:---:|
-| 1 | [Discover & Register for Events](#tc-e01) | 14 | 28 | 20 | 6 | 2 |
-| 2 | [Public Event Pages](#tc-e02) | 10 | 21 | 11 | 9 | 1 |
-| 3 | [Accounts & Sign-in](#tc-e03) | 12 | 24 | 17 | 7 | 0 |
-| 4 | [Organizer Home & Dashboard](#tc-e04) | 13 | 25 | 14 | 9 | 2 |
-| 5 | [Create & Manage Events](#tc-e05) | 15 | 35 | 20 | 13 | 2 |
-| 6 | [Sell Tickets & Run Promotions](#tc-e06) | 12 | 24 | 9 | 12 | 3 |
-| 7 | [Build the Event Program](#tc-e07) | 13 | 24 | 14 | 9 | 1 |
+| 1 | [Accounts & Sign-in](#tc-e01) | 12 | 24 | 19 | 5 | 0 |
+| 2 | [Configure the Workspace & Team](#tc-e02) | 13 | 29 | 16 | 11 | 2 |
+| 3 | [Create & Manage Events](#tc-e03) | 15 | 35 | 20 | 13 | 2 |
+| 4 | [Public Event Pages](#tc-e04) | 10 | 21 | 11 | 9 | 1 |
+| 5 | [Sell Tickets & Run Promotions](#tc-e05) | 12 | 24 | 9 | 12 | 3 |
+| 6 | [Discover & Register for Events](#tc-e06) | 14 | 28 | 20 | 6 | 2 |
+| 7 | [Communicate with Attendees](#tc-e07) | 10 | 20 | 3 | 13 | 4 |
 | 8 | [Manage Registrations & Admit Attendees](#tc-e08) | 14 | 30 | 17 | 13 | 0 |
-| 9 | [Coordinate Meetings](#tc-e09) | 9 | 21 | 8 | 11 | 2 |
-| 10 | [Get Paid & Manage Finances](#tc-e10) | 14 | 27 | 20 | 7 | 0 |
-| 11 | [Measure Performance (Reports)](#tc-e11) | 12 | 25 | 10 | 13 | 2 |
-| 12 | [Communicate with Attendees](#tc-e12) | 10 | 20 | 3 | 13 | 4 |
-| 13 | [Configure the Workspace & Team](#tc-e13) | 13 | 29 | 16 | 11 | 2 |
-| | **Total** | **161** | **333** | **179** | **133** | **21** |
+| 9 | [Get Paid & Manage Finances](#tc-e09) | 14 | 27 | 20 | 7 | 0 |
+| 10 | [Build the Event Program](#tc-e10) | 13 | 24 | 14 | 9 | 1 |
+| 11 | [Organizer Home & Dashboard](#tc-e11) | 13 | 25 | 14 | 9 | 2 |
+| 12 | [Coordinate Meetings](#tc-e12) | 9 | 21 | 8 | 11 | 2 |
+| 13 | [Measure Performance (Reports)](#tc-e13) | 12 | 25 | 10 | 13 | 2 |
+| | **Total** | **161** | **333** | **181** | **131** | **21** |
 
 ---
 
 <a id="tc-e01"></a>
 
-# Discover & Register for Events — Test Cases
-
-Area: DISC · Epic E1 — Discover & Register for Events (Attendee)
-Locale defaults: currency ฿ (THB), VAT 7%, PromptPay, Asia/Bangkok, languages EN/TH.
-
----
-
-## US-DISC-01 — Discover and browse what's on
-
-### TC-DISC-01 — Discover grid shows upcoming events with key details, soonest-first
-- **Traces:** US-DISC-01  ·  **Priority:** High  ·  **Type:** Functional
-- **Preconditions:** At least 3 published, publicly visible upcoming events exist in different categories; one event has attendee ratings from US-DISC-13; attendee is a guest (not signed in).
-- **Test data:** Event A "Bangkok Jazz Night", category Music, date 2026-08-15, venue GMM Live House / Bangkok, organizer "Live Nation TH", price-from ฿890, 120 going, avg rating 4.6; Event B a free workshop (price "Free"); Event C paid, no reviews yet.
-- **Steps:**
-  1. Open the Discover page as a guest.
-  2. Inspect each event card in the grid.
-  3. Note the order of the cards.
-  4. Tap the Event A card.
-- **Expected result:** A grid of event cards renders. Each card shows cover image, category, title, date, venue/city, organizer, count of people going, a price-from in ฿ (Event B shows "Free"), and an average rating only where feedback exists (Event A shows 4.6; Event C shows no rating). Cards are ordered soonest-first. Tapping Event A opens its public event page with a register/get-tickets action.
-
-### TC-DISC-02 — Sold-out, selling-fast, expired, and empty-state handling
-- **Traces:** US-DISC-01  ·  **Priority:** High  ·  **Type:** Edge
-- **Preconditions:** One event is sold out; one event is nearly sold out (few seats remaining); one event already started/finished (start time in the past, Asia/Bangkok); a search term exists that matches no event.
-- **Test data:** Sold-out event "Coldplay BKK"; nearly-sold-out event "Indie Film Fest" (e.g. 6 of 400 seats left); past event "NYE Countdown 2026" (started 2026-07-26 20:00 +07); no-match keyword "zzzxxq".
-- **Steps:**
-  1. Open the Discover page and locate the sold-out event card.
-  2. Locate the nearly-sold-out event card.
-  3. Look for the already-started/finished event in the list.
-  4. Search for "zzzxxq".
-- **Expected result:** The sold-out card shows a "Waitlist" badge instead of a buy-now price; the nearly-sold-out card shows a "Selling fast" badge; the started/finished event is not shown anywhere in the list; the no-match search shows a friendly empty state suggesting a different search or category.
-
----
-
-## US-DISC-02 — Search and filter events
-
-### TC-DISC-03 — Keyword and category filters combine (AND) and update the count
-- **Traces:** US-DISC-02  ·  **Priority:** High  ·  **Type:** Functional
-- **Preconditions:** Published events span multiple categories; at least one Music event in Bangkok whose title contains "Jazz".
-- **Test data:** Keyword "Jazz"; category "Music"; a competing "Jazz Cooking Class" event in category Food.
-- **Steps:**
-  1. Open the Discover page.
-  2. Type "Jazz" in the search box and observe the list and result count.
-  3. Select category "Music".
-  4. Select "All events" to clear the category.
-- **Expected result:** Typing "Jazz" narrows the list to events whose title, category, city, or venue matches and updates the result count. Adding category "Music" shows only events matching both keyword AND category (the Food "Jazz Cooking Class" is excluded). Selecting "All events" clears the category filter and the keyword-only results return.
-
-### TC-DISC-04 — Bilingual search, trimmed whitespace, and no-match empty state
-- **Traces:** US-DISC-02  ·  **Priority:** High  ·  **Type:** Edge
-- **Preconditions:** An event exists with a Thai title/venue and an English equivalent (e.g. venue "ไอคอนสยาม" / "IconSiam").
-- **Test data:** Thai keyword "ไอคอนสยาม"; English keyword "IconSiam"; padded keyword "  Jazz  "; combination keyword "Jazz" + category "Food" that matches nothing.
-- **Steps:**
-  1. Search "ไอคอนสยาม" (Thai) and note results.
-  2. Clear and search "IconSiam" (English).
-  3. Search "  Jazz  " with leading/trailing spaces.
-  4. Set keyword "Jazz" and category "Food" (a combination with no matching event).
-- **Expected result:** Thai and English searches both return the same matching event consistently (tone marks/accents do not break matching). The padded "  Jazz  " returns the same results as "Jazz" (stray spaces ignored). The keyword+category combination that matches nothing shows the friendly empty state.
-
----
-
-## US-DISC-03 — Save events for later
-
-### TC-DISC-05 — Save persists and guest saves merge into account on sign-in
-- **Traces:** US-DISC-03  ·  **Priority:** Medium  ·  **Type:** Functional
-- **Preconditions:** A registered attendee account exists; several published events available; attendee starts as a guest.
-- **Test data:** Guest saves Event A and Event B; account already has Event B saved from a prior session (potential duplicate).
-- **Steps:**
-  1. As a guest, tap the save (heart) control on Event A and Event B.
-  2. Reload the Discover page and confirm both remain saved.
-  3. Sign in to the registered account (which already has Event B saved).
-  4. Sign in on a second device/browser to the same account and open saved events.
-- **Expected result:** Tapped events show as saved and stay saved after reload. On sign-in, in-session guest saves merge into the account with no duplicate for Event B. The saved events appear on the second device (saves are account-bound across devices).
-
-### TC-DISC-06 — Save failure reverts the control with a message
-- **Traces:** US-DISC-03  ·  **Priority:** Medium  ·  **Type:** Negative
-- **Preconditions:** Ability to simulate a save that cannot be recorded (e.g. network/service error on the save action).
-- **Test data:** Event C; save action forced to fail.
-- **Steps:**
-  1. Open the Discover page.
-  2. Tap the save (heart) control on Event C under the failing condition.
-  3. Observe the control state and any message.
-- **Expected result:** The save is not recorded, the heart control reverts to its unsaved state, and a brief "couldn't save right now" message is shown. No phantom saved state persists on reload.
-
----
-
-## US-DISC-04 — Register and choose my tickets (guest or signed in)
-
-### TC-DISC-07 — Reserved-seating checkout with live totals, seat hold, and guest details
-- **Traces:** US-DISC-04  ·  **Priority:** High  ·  **Type:** Functional
-- **Preconditions:** A paid event with reserved seating and an available seat map; attendee is a guest.
-- **Test data:** Event "Bangkok Jazz Night"; ticket type "General" ฿890; service fee ฿50/seat; select 2 seats (A12, A13); guest name "Somchai P.", email somchai@example.com, mobile 08x-xxx-xxxx.
-- **Steps:**
-  1. Click "Register"/"Get tickets" on the event.
-  2. Choose exactly one ticket type (General ฿890) and confirm prices show in ฿.
-  3. On the seat map, select seats A12 and A13; observe held state and that taken seats are not selectable.
-  4. Watch the order summary and the sticky action bar as selection changes.
-  5. Enter guest name, email, and mobile number; place the order without opting into an account.
-- **Expected result:** Checkout shows the event summary and a single-choice ticket type in ฿. Chosen seats are held for the attendee during checkout; already-taken seats cannot be selected. The order summary and sticky action bar update live with subtotal (฿1,780), service fee (฿100), and total (฿1,880). Guest fields are captured, and after placing the order no account is silently created for the guest.
-
-### TC-DISC-08 — Quantity boundaries (1–8) and free-event fee/payment skip
-- **Traces:** US-DISC-04  ·  **Priority:** High  ·  **Type:** Edge
-- **Preconditions:** A general-admission or online event for quantity selection; a separate free event.
-- **Test data:** GA/online event ฿300; free event with two tiers both ฿0.
-- **Steps:**
-  1. Open checkout for the GA/online event and attempt quantity 0, then 1, then 8, then 9.
-  2. For an online event, note the join-link message; for GA, note the first-come seating note.
-  3. Open checkout for the free event and select a tier.
-  4. Proceed toward confirmation on the free event.
-- **Expected result:** Quantity is constrained to 1–8: 0 and 9 are rejected/clamped, 1 and 8 are accepted. Online events state a join link will be emailed; GA events note seating is first-come. For the free event all tiers show "Free", no service fee is added, and the payment step is skipped entirely.
-
-### TC-DISC-09 — Seat hold expiry / seat taken before confirm blocks continue without charge
-- **Traces:** US-DISC-04  ·  **Priority:** High  ·  **Type:** Negative
-- **Preconditions:** Reserved-seating event; a way to let the seat hold expire or have a chosen seat taken by another buyer before confirmation.
-- **Test data:** Seat A14 selected; hold timer allowed to expire (or A14 taken concurrently) before payment is confirmed.
-- **Steps:**
-  1. Begin checkout and select seat A14.
-  2. Wait until the seat hold expires (or have another buyer take A14) before confirming.
-  3. Attempt to continue/confirm.
-- **Expected result:** The attendee is told the seat/hold is no longer available and is asked to re-select. No charge is made for the lapsed selection, and the released seat becomes available again.
-
----
-
-## US-DISC-05 — Pay by card or PromptPay
-
-### TC-DISC-10 — Card payment approved completes registration
-- **Traces:** US-DISC-05  ·  **Priority:** High  ·  **Type:** Functional
-- **Preconditions:** A paid order is at the payment step with a valid total in THB.
-- **Test data:** Order total ฿1,880; test card that approves; method = Card.
-- **Steps:**
-  1. At payment, choose Card.
-  2. Enter the approving test card in the secure payment provider fields and submit.
-  3. Observe the result.
-- **Expected result:** Attendee can choose card or PromptPay. On approval the flow moves to confirmation and the registration is completed. The charge settles in THB. (Card numbers are entered into the provider, not stored by Eventa.)
-
-### TC-DISC-11 — Card declined shows message, issues no ticket, allows retry/switch
-- **Traces:** US-DISC-05  ·  **Priority:** High  ·  **Type:** Negative
-- **Preconditions:** Paid order at payment step.
-- **Test data:** Order total ฿1,880; test card that declines; a second valid card; PromptPay as fallback.
-- **Steps:**
-  1. Choose Card and submit the declining test card.
-  2. Read the decline message and confirm no ticket was issued.
-  3. Retry with the valid card, or switch to PromptPay.
-- **Expected result:** A clear decline message is shown, no ticket is issued, and the attendee can try another card or switch to PromptPay. Retrying with a valid method completes the registration. The attendee is never charged for the declined attempt.
-
-### TC-DISC-12 — PromptPay QR for exact total, single issuance, and expiry releases seats
-- **Traces:** US-DISC-05  ·  **Priority:** High  ·  **Type:** Functional
-- **Preconditions:** Paid reserved-seating order at payment step.
-- **Test data:** Order total ฿1,880; held seats A12/A13; method = PromptPay with time-limited QR.
-- **Steps:**
-  1. Choose PromptPay and continue.
-  2. Verify the QR encodes the exact total ฿1,880 and shows a validity countdown.
-  3. Scenario A: complete the PromptPay payment in-app and let it settle.
-  4. Scenario B (fresh order): let the QR expire before paying, then generate a new code.
-- **Expected result:** A PromptPay QR for the exact total is shown, valid for a limited time. On settlement (A) the registration completes and exactly one ticket is issued (no double issuance on repeated webhook/confirmation). On expiry (B) no ticket is issued, the held seats are released, and a new code can be generated. The attendee is never charged twice for the same order.
-
----
-
-## US-DISC-06 — Confirm and receive my QR ticket
-
-### TC-DISC-13 — Confirmation recap plus email with QR, VAT receipt, and calendar invite
-- **Traces:** US-DISC-06  ·  **Priority:** High  ·  **Type:** Functional
-- **Preconditions:** A valid selection with approved payment (paid event) or a free registration; attendee provided a mobile number.
-- **Test data:** Paid order, 2 seats → 2 QR tickets; email somchai@example.com; mobile provided; VAT 7% on ฿1,780 base.
-- **Steps:**
-  1. Confirm the registration.
-  2. Review the on-screen recap.
-  3. Check the confirmation email contents.
-  4. Check for a confirmation SMS.
-- **Expected result:** The registration is placed once; one QR ticket is issued per seat/ticket (2 tickets here); a "You're registered!" recap appears with links to view tickets. The confirmation email contains the QR ticket(s), an order summary, a VAT receipt (7% breakdown in ฿) for the paid order, and a calendar invite; an online event would also include a join link. Because a mobile number was provided, a confirmation SMS is also received.
-
-### TC-DISC-14 — Idempotent confirm and concurrent-seat race yield one registration/charge
-- **Traces:** US-DISC-06  ·  **Priority:** High  ·  **Type:** Negative
-- **Preconditions:** Ability to double-submit confirm and to have two attendees confirm the same seat simultaneously.
-- **Test data:** Single order double-tapped; two attendees both selecting seat B5.
-- **Steps:**
-  1. On one order, double-tap/retry the confirm action.
-  2. Verify how many registrations and charges result.
-  3. Have two attendees confirm seat B5 at the same time.
-  4. Observe both outcomes.
-- **Expected result:** Double-tap/retry creates only one registration and one charge. In the seat race only the first attendee succeeds; the second is not charged (or is refunded) and is asked to pick again. No duplicate ticket and no double charge occur.
-
----
-
-## US-DISC-07 — View and download my QR ticket
-
-### TC-DISC-15 — Open and download a printable QR ticket with full details
-- **Traces:** US-DISC-07  ·  **Priority:** High  ·  **Type:** Functional
-- **Preconditions:** Signed-in attendee owns a valid ticket.
-- **Test data:** Ticket for "Bangkok Jazz Night", class VIP, seat A12/Row A/Gate 3, doors 18:00 (Asia/Bangkok), admission number and ticket reference present.
-- **Steps:**
-  1. Open the owned ticket.
-  2. Confirm the QR and ticket reference are shown.
-  3. Download the ticket.
-  4. Inspect the downloaded image.
-- **Expected result:** The ticket displays a scannable QR and its ticket reference. The download is a printable ticket image showing the QR, event name, date, venue, doors-open time, ticket class (VIP/General), seat/row/gate where applicable, and admission number.
-
-### TC-DISC-16 — Refunded/voided ticket is invalid; access to a non-owned ticket is refused
-- **Traces:** US-DISC-07  ·  **Priority:** High  ·  **Type:** Negative
-- **Preconditions:** One ticket has been refunded/voided; a valid ticket belongs to a different attendee.
-- **Test data:** Refunded ticket T-REF-001; another attendee's ticket T-OTHER-999.
-- **Steps:**
-  1. Open the refunded/voided ticket.
-  2. Attempt to download it as a valid pass.
-  3. Attempt to open ticket T-OTHER-999 (not owned).
-- **Expected result:** The refunded/voided ticket shows as no longer valid and cannot be downloaded as a valid pass. Attempting to open a ticket the attendee does not own is refused (access denied).
-
----
-
-## US-DISC-08 — Sign in to my attendee account
-
-### TC-DISC-17 — Valid sign-in lands on My Events with attendee-only access and attaches guest saves
-- **Traces:** US-DISC-08  ·  **Priority:** High  ·  **Type:** Functional
-- **Preconditions:** A registered attendee account; the same browser session has guest-saved events.
-- **Test data:** Valid email/password (and/or Google/Apple); guest-saved Event A and Event B.
-- **Steps:**
-  1. As a guest, save Event A and Event B.
-  2. Sign in with valid email/password (or via Google/Apple).
-  3. Land on the account and check accessible areas.
-  4. Open saved events.
-- **Expected result:** Sign-in succeeds and lands on My Events with attendee access only (no organizer/admin console reachable). The guest-session saves are attached to the account.
-
-### TC-DISC-18 — Wrong credentials show a single generic error; repeated failures trigger lockout
-- **Traces:** US-DISC-08  ·  **Priority:** High  ·  **Type:** Negative
-- **Preconditions:** A registered account exists.
-- **Test data:** Correct email with wrong password; repeated wrong attempts past the lockout threshold; "Forgot password?" link.
-- **Steps:**
-  1. Submit a valid email with an incorrect password.
-  2. Read the error message.
-  3. Repeat failed attempts until the limit is passed.
-  4. Choose "Forgot password?".
-- **Expected result:** A single "email or password is incorrect" message appears without revealing which field was wrong. After repeated failures the attempts are temporarily blocked and the attendee is pointed to reset the password. "Forgot password?" opens the reset flow.
-
----
-
-## US-DISC-09 — See my upcoming and past tickets
-
-### TC-DISC-19 — My Events splits upcoming/past with counts, countdown, attended badge, and empty state
-- **Traces:** US-DISC-09  ·  **Priority:** High  ·  **Type:** Functional
-- **Preconditions:** Signed-in attendee with at least one upcoming and one past registration; also a fresh account with none.
-- **Test data:** Upcoming event 6 days out and one today; past event attended with feedback still open; separate empty account.
-- **Steps:**
-  1. Open My Events on the account with registrations.
-  2. Inspect the Upcoming section (counts, countdown, ticket type, date/venue, event link, Ticket action).
-  3. Inspect the Past section (Attended badge, Leave feedback action).
-  4. Sign in with the empty account and open My Events.
-- **Expected result:** My Events shows an Upcoming and a Past section, each with a count, listing only this attendee's registrations. Upcoming items show a countdown ("6 days left", "Today"), ticket type, date and venue, an event-page link, and a "Ticket" action to open the QR. The attended past event shows an "Attended" badge and a "Leave feedback" action while feedback is open. The empty account shows an empty state inviting the attendee to discover events.
-
----
-
-## US-DISC-10 — Review my payment history and receipts
-
-### TC-DISC-20 — Payment history tiles, transaction detail, VAT receipt, export, and refund handling
-- **Traces:** US-DISC-10  ·  **Priority:** High  ·  **Type:** Functional
-- **Preconditions:** Signed-in attendee with several transactions including one refunded; also a fresh account with none.
-- **Test data:** Paid transaction ฿1,880 (card ending 4242), invoice INV-2026-0001; PromptPay transaction ฿300; refunded transaction ฿500 (struck through); VAT 7%.
-- **Steps:**
-  1. Open Payment history and read the summary tiles (total spent, number of transactions, total refunded).
-  2. Open a transaction row and check event, invoice number, date, masked method, amount, status.
-  3. Download the receipt for a paid transaction.
-  4. Export the full history.
-  5. Sign in with the empty account and open Payment history.
-- **Expected result:** Tiles show total spent, transaction count, and total refunded. Each row shows event, invoice number, date, payment method (masked card or PromptPay), amount, and status (Paid/Refunded); the refunded amount is struck through and excluded from total spent. The downloaded receipt is a VAT receipt showing the 7% VAT breakdown in ฿. Export returns the full transaction list. The empty account shows zero tiles and an empty state.
-
----
-
-## US-DISC-11 — Manage my profile
-
-### TC-DISC-21 — Edit and save profile, cancel discards, and details pre-fill at checkout
-- **Traces:** US-DISC-11  ·  **Priority:** High  ·  **Type:** Functional
-- **Preconditions:** Signed-in attendee on the Profile tab.
-- **Test data:** Name "Somchai Prasert", city "Bangkok", DOB 1990-05-01, bio text, valid JPG photo under 5 MB.
-- **Steps:**
-  1. Edit name, city, date of birth, and bio; save.
-  2. Make another edit and click "Cancel".
-  3. Start a new checkout and observe the contact fields.
-- **Expected result:** Valid changes are saved and confirmed. "Cancel" discards the unsaved edits (previous saved values remain). At the next checkout, contact details pre-fill from the saved profile.
-
-### TC-DISC-22 — Email/phone re-verification and photo upload validation
-- **Traces:** US-DISC-11  ·  **Priority:** High  ·  **Type:** Negative
-- **Preconditions:** Signed-in attendee on the Profile tab.
-- **Test data:** New email new@example.com; new phone 08x-xxx-xxxx; oversized photo 7 MB JPG; a GIF/BMP file; a valid 3 MB PNG.
-- **Steps:**
-  1. Change the email and save.
-  2. Change the phone and save.
-  3. Upload the 7 MB photo, then the GIF/BMP, then the valid PNG.
-- **Expected result:** The changed email is marked unverified and a verification link is sent, while the old email keeps working until confirmed. The changed phone must be confirmed by code before it is used for texts. The 7 MB photo and the non-JPG/PNG file are rejected with guidance and the current avatar is unchanged; the valid PNG is accepted.
-
----
-
-## US-DISC-12 — Manage my notifications, display preferences, and security
-
-### TC-DISC-23 — Notification toggles, marketing exclusion, and display prefs vs Baht charges
-- **Traces:** US-DISC-12  ·  **Priority:** Medium  ·  **Type:** Functional
-- **Preconditions:** Signed-in attendee on the Settings tab.
-- **Test data:** Toggle marketing/promotions OFF, event reminders ON; set language = Thai, timezone = Asia/Bangkok, display currency = USD; a promotion send and an order confirmation.
-- **Steps:**
-  1. Toggle email notifications, event reminders, SMS alerts, and marketing/promotions; save.
-  2. With marketing OFF, trigger a promotional send.
-  3. Complete an order and check the confirmation/receipt still arrives.
-  4. Set language, timezone, and display currency, then view an event and its price.
-- **Expected result:** Toggle choices are saved and applied to future messages. With marketing off, the attendee is excluded from the promotion but still receives order confirmations and receipts (transactional always sent). Interface reflects the chosen language/timezone/currency, but all charges still settle in ฿ (THB) and event times stay anchored to each event's own timezone.
-
-### TC-DISC-24 — Password change validation and two-factor enablement
-- **Traces:** US-DISC-12  ·  **Priority:** Medium  ·  **Type:** Negative
-- **Preconditions:** Signed-in attendee on the Settings tab.
-- **Test data:** Correct current password; a wrong current password; mismatched new/confirm passwords; 2FA setup with recovery codes.
-- **Steps:**
-  1. Change password using a wrong current password.
-  2. Change password with correct current password but mismatched new/confirm fields.
-  3. Change password correctly and save.
-  4. Enable two-factor authentication and complete verification, then sign out and back in.
-- **Expected result:** Wrong current password and mismatched new passwords each show a clear error and change nothing. A correct change updates the password, sends a confirmation email, and offers to sign out other sessions. Enabling 2FA turns it on with recovery codes provided, and it is required at the next sign-in.
-
----
-
-## US-DISC-13 — Share post-event feedback
-
-### TC-DISC-25 — Submit feedback contributes to average and resubmission updates it
-- **Traces:** US-DISC-13  ·  **Priority:** Medium  ·  **Type:** Functional
-- **Preconditions:** Signed-in attendee who attended an event with feedback open.
-- **Test data:** 4-star rating, "enjoyed the venue", heard via "friend", would recommend = Yes; later change to 5 stars.
-- **Steps:**
-  1. Open the feedback survey for the attended event.
-  2. Give a 4-star rating and fill the optional fields; submit.
-  3. Reopen the survey within the window and change the rating to 5 stars; resubmit.
-  4. Check the event's average rating on Discover.
-- **Expected result:** A thank-you confirmation appears and the rating contributes to the event's average shown on Discover. Resubmitting within the window updates the earlier response rather than creating a duplicate; the average reflects the single updated rating.
-
-### TC-DISC-26 — Missing rating is blocked; ineligible/closed feedback is disallowed
-- **Traces:** US-DISC-13  ·  **Priority:** Medium  ·  **Type:** Negative
-- **Preconditions:** An attended event with feedback open; a second event where feedback is closed or the attendee is not eligible (e.g. did not attend).
-- **Test data:** Feedback with comments filled but no star selected; a closed/ineligible event survey.
-- **Steps:**
-  1. Open the open survey, fill only the optional comments, leave the star rating unset, and submit.
-  2. Open the survey for the closed/ineligible event.
-- **Expected result:** Submitting without a star rating prompts the attendee to choose one and records nothing until a rating is chosen. For the closed/ineligible event the attendee is told feedback isn't open.
-
----
-
-## US-DISC-14 — Delete my account
-
-### TC-DISC-27 — Account deletion with confirmation, re-verification, and non-refundable warning
-- **Traces:** US-DISC-14  ·  **Priority:** Low  ·  **Type:** Functional
-- **Preconditions:** Signed-in attendee in the Settings danger zone; attendee holds an upcoming paid, non-refundable ticket.
-- **Test data:** Upcoming paid ticket ฿1,880 marked non-refundable; identity re-verification (password/2FA); confirmation email.
-- **Steps:**
-  1. In the danger zone, choose to delete the account.
-  2. Observe the warning about upcoming non-refundable tickets.
-  3. Explicitly confirm and complete identity re-verification.
-  4. Check the resulting session and email.
-- **Expected result:** Deletion requires explicit confirmation and identity re-verification, and warns about non-refundable upcoming tickets before continuing. On confirmed re-verification, personal data is scheduled for removal, the attendee is signed out, and a confirmation email is received. (Financial/tax records are retained anonymized per legal retention.)
-
-### TC-DISC-28 — Failed identity re-verification aborts deletion
-- **Traces:** US-DISC-14  ·  **Priority:** Low  ·  **Type:** Negative
-- **Preconditions:** Signed-in attendee attempting account deletion.
-- **Test data:** Wrong password / failed 2FA at the re-verification step.
-- **Steps:**
-  1. Start account deletion and reach the identity re-verification step.
-  2. Fail re-verification (wrong password / failed 2FA).
-- **Expected result:** Deletion is aborted and the account is unchanged (still signed in, data intact, no confirmation email sent).
-
-
----
-
-<a id="tc-e02"></a>
-
-# Public Event Pages — Test Cases
-
-Epic E2 — Public Event Pages. Area code: PAGE. Locale context: Thai market, ฿ (VAT 7% inclusive), PromptPay, Asia/Bangkok timezone, EN/TH bilingual.
-
----
-
-## US-PAGE-01 — Open a shareable event page
-
-### TC-PAGE-01 — Open a published event from its shared link (guest, no login)
-- **Traces:** US-PAGE-01  ·  **Priority:** High  ·  **Type:** Functional
-- **Preconditions:** A published in-person event exists ("Bangkok Tech Meetup") with title, date, time, location and at least one ticket tier. Tester is not signed in (guest / incognito).
-- **Test data:** Event "Bangkok Tech Meetup", 15 Aug 2026, 18:00–21:00 (Asia/Bangkok), Venue "True Digital Park, Sukhumvit", ticket "General — ฿500".
-- **Steps:**
-  1. Open the event's public shared link in a fresh browser session with no active login.
-  2. Observe the page content without interacting with any auth control.
-- **Expected result:** The page renders showing title, date, time, location and the ticket(s). No login/sign-up prompt or wall appears at any point. Dates/times display in Bangkok time. (AC: shared link shows key facts with no prompt to log in.)
-
-### TC-PAGE-02 — Link to an unpublished or non-existent event shows an "unavailable" message
-- **Traces:** US-PAGE-01  ·  **Priority:** High  ·  **Type:** Negative
-- **Preconditions:** One event exists in draft/unpublished state; a known-invalid public address is available.
-- **Test data:** (a) URL of an unpublished/draft event; (b) URL with a non-existent slug e.g. `/e/does-not-exist-2026`.
-- **Steps:**
-  1. Open the unpublished event's public URL.
-  2. Separately, open the non-existent slug URL.
-- **Expected result:** In both cases a clear "this event page isn't available" message is shown. No other event's content is displayed, and no broken/error screen appears. (AC: link to no live event shows a clear unavailable message, never the wrong event or a broken screen.)
-
-### TC-PAGE-03 — Empty sections are hidden and Thai content reads correctly in Bangkok time
-- **Traces:** US-PAGE-01  ·  **Priority:** Medium  ·  **Type:** Edge
-- **Preconditions:** A published event configured in Thai (TH) language with NO highlights, NO agenda, NO speakers and NO FAQs, but with title, date/time and one ticket.
-- **Test data:** Event "งานสัมมนากรุงเทพ", 20 ก.ย. 2026 09:00–12:00 (Asia/Bangkok), ticket "ทั่วไป — ฿300".
-- **Steps:**
-  1. Open the Thai event's public page.
-  2. Scroll through the full page looking for section headings.
-- **Expected result:** No empty section heading appears for highlights, agenda, speakers or FAQs — each absent section is omitted entirely, not shown as an empty heading. All Thai text renders correctly, and the date/time reads correctly in Thai and Bangkok time. (AC: empty sections hidden entirely; TH text and dates/times correct in Bangkok time.)
-
----
-
-## US-PAGE-02 — Event identity and one-tap Register
-
-### TC-PAGE-04 — Register button reachable at every position and lands on registration in the same tab
-- **Traces:** US-PAGE-02  ·  **Priority:** High  ·  **Type:** Functional
-- **Preconditions:** Published event with an open registration window and at least one purchasable ticket tier.
-- **Test data:** Event "Bangkok Tech Meetup", ticket "General — ฿500", registration open.
-- **Steps:**
-  1. Open the event page; confirm a Register / Get tickets button is present in the top bar and in the hero.
-  2. Scroll to the Tickets section; confirm each tier carries its own Register button.
-  3. Scroll to the foot of the page; confirm a Register button is present.
-  4. Click one of the Register buttons.
-- **Expected result:** A Register / Get tickets button is available at the top, hero, per-ticket, and page foot. Clicking it opens the registration step for this event in the same tab (no new tab, no dead end). (AC: Register reachable at all positions; click lands on registration in the same tab.)
-
-### TC-PAGE-05 — Registration not yet open disables Register with a hint; missing cover shows branded fallback
-- **Traces:** US-PAGE-02  ·  **Priority:** Medium  ·  **Type:** Edge
-- **Preconditions:** Published event whose registration opening date is in the future, and whose cover image is unset or fails to load.
-- **Test data:** Event "Future Expo 2027", registration opens 01 Jan 2027 (today is 2026-07-27); no cover image uploaded.
-- **Steps:**
-  1. Open the event page before its registration window opens.
-  2. Inspect the Register button state and any accompanying hint.
-  3. Observe the hero background where the cover image would appear.
-- **Expected result:** The Register button is visibly unavailable (disabled) with a short "registration isn't open yet" hint; it does not lead to a dead end. The hero shows a branded background instead of a broken-image icon. (AC: registration not open → disabled Register with hint; missing/failed cover → branded background, never a broken image.)
-
----
-
-## US-PAGE-03 — Clear about section and online-event handling
-
-### TC-PAGE-06 — Online event states "Online" and promises the join link, never exposing it or an address
-- **Traces:** US-PAGE-03  ·  **Priority:** High  ·  **Type:** Functional
-- **Preconditions:** A published online event with a configured private join link.
-- **Test data:** Event "Remote UX Workshop", type Online, private join link `https://meet.example.com/xyz-secret`.
-- **Steps:**
-  1. Open the online event's public page.
-  2. Read the details/about section thoroughly.
-  3. Search the visible page for the private join URL and for any physical address.
-- **Expected result:** The page shows "Online event" and a note that the join link is sent after registering. No physical address is shown. The private join link is never displayed publicly — only the promise of when it will be received. (AC: online event shows "Online event", join-link-after-register note, never a physical address, never the private link.)
-
-### TC-PAGE-07 — In-person event shows venue details and omits blank rows
-- **Traces:** US-PAGE-03  ·  **Priority:** Medium  ·  **Type:** Edge
-- **Preconditions:** A published in-person event with venue, date, time, category and price set, but with the street address field left blank.
-- **Test data:** Event "Chiang Mai Coffee Fair", venue "TCDC Chiang Mai", address (blank), category "Food & Drink", price ฿250.
-- **Steps:**
-  1. Open the in-person event's public page.
-  2. Review the details section row by row.
-- **Expected result:** Venue, date, time, category and price are shown. The blank address row is simply left out — no empty "Address:" label — and every other detail still renders. (AC: in-person shows venue/address/date/time/category/price; a blank detail row is omitted while the rest still shows.)
-
----
-
-## US-PAGE-04 — Highlights, agenda and speakers
-
-### TC-PAGE-08 — Highlights, agenda and speakers render in organizer order with custom titles
-- **Traces:** US-PAGE-04  ·  **Priority:** Medium  ·  **Type:** Functional
-- **Preconditions:** A published event with 3 highlights, a 4-item agenda and 3 speakers arranged in a specific organizer order, and custom titles set for the schedule and speaker sections.
-- **Test data:** Agenda order [Registration, Keynote, Break, Panel]; speakers [Anan, Bua, Chai]; custom titles "กำหนดการ" (schedule) and "วิทยากรรับเชิญ" (speakers).
-- **Steps:**
-  1. Open the event page and scroll to Highlights, then Schedule, then Speakers.
-  2. Compare the displayed order of items against the organizer-arranged order.
-  3. Check the section headings for the schedule and speakers.
-- **Expected result:** Each list appears in the exact order the organizer arranged. The custom section titles ("กำหนดการ", "วิทยากรรับเชิญ") are used. A separate check on an event with these lists empty confirms each empty section is absent rather than shown blank. (AC: items in organizer order; custom titles used with sensible defaults otherwise; empty lists → section absent.)
-
----
-
-## US-PAGE-05 — Ticket tiers, pricing and availability
-
-### TC-PAGE-09 — Ticket tiers show VAT-inclusive Baht pricing, Free/RSVP labels and the recommended badge
-- **Traces:** US-PAGE-05  ·  **Priority:** High  ·  **Type:** Functional
-- **Preconditions:** A published event with multiple tiers: a paid tier, a free tier, an RSVP tier, and one tier flagged as recommended. All prices are configured VAT-inclusive.
-- **Test data:** Tiers — "General ฿500" (incl. 7% VAT), "VIP ฿1,500" (marked recommended, badge "Most popular", includes ["Front seat","Swag bag"]), "Student — Free", "Waitlist — RSVP".
-- **Steps:**
-  1. Open the event page and scroll to the Tickets section.
-  2. For each tier, read its name, price, "what's included" list and Register button.
-  3. Inspect the free and RSVP tiers for any price prefix.
-  4. Inspect the recommended tier for its badge/highlight.
-- **Expected result:** Each tier shows name, price, any "what's included" list and its own Register button. Every Baht price is presented as already including 7% VAT (no separate VAT add-on at display). The free tier reads "Free" and the RSVP tier reads "RSVP" with no price prefix. The recommended tier stands out visually and shows its "Most popular" badge. (AC: per-tier fields; VAT-inclusive Baht; Free/RSVP labels; recommended badge stands out.)
-
-### TC-PAGE-10 — Sold-out tier shows "Sold out" and cannot be clicked through
-- **Traces:** US-PAGE-05  ·  **Priority:** High  ·  **Type:** Negative
-- **Preconditions:** A published event whose registration is open, with one tier at zero remaining seats and another still available.
-- **Test data:** "General ฿500" available; "VIP ฿1,500" sold out (0 seats).
-- **Steps:**
-  1. Open the event page and scroll to the sold-out VIP tier.
-  2. Read the VIP tier's button label.
-  3. Attempt to click through the VIP button to registration.
-- **Expected result:** The sold-out tier's button reads "Sold out" and is non-actionable — it cannot be clicked through to registration. The still-available tier's Register button continues to work. (AC: sold-out tier button reads "Sold out" and cannot proceed.)
-
-### TC-PAGE-11 — Registration closed disables all tier buttons; low-seat urgency line shows
-- **Traces:** US-PAGE-05  ·  **Priority:** High  ·  **Type:** Edge
-- **Preconditions:** Two scenarios available: (A) an event whose registration window has closed; (B) a still-open event with a tier at very low remaining seats.
-- **Test data:** (A) Event "Closed Summit" — registration closed. (B) Event "Almost Full" — tier "General ฿500" with 3 seats left.
-- **Steps:**
-  1. Open event (A) and inspect every tier's Register button and any page-level message.
-  2. Open event (B) and inspect the low-seat tier for an urgency line.
-- **Expected result:** For (A), all tier buttons are disabled and a "registration is closed" message is shown. For (B), an urgency line such as "Going fast — only 3 left" is displayed on the low-seat tier. (AC: registration closed → all buttons disabled + closed message; very few seats → urgency line.)
-
----
-
-## US-PAGE-06 — Frequently asked questions
-
-### TC-PAGE-12 — FAQ opens the first answer, collapses the rest, and is expandable; absent when empty
-- **Traces:** US-PAGE-06  ·  **Priority:** Low  ·  **Type:** Functional
-- **Preconditions:** Two events: (A) published with 4 FAQ entries; (B) published with no FAQs.
-- **Test data:** (A) FAQs Q1–Q4; (B) no FAQ content.
-- **Steps:**
-  1. Open event (A); locate the FAQ section on load.
-  2. Confirm the first answer is expanded and Q2–Q4 are collapsed.
-  3. Click Q3 to expand it, and confirm it opens.
-  4. Open event (B) and look for a FAQ section.
-- **Expected result:** On (A), the first FAQ answer is open on load and the rest are collapsed; any FAQ can be expanded on click. On (B), the FAQ section is entirely absent. (AC: first answer open, rest collapsed and expandable; no FAQs → section absent.)
-
----
-
-## US-PAGE-07 — Add the event to my calendar
-
-### TC-PAGE-13 — Add to calendar creates a Bangkok-time entry via Apple/Google/Outlook
-- **Traces:** US-PAGE-07  ·  **Priority:** Medium  ·  **Type:** Functional
-- **Preconditions:** A published in-person event with a clear start and end time, opened on a mobile viewport.
-- **Test data:** Event "Bangkok Tech Meetup", 15 Aug 2026 18:00–21:00 (Asia/Bangkok), Venue "True Digital Park".
-- **Steps:**
-  1. Open the event page on a phone and tap "Add to calendar".
-  2. Choose a provider (Apple, Google or Outlook).
-  3. Inspect the generated calendar entry's title, location, start/end and timezone.
-- **Expected result:** Apple, Google and Outlook options are offered. The resulting entry is set to Bangkok time (18:00–21:00, +07:00) with the correct event title and location. (AC: clear start/end → provider choice and a Bangkok-time entry with title and location.)
-
-### TC-PAGE-14 — Calendar entry for online events carries no join link; option hidden when time is unclear; re-add updates not duplicates
-- **Traces:** US-PAGE-07  ·  **Priority:** Medium  ·  **Type:** Edge
-- **Preconditions:** (A) A published online event with a private join link and clear times; (B) a published event with a missing/unclear time; the tester already added event (A) once.
-- **Test data:** (A) "Remote UX Workshop" online, join link private; (B) "TBD Networking Night" with no set time.
-- **Steps:**
-  1. On (A), tap Add to calendar, generate the entry and inspect it for the private join link.
-  2. Add event (A) to the same calendar a second time and inspect the calendar.
-  3. Open (B) and check whether the Add to calendar option is present.
-- **Expected result:** The online event's calendar entry contains no private join link. Re-adding the same event updates the existing entry rather than creating a duplicate. For (B), the Add to calendar option is hidden rather than producing a broken entry. (AC: online entry has no join link; missing/unclear time → option hidden; re-add updates existing entry.)
-
----
-
-## US-PAGE-08 — Rich search results and social sharing
-
-### TC-PAGE-15 — Shared/searched link renders a rich card; share buttons copy a clean public link
-- **Traces:** US-PAGE-08  ·  **Priority:** Medium  ·  **Type:** Functional
-- **Preconditions:** A published event with title, description and cover image.
-- **Test data:** Event "Bangkok Tech Meetup", ticket from ฿500, 15 Aug 2026 18:00 (Asia/Bangkok).
-- **Steps:**
-  1. Inspect the page's share preview metadata (as a social scraper / link unfurl would consume).
-  2. Use the on-page share controls to copy the link and to share to Facebook, LINE and X.
-  3. Examine the copied/shared URL for any personal or tracking data.
-- **Expected result:** The rich card shows the correct title, description, image (or a branded default) and event details including Baht pricing and Bangkok time. Share controls allow copy-link and sharing to Facebook, LINE and X. The shared link is the clean public address with no personal data attached. (AC: rich card correct incl. ฿ and Bangkok time; share to channels; clean public link with no personal data.)
-
-### TC-PAGE-16 — Preview and unpublished pages are marked "do not index"
-- **Traces:** US-PAGE-08  ·  **Priority:** Medium  ·  **Type:** Negative
-- **Preconditions:** A preview page and an unpublished event page are reachable by URL.
-- **Test data:** A template preview URL and an unpublished event URL.
-- **Steps:**
-  1. Reach the preview page as a scraper/search engine would and inspect its indexing directives.
-  2. Repeat for the unpublished event page.
-- **Expected result:** Both the preview and the unpublished page are marked "do not index" (noindex), so neither can leak into public search results. (AC: preview/unpublished pages marked do-not-index.)
-
----
-
-## US-PAGE-09 — Preview any template with unsaved content
-
-### TC-PAGE-17 — Preview renders live unsaved values, saves nothing, and is marked as a preview
-- **Traces:** US-PAGE-09  ·  **Priority:** High  ·  **Type:** Functional
-- **Preconditions:** An organizer is signed in and editing a new, unsaved event.
-- **Test data:** Typed title "Draft Launch Party", one highlight "Free welcome drink", event type set to "Online". Nothing saved yet.
-- **Steps:**
-  1. In the event editor, type the title and highlight and choose "Online" without saving.
-  2. Click Preview.
-  3. In the new preview tab, confirm the typed values appear and that a preview marker is shown.
-  4. Return and confirm no event/page/draft was created; verify the preview is excluded from public visitor analytics and public search.
-- **Expected result:** A new tab shows a live page with exactly the typed values ("Draft Launch Party", the highlight, Online handling). Nothing is saved — no event, page or draft is created — and the page is clearly marked as a preview. It is not counted in public visitor analytics and does not appear in public search. (AC: preview shows live unsaved values; nothing saved; marked preview; excluded from public analytics and search.)
-
-### TC-PAGE-18 — Blocked pop-up on Preview shows an allow-pop-ups hint
-- **Traces:** US-PAGE-09  ·  **Priority:** Medium  ·  **Type:** Negative
-- **Preconditions:** Organizer signed in and editing an event; browser configured to block pop-ups/new tabs.
-- **Test data:** Any valid in-progress event; pop-up blocker enabled.
-- **Steps:**
-  1. With pop-ups blocked, click Preview.
-  2. Observe the editor when no new tab opens.
-- **Expected result:** Because the new tab is blocked, a clear hint is shown telling the organizer to allow pop-ups. No silent failure. (AC: browser blocks the new tab → clear hint to allow pop-ups.)
-
----
-
-## US-PAGE-10 — Choose a design, brand it, and publish under a stable link
-
-### TC-PAGE-19 — Choose a design, publish under a stable address, and switch designs with no content loss
-- **Traces:** US-PAGE-10  ·  **Priority:** High  ·  **Type:** Functional
-- **Preconditions:** Organizer signed in with a complete event (title, date, at least one ticket/RSVP option) ready to publish.
-- **Test data:** Event "Bangkok Tech Meetup"; designs Classic, Spotlight, Minimal, Vibrant; public address `/e/bkk-tech-meetup`.
-- **Steps:**
-  1. Choose the "Spotlight" design and publish.
-  2. Open the public address and confirm content renders in Spotlight under the stable address.
-  3. Return to the editor, switch the design to "Vibrant" and save.
-  4. Reload the public page at the same address.
-- **Expected result:** The event content renders in the chosen design at a stable public address. Switching from Spotlight to Vibrant re-renders the same content in the new design with no loss of content and the same public address. (AC: choose one of four designs, publish under a stable address, switch later with no content loss.)
-
-### TC-PAGE-20 — Publishing is blocked when title, date, or a ticket/RSVP option is missing
-- **Traces:** US-PAGE-10  ·  **Priority:** High  ·  **Type:** Negative
-- **Preconditions:** Organizer signed in editing an event missing one or more required fields.
-- **Test data:** Case (a) no title; Case (b) no date; Case (c) no ticket/RSVP option configured.
-- **Steps:**
-  1. For each case, attempt to publish the event.
-  2. Read the resulting message.
-- **Expected result:** In each case publishing is blocked, and the message states exactly what to add first (the missing title, date, or at least one ticket/RSVP option). The event does not go live. (AC: publish blocked when missing title/date/ticket-or-RSVP with a message naming what to add.)
-
-### TC-PAGE-21 — Duplicate public address rejected; invalid accent falls back; unpublish kills the link but preserves the page
-- **Traces:** US-PAGE-10  ·  **Priority:** High  ·  **Type:** Edge
-- **Preconditions:** A published event already owns the address `/e/bkk-tech-meetup`; organizer is editing a second event and a published event whose accent colour can be changed.
-- **Test data:** Duplicate slug `bkk-tech-meetup`; accent colours: valid `#E91E63`, invalid `not-a-color`; brand default accent.
-- **Steps:**
-  1. On the second event, set the public web address to the already-taken slug and save.
-  2. On a published event, set a valid accent colour and confirm buttons/highlights take that colour; then set an invalid colour value and save.
-  3. Unpublish a published event, then open its public link and confirm search visibility.
-  4. Re-publish the same event and confirm its original address still works.
-- **Expected result:** Saving a taken address is rejected with a message that the address is in use, asking for another. A valid accent colour applies to buttons and highlights; an invalid colour quietly falls back to the brand default (no error thrown). After unpublish, the public link stops working immediately and drops out of search, while the page is preserved and can be re-published under the same address. (AC: duplicate address rejected; invalid accent → brand default fallback; unpublish disables link and de-indexes yet preserves the page for re-publish.)
-
-
----
-
-<a id="tc-e03"></a>
-
 # Accounts & Sign-in — Test Cases
 
-Epic E3 — Accounts & Sign-in. Test basis: user stories US-ACC-01…US-ACC-12 and their acceptance criteria.
+Epic E1 — Accounts & Sign-in. Test basis: user stories US-ACC-01…US-ACC-12 and their acceptance criteria.
 Locale notes: bilingual EN/TH surfaces; Asia/Bangkok time for "last active" and lockout timers; neutral, non-revealing messages are a recurring security rule across this epic.
 
 ---
@@ -782,7 +160,7 @@ Locale notes: bilingual EN/TH surfaces; Asia/Bangkok time for "last active" and 
 ## US-ACC-05 — Change my password while signed in
 
 ### TC-ACC-11 — Change password signs out other devices, keeps this one
-- **Traces:** US-ACC-05  ·  **Priority:** Medium  ·  **Type:** Functional
+- **Traces:** US-ACC-05  ·  **Priority:** High  ·  **Type:** Functional
 - **Preconditions:** Account signed in on device A (the one making the change) and device B.
 - **Test data:** Current password `NewStrong#2026`; new password `EvenStronger#27`.
 - **Steps:**
@@ -792,7 +170,7 @@ Locale notes: bilingual EN/TH surfaces; Asia/Bangkok time for "last active" and 
 - **Expected result:** The password changes; device A stays signed in; device B (and all other devices) are signed out and must sign in again with the new password.
 
 ### TC-ACC-12 — Change rejected: wrong current password and reused password
-- **Traces:** US-ACC-05  ·  **Priority:** Medium  ·  **Type:** Negative
+- **Traces:** US-ACC-05  ·  **Priority:** High  ·  **Type:** Negative
 - **Preconditions:** Account signed in on device A and device B.
 - **Test data:** Wrong current `NotMyPassword#9`; correct current `EvenStronger#27`; new = same as current `EvenStronger#27`.
 - **Steps:**
@@ -949,307 +327,343 @@ Locale notes: bilingual EN/TH surfaces; Asia/Bangkok time for "last active" and 
 
 ---
 
-<a id="tc-e04"></a>
+<a id="tc-e02"></a>
 
-# Organizer Home & Dashboard — Test Cases
+# Configure the Workspace & Team — Test Cases
 
-Area: DASH · Epic E4 — Organizer Home & Dashboard
-Locale defaults: Currency ฿ (THB), VAT 7% tracked separately, timezone Asia/Bangkok, languages EN/TH.
-
----
-
-## US-DASH-01 — Daily operations home
-
-### TC-DASH-01 — Home greets organizer by name in chosen language, using Bangkok time
-- **Traces:** US-DASH-01 · **Priority:** High · **Type:** Functional
-- **Preconditions:** Organizer account "Somchai" exists; UI language set to Thai; device locale/timezone set to a non-Bangkok zone (e.g. Europe/Berlin).
-- **Test data:** Force Bangkok wall-clock to 08:15 (morning) while the device clock reads 03:15 CEST.
-- **Steps:**
-  1. Sign in as the organizer.
-  2. Land on the home screen.
-  3. Read the greeting text.
-- **Expected result:** A time-of-day greeting for MORNING is shown, addressed to the organizer by name, rendered in Thai. The greeting reflects Bangkok time (morning) even though the device is in an earlier timezone. Home only summarizes/links — no record is modified.
-
-### TC-DASH-02 — "New event" launches the event creation flow
-- **Traces:** US-DASH-01 · **Priority:** High · **Type:** Functional
-- **Preconditions:** Signed in as organizer on the home screen.
-- **Test data:** —
-- **Steps:**
-  1. Choose "New event".
-- **Expected result:** The event creation flow opens. No event record is created merely by opening it (home never changes records itself).
-
-### TC-DASH-03 — Attendee is refused access to the admin home
-- **Traces:** US-DASH-01 · **Priority:** High · **Type:** Negative
-- **Preconditions:** A pure Attendee account (no team-member role) is signed in.
-- **Test data:** Direct navigation to the admin home URL.
-- **Steps:**
-  1. As the Attendee, attempt to open the organizer/admin home.
-- **Expected result:** Access is refused (not authorized / redirected away). No organizer home data, greeting, or panels are rendered.
+Epic E2 — Configure the Workspace & Team. Area code: **SET**. Locale defaults: ฿ THB, VAT 7%, Asia/Bangkok, EN/TH.
 
 ---
 
-## US-DASH-02 — Today's registrations at a glance
+## US-SET-01 — My profile & preferences
 
-### TC-DASH-04 — Today's sign-up count and newest previews shown for team member with registration access
-- **Traces:** US-DASH-02 · **Priority:** High · **Type:** Functional
-- **Preconditions:** Signed in as a team member permitted to view registrations. Several registrations exist for events, some created today (Bangkok calendar day), some earlier.
-- **Test data:** 3 registrations today at 09:05, 11:40, 14:20 (Bangkok); 1 registration from yesterday 23:50 Bangkok that must NOT count as today.
+### TC-SET-01 — Edit name and phone, save and cancel
+- **Traces:** US-SET-01  ·  **Priority:** High  ·  **Type:** Functional
+- **Preconditions:** Signed in as any team member with an existing profile (name, email, phone populated).
+- **Test data:** New name "Somchai Rattana", new phone "+66 81 234 5678".
 - **Steps:**
-  1. Open home and read the registrations panel count badge.
-  2. Inspect the previewed newest sign-ups.
-  3. Choose "View all registrations".
-- **Expected result:** Count badge shows 3 (today only, Bangkok calendar day; yesterday's late entry excluded). Newest sign-ups preview each show attendee name, their event + ticket type, and the time (Bangkok, in the UI language). "View all registrations" navigates to the registrations list.
+  1. Open My Profile; confirm the page loads with current name, email, phone, timezone, language and photo, all editable.
+  2. Change name to "Somchai Rattana" and phone to "+66 81 234 5678", then Save.
+  3. Reopen the page, edit the name again, then choose Cancel.
+- **Expected result:** After step 2 the new name and phone are persisted and a confirmation is shown. After step 3 all fields revert to their last-saved values ("Somchai Rattana"), with no change kept.
 
-### TC-DASH-05 — Empty state when no one has registered today
-- **Traces:** US-DASH-02 · **Priority:** Medium · **Type:** Edge
-- **Preconditions:** Signed in as a team member with registration access. No registrations exist with a Bangkok "today" timestamp (older registrations may exist).
-- **Test data:** Last registration was yesterday 22:00 Bangkok.
+### TC-SET-02 — Change email keeps old sign-in and marks new address unverified
+- **Traces:** US-SET-01  ·  **Priority:** High  ·  **Type:** Functional
+- **Preconditions:** Signed in with a verified email on file.
+- **Test data:** Current email `somchai@old.co.th`; new email `somchai@new.co.th`.
 - **Steps:**
-  1. Open home and view the today's-registrations panel.
-- **Expected result:** Panel clearly shows "no registrations yet today" (not a zero-count list of previews and not stale entries).
+  1. Open My Profile and change email to `somchai@new.co.th`, then Save.
+  2. Observe the email status shown for the new address.
+  3. Sign out and sign back in using the original email `somchai@old.co.th`.
+- **Expected result:** The new email is shown as "unverified" and a confirmation link is sent to `somchai@new.co.th`. The original sign-in email keeps working until the new one is verified. A confirmation of the change is displayed.
+
+### TC-SET-03 — Timezone Bangkok and language Thai apply to dates and copy
+- **Traces:** US-SET-01  ·  **Priority:** Medium  ·  **Type:** Edge
+- **Preconditions:** Signed in; profile currently on a non-Bangkok timezone / English.
+- **Test data:** Timezone "Asia/Bangkok (GMT+7)", language "ไทย (Thai)".
+- **Steps:**
+  1. Set timezone to Asia/Bangkok and language to Thai, then Save.
+  2. Navigate to a screen showing timestamps (e.g. an event or activity list) and open a menu.
+- **Expected result:** Dates/times render in Asia/Bangkok (GMT+7) and menu labels and copy render in Thai. Change persists across navigation.
 
 ---
 
-## US-DASH-03 — Today's meetings
+## US-SET-02 — Change my password
 
-### TC-DASH-06 — Today's meetings previewed earliest-first with empty-state and schedule shortcut verified
-- **Traces:** US-DASH-03 · **Priority:** Medium · **Type:** Functional
-- **Preconditions:** Signed in as organizer.
-- **Test data:** Two meetings scheduled today (Bangkok): "Sponsor sync" 15:00–15:30 with counterpart "Nok"; "Vendor call" 10:00–10:45 with counterpart "Arun". No meetings scheduled after these for today.
+### TC-SET-04 — Successful password change signs out other sessions
+- **Traces:** US-SET-02  ·  **Priority:** High  ·  **Type:** Functional
+- **Preconditions:** Signed in; the same account is also signed in on a second device/browser.
+- **Test data:** Current password `OldPass!9`; new password `NewPass#7` (8+ chars, has a number and a symbol).
 - **Steps:**
-  1. Open home and read the meetings count badge and preview order.
-  2. Verify each preview shows title, time range, and counterpart.
-  3. Choose "Schedule meeting".
-- **Expected result:** Count badge shows 2; meetings are previewed earliest-first ("Vendor call" 10:00–10:45 before "Sponsor sync" 15:00–15:30), each with title, time range (Bangkok), and counterpart. "Schedule meeting" opens the meeting creation flow. (If no meetings existed today, the panel would instead show "no meetings scheduled today".)
+  1. Open Change Password, enter current `OldPass!9` and new `NewPass#7` with matching confirmation, then Submit.
+  2. On the second device, attempt any authenticated action.
+- **Expected result:** Password is updated with a confirmation shown; a "password was changed" email is sent; the second device is signed out and forced to re-authenticate.
+
+### TC-SET-05 — Weak, mismatched, or wrong-current password is refused
+- **Traces:** US-SET-02  ·  **Priority:** High  ·  **Type:** Negative
+- **Preconditions:** Signed in with password `OldPass!9`.
+- **Test data:** (a) new `abc` / confirm `abc` (too weak, no number+symbol, <8); (b) new `NewPass#7` / confirm `NewPass#8` (mismatch); (c) current `WrongPass!1` + valid new `NewPass#7`.
+- **Steps:**
+  1. Attempt case (a) and Submit.
+  2. Attempt case (b) and Submit.
+  3. Attempt case (c) and Submit.
+- **Expected result:** Each case is rejected with a specific reason (weak password / confirmation mismatch / wrong current password). The password remains `OldPass!9` in all cases and nothing is changed.
 
 ---
 
-## US-DASH-04 — Upcoming events progress
+## US-SET-03 — Two-factor authentication & recovery codes
 
-### TC-DASH-07 — Upcoming event card shows days-remaining chip, attendee preview, and capacity progress
-- **Traces:** US-DASH-04 · **Priority:** Medium · **Type:** Functional
-- **Preconditions:** Signed in as organizer. Multiple upcoming events exist. Today's Bangkok date is 2026-07-27.
-- **Test data:** Event A starts 2026-08-01 (5 days out), capacity 100, sold 83; Event B starts 2026-08-10; some attendees registered on Event A.
+### TC-SET-06 — Enable 2FA and receive 8 recovery codes
+- **Traces:** US-SET-03  ·  **Priority:** Medium  ·  **Type:** Functional
+- **Preconditions:** Signed in; 2FA currently off; authenticator app available.
+- **Test data:** Valid current 6-digit TOTP code from the paired authenticator.
 - **Steps:**
-  1. Open home and view the upcoming-events panel.
-  2. Read Event A's days-remaining chip, attendee preview, and progress bar.
-  3. Confirm ordering of cards.
-- **Expected result:** Event A card shows a days-remaining chip ("5 days" / Thai equivalent), a preview of who's attending, and a progress bar reading 83% (83 of 100 seats). Soonest-starting event (A) appears before B; only a small number of cards shown, with a link to the full events list.
+  1. Start 2FA setup, scan the displayed QR/secret with the authenticator app.
+  2. Enter the current 6-digit code and confirm.
+  3. Note the recovery codes presented and download them.
+- **Expected result:** 2FA is turned on and exactly 8 one-time recovery codes are shown once (downloadable). Codes are not shown again after leaving the screen.
 
-### TC-DASH-08 — Event starting today shows "Today" chip; empty state when no upcoming events
-- **Traces:** US-DASH-04 · **Priority:** Medium · **Type:** Edge
-- **Preconditions:** Signed in as organizer. Bangkok "today" is well defined.
-- **Test data:** Case A: Event C starts today (Bangkok). Case B: no upcoming events at all.
+### TC-SET-07 — Wrong/expired code leaves 2FA off; disable requires re-confirmation
+- **Traces:** US-SET-03  ·  **Priority:** Medium  ·  **Type:** Negative
+- **Preconditions:** Signed in. For part B, 2FA is already on and the workspace does not force 2FA for everyone.
+- **Test data:** Wrong code `000000` / a code that has expired; valid re-confirmation credential for disable.
 - **Steps:**
-  1. Case A: open home, read Event C's chip.
-  2. Case B: with no upcoming events, open home and view the panel.
-- **Expected result:** Case A — Event C's chip reads "Today" (localized). Case B — panel shows "no upcoming events".
+  1. During setup, enter `000000` (or an expired code) and try to finish.
+  2. With 2FA on, choose to turn it off and complete the required identity re-confirmation.
+- **Expected result:** Step 1 keeps 2FA off with a prompt to try again. Step 2 requires re-confirming identity before disabling, and an email is sent that 2FA was disabled. (If the workspace requires 2FA for everyone, the disable option is unavailable to the member.)
+
+### TC-SET-08 — Regenerate recovery codes invalidates old set
+- **Traces:** US-SET-03  ·  **Priority:** Medium  ·  **Type:** Edge
+- **Preconditions:** Signed in; 2FA on; running low on recovery codes.
+- **Test data:** One previously issued (still-unused) recovery code.
+- **Steps:**
+  1. Regenerate recovery codes and save the new set.
+  2. Attempt to authenticate/step-up using one of the OLD codes.
+- **Expected result:** A fresh set of 8 codes is issued; all old codes stop working (the old-code attempt is rejected).
 
 ---
 
-## US-DASH-05 — Active-events activity share
+## US-SET-04 — Review & sign out my active sessions
 
-### TC-DASH-09 — Activity-share ring shows per-event share, legend, and total; empty state
-- **Traces:** US-DASH-05 · **Priority:** Low · **Type:** Functional
-- **Preconditions:** Signed in as organizer.
-- **Test data:** Case A: 3 active events with differing sign-up activity. Case B: 0 active events.
+### TC-SET-09 — Session list marks current device with no sign-out control
+- **Traces:** US-SET-04  ·  **Priority:** Medium  ·  **Type:** Functional
+- **Preconditions:** Signed in on at least two devices/browsers.
+- **Test data:** Current device plus one other session.
 - **Steps:**
-  1. Case A: open home; inspect the ring, its color-keyed legend of event names, and the center number.
-  2. Choose "See all".
-  3. Case B: with no active events, view the panel.
-- **Expected result:** Case A — ring shows each event's share of activity, a color-keyed legend of event names, and the total count of active events (3) in the center; "See all" navigates to the events list. Case B — panel shows "no active events".
+  1. Open Active Sessions and review the list.
+- **Expected result:** Each session shows device, rough location and how recently it was used. The current device is clearly marked and has no "sign out" control; other sessions do.
+
+### TC-SET-10 — Sign out one device and sign out all other sessions
+- **Traces:** US-SET-04  ·  **Priority:** Medium  ·  **Type:** Functional
+- **Preconditions:** Signed in on the current device plus two other sessions.
+- **Test data:** One unfamiliar device entry.
+- **Steps:**
+  1. Sign out the unfamiliar device and confirm; observe the list.
+  2. On that device, attempt an authenticated request.
+  3. Choose "Sign out all other sessions" and confirm.
+- **Expected result:** The signed-out device is logged out on its next attempt and its entry disappears. After step 3 every session except the current device is signed out; the current device stays signed in.
 
 ---
 
-## US-DASH-06 — Operational alerts
+## US-SET-05 — Security & access audit log
 
-### TC-DASH-10 — Alerts listed most-urgent-first, each linking to its module; resolved alert clears on refresh
-- **Traces:** US-DASH-06 · **Priority:** High · **Type:** Functional
-- **Preconditions:** Signed in as organizer with full access. Multiple unresolved actionable issues exist (e.g. a pending approval, an unconfirmed speaker, a pending reply).
-- **Test data:** At least three alerts of differing severity.
+### TC-SET-11 — Role change appears newest-first and is immutable
+- **Traces:** US-SET-05  ·  **Priority:** Medium  ·  **Type:** Functional
+- **Preconditions:** Signed in as Admin; a teammate's role was just changed (e.g. Staff → Organizer).
+- **Test data:** Teammate "Nok", change Staff → Organizer.
 - **Steps:**
-  1. Open home and read the alerts panel: severity indicators, text, and ordering.
-  2. Click one alert and confirm it links to the correct resolving module.
-  3. Resolve that issue in its owning module, return to home, and refresh.
-- **Expected result:** Each alert shows a clear severity indicator + text, most urgent first, with a link to the right module. Resolving is done only in the module (never on home). After the issue is resolved, the alert is gone on the next home refresh.
+  1. Open the audit log and locate the role-change entry.
+  2. Attempt to edit or delete any entry from anywhere in the product.
+- **Expected result:** Entry shows who changed it, from Staff to Organizer, and when. Entries are ordered newest-first and no edit/delete control exists anywhere.
 
-### TC-DASH-11 — Finance alert hidden from user without finance access; all-caught-up empty state
-- **Traces:** US-DASH-06 · **Priority:** High · **Type:** Negative
-- **Preconditions:** A declined-payment (finance) alert exists in the workspace.
-- **Test data:** Case A: signed in as a staff member WITHOUT finance access. Case B: a user with no outstanding actionable items.
+### TC-SET-12 — Export records a new entry and masks secrets
+- **Traces:** US-SET-05  ·  **Priority:** Medium  ·  **Type:** Functional
+- **Preconditions:** Signed in as Admin; log contains an entry referencing a saved payment key.
+- **Test data:** Export date range 2026-07-01 to 2026-07-27.
 - **Steps:**
-  1. Case A: open home; scan the alerts panel for the declined-payment (finance) alert.
-  2. Case B: with nothing outstanding, view the alerts panel.
-- **Expected result:** Case A — the finance/declined-payment alert is NOT shown to the user without finance access (non-finance alerts still show normally). Case B — panel shows "you're all caught up".
+  1. Export the audit log for the given date range and let the download complete.
+  2. Reopen the log and confirm the export was logged.
+  3. Open the entry that involves a saved payment key.
+- **Expected result:** A file scoped to that date range downloads; the export action itself is recorded as a new audit entry. The secret-bearing entry shows only a masked hint, never the full value.
 
 ---
 
-## US-DASH-07 — Website template shortcuts
+## US-SET-06 — Notification preferences
 
-### TC-DASH-12 — Template shortcut opens landing-pages area; shortcuts reflect current template set on reload
-- **Traces:** US-DASH-07 · **Priority:** Low · **Type:** Functional
-- **Preconditions:** Signed in as organizer; templates panel is shown with the current set of landing-page templates.
-- **Test data:** Available templates set changes (one added/removed) between the two loads.
+### TC-SET-13 — Toggle email/SMS per topic independently and honor the setting
+- **Traces:** US-SET-06  ·  **Priority:** Medium  ·  **Type:** Functional
+- **Preconditions:** Signed in with a phone number on file.
+- **Test data:** Topics registrations, payments, reminders, product updates. Turn SMS off for "reminders" while leaving email on.
 - **Steps:**
-  1. Choose a template shortcut from the panel.
-  2. Change the available template set, then reload home.
-  3. Re-inspect the templates panel.
-- **Expected result:** Choosing a template navigates to the landing-pages area to work with it. After reload, the shortcuts reflect the current set (added template appears, removed template disappears).
+  1. Open Notification Preferences and toggle email and SMS per topic; turn SMS off for "reminders".
+  2. Trigger a reminder event.
+- **Expected result:** Each topic exposes independent email and SMS switches. After turning SMS off for reminders, no reminder SMS is delivered while the reminder email still sends.
+
+### TC-SET-14 — SMS switches unavailable without a phone; receipts always send
+- **Traces:** US-SET-06  ·  **Priority:** Medium  ·  **Type:** Edge
+- **Preconditions:** Signed in with no phone number on file; payment alerts turned off.
+- **Test data:** Account with empty phone field; a successful payment event.
+- **Steps:**
+  1. Open Notification Preferences and inspect the SMS switches.
+  2. With payment alerts off, complete a successful payment.
+- **Expected result:** SMS switches are unavailable with a prompt to add a phone number. Despite payment alerts being off, the required transactional receipt (VAT 7% itemized) still sends; only the optional payment alert is suppressed.
 
 ---
 
-## US-DASH-08 — Performance KPIs at a glance
+## US-SET-07 — Organization profile, tax details & branding
 
-### TC-DASH-13 — KPI cards render five headline metrics with period-over-period change
-- **Traces:** US-DASH-08 · **Priority:** High · **Type:** Functional
-- **Preconditions:** Signed in as Admin with finance access. Data exists for the current and previous comparable periods.
-- **Test data:** Registrations up vs prior period; ticket revenue e.g. ฿128,500 (net of VAT and refunds); some upcoming events; check-in rate lower than prior period; capacity filled with a value.
+### TC-SET-15 — Save valid org identity; VAT 7% itemized on future receipts
+- **Traces:** US-SET-07  ·  **Priority:** High  ·  **Type:** Functional
+- **Preconditions:** Signed in as Admin.
+- **Test data:** Org name "Eventa Thailand Co., Ltd.", Bangkok address, website `https://eventa.co.th`, 13-digit Thai tax ID `0105558000000`.
 - **Steps:**
-  1. Open the dashboard and wait for KPI cards to load.
-  2. Read each card: total registrations, ticket revenue, upcoming events, check-in rate, capacity filled.
-  3. Read the change indicator on each.
-- **Expected result:** All five KPI cards render. Ticket revenue is shown in ฿, net of VAT and refunds (7% VAT not surfaced). Registrations show an upward, positive-colored change; check-in rate (worsened) shows a downward, warning-colored change. Each card shows change versus the previous comparable period.
+  1. Fill in name, address, website and the 13-digit tax ID, then Save.
+  2. Issue a new receipt after saving.
+  3. Change the address, then view a previously issued document.
+- **Expected result:** Details are saved and appear on documents issued from then on; the new receipt itemizes VAT 7%. The previously issued document is unchanged — only future documents use the new address.
 
-### TC-DASH-14 — Ticket revenue KPI withheld from user without finance access
-- **Traces:** US-DASH-08 · **Priority:** High · **Type:** Negative
-- **Preconditions:** Signed in as a team member WITHOUT finance access.
-- **Test data:** Revenue data exists for the period.
+### TC-SET-16 — Invalid tax ID or website is rejected
+- **Traces:** US-SET-07  ·  **Priority:** High  ·  **Type:** Negative
+- **Preconditions:** Signed in as Admin with valid details already saved.
+- **Test data:** (a) tax ID `12345` (not 13 digits); (b) website `not-a-url`.
 - **Steps:**
-  1. Open the dashboard and inspect the KPI cards.
-- **Expected result:** The ticket-revenue figure is not disclosed (hidden entirely — never shown as ฿0 or a placeholder). The other four KPI cards render normally.
+  1. Enter tax ID `12345` and Save.
+  2. Restore the valid tax ID, enter website `not-a-url`, and Save.
+- **Expected result:** Each save is blocked with a specific validation message (tax ID must be 13 digits / invalid website). Nothing is saved and previously stored valid details remain intact.
 
-### TC-DASH-15 — Metric with no data shows neutral empty state, not a misleading value
-- **Traces:** US-DASH-08 · **Priority:** Medium · **Type:** Edge
-- **Preconditions:** Signed in as Admin. At least one KPI (e.g. check-in rate) has no data for the selected period (no events required check-in yet).
-- **Test data:** Period with zero check-in-eligible activity.
+### TC-SET-17 — Organizer/Staff cannot change organization settings
+- **Traces:** US-SET-07  ·  **Priority:** Medium  ·  **Type:** Negative
+- **Preconditions:** Signed in as an Organizer (repeat as Staff).
+- **Test data:** Any org field.
 - **Steps:**
-  1. Open the dashboard and read the affected KPI card.
-- **Expected result:** The card shows a neutral, empty state rather than a misleading value (e.g. not a fabricated 0% or 100%, and not a false change arrow).
+  1. Navigate to the Organization Profile page.
+- **Expected result:** The page is read-only or hidden; no field is editable and no save/change action is available for non-Admin roles.
 
 ---
 
-## US-DASH-09 — Revenue trend with time-range toggle
+## US-SET-08 — Connect our payment account
 
-### TC-DASH-16 — Revenue chart defaults to yearly and toggles Week/Month without page reload
-- **Traces:** US-DASH-09 · **Priority:** High · **Type:** Functional
-- **Preconditions:** Signed in as organizer with finance access. Revenue exists across weeks, months, and the year.
-- **Test data:** Yearly total e.g. ฿1,240,000 with change vs previous year; distinct Week and Month totals.
+### TC-SET-18 — Test connection, then go live; test-mode banner shown
+- **Traces:** US-SET-08  ·  **Priority:** High  ·  **Type:** Functional
+- **Preconditions:** Signed in as Admin; no live payment account connected yet.
+- **Test data:** Valid test-mode credentials, then valid live credentials.
 - **Steps:**
-  1. Open the dashboard and observe the default revenue view.
-  2. Note the period total and change indicator.
-  3. Switch to Month, then to Week.
-- **Expected result:** Revenue view defaults to Yearly, showing the period total (฿) and its change vs the previous period. Switching to Month then Week updates the chart, headline total, and change to that range without a full page reload. The yearly total agrees with the ticket-revenue KPI for the same scope/period.
+  1. Enter test-mode credentials; confirm the payments page shows a banner that no real charges happen until going live.
+  2. Choose "Test connection".
+  3. Enter valid live credentials and Save.
+- **Expected result:** In test mode the reminder banner is shown. "Test connection" reports whether credentials work with no money moving (or a clear failure reason). After connecting live credentials the workspace shows "Connected" and can accept real payments. Saved sensitive details are never shown back in full.
 
-### TC-DASH-17 — Revenue section entirely hidden without finance access; empty period shows zero/neutral
-- **Traces:** US-DASH-09 · **Priority:** High · **Type:** Negative
-- **Preconditions:** Case A: signed in WITHOUT finance access. Case B: signed in WITH finance access but the selected period has zero revenue.
-- **Test data:** Case B: a Week with no ticket sales.
+### TC-SET-19 — Disconnect switches off paid checkout, free events unaffected
+- **Traces:** US-SET-08  ·  **Priority:** High  ·  **Type:** Functional
+- **Preconditions:** Signed in as Admin; payments connected; existing paid orders and payouts on record; at least one free event and one paid event.
+- **Test data:** Disconnect confirmation.
 - **Steps:**
-  1. Case A: open the dashboard and look for the revenue section.
-  2. Case B: select the empty Week and view the chart.
-- **Expected result:** Case A — the revenue section is not shown at all (not zeroed, not a locked placeholder). Case B — the chart shows an empty (zero) result with a neutral change.
+  1. Disconnect the payment account and confirm.
+  2. Attempt checkout on a paid event, then register for a free event.
+  3. Review past orders and payouts.
+- **Expected result:** Paid checkout is switched off; free-event registration keeps working; past orders and payouts remain untouched.
 
 ---
 
-## US-DASH-10 — Registrations by ticket type
+## US-SET-09 — Choose payment methods at checkout
 
-### TC-DASH-18 — Ticket-type breakdown shows shares, counts, percentages, and center total, largest-first; reconciles with KPI
-- **Traces:** US-DASH-10 · **Priority:** Medium · **Type:** Functional
-- **Preconditions:** Signed in as organizer. Registrations exist across multiple ticket types for the current scope.
-- **Test data:** Total 200 registrations — General 120 (60%), VIP 50 (25%), Early Bird 30 (15%).
+### TC-SET-20 — Enable PromptPay and disable a method reflect at checkout
+- **Traces:** US-SET-09  ·  **Priority:** High  ·  **Type:** Functional
+- **Preconditions:** Signed in as Admin; payments connected; cards and PromptPay available.
+- **Test data:** Enable PromptPay; disable cards.
 - **Steps:**
-  1. Open the dashboard and view the ticket-type breakdown.
-  2. Check each segment's count and percentage and the center total.
-  3. Compare the center total against the total-registrations KPI for the same scope.
-- **Expected result:** Breakdown lists each ticket type's share with count and percentage, largest share first (General → VIP → Early Bird), and shows 200 in the center. The center total equals the total-registrations KPI for the same scope. (If the mix later changes and the dashboard refreshes, the breakdown updates to match.)
+  1. Enable PromptPay and disable cards, then save.
+  2. As an attendee, start checkout on a paid ฿ event and review the payment options.
+- **Expected result:** PromptPay is offered at checkout; cards no longer appear on new orders.
 
-### TC-DASH-19 — Empty state when there are no registrations
-- **Traces:** US-DASH-10 · **Priority:** Medium · **Type:** Edge
-- **Preconditions:** Signed in as organizer for a scope with zero registrations.
-- **Test data:** New workspace / event with no sign-ups.
+### TC-SET-21 — Cannot switch off the last remaining method
+- **Traces:** US-SET-09  ·  **Priority:** High  ·  **Type:** Negative
+- **Preconditions:** Signed in as Admin; still selling paid tickets; only one payment method (e.g. PromptPay) currently enabled.
+- **Test data:** Attempt to disable PromptPay (the last enabled method).
 - **Steps:**
-  1. Open the dashboard and view the ticket-type panel.
-- **Expected result:** Panel shows "no registrations yet" (no empty ring with misleading segments).
+  1. Turn off the only remaining enabled method and save.
+- **Expected result:** The action is blocked with a prompt to keep at least one method enabled; the method stays on. (A wallet method whose prerequisites are unmet stays off with guidance on what to complete.)
 
 ---
 
-## US-DASH-11 — Tickets selling fast
+## US-SET-10 — Checkout & receipt preferences
 
-### TC-DASH-20 — Low-inventory ticket types listed scarcest-first with urgency coloring and Manage link
-- **Traces:** US-DASH-11 · **Priority:** Medium · **Type:** Functional
-- **Preconditions:** Signed in as organizer. Several ticket types are low on remaining inventory.
-- **Test data:** VIP 2 left (critical), General 6 left (warning), Workshop 15 left (normal), each with its event context.
+### TC-SET-22 — Statement label ≤22 chars saved; email receipt itemizes VAT 7%
+- **Traces:** US-SET-10  ·  **Priority:** High  ·  **Type:** Functional
+- **Preconditions:** Signed in as Admin; payments connected; "email receipts" on.
+- **Test data:** Statement label "EVENTA TICKETS" (14 chars); a successful ฿ payment.
 - **Steps:**
-  1. Open the dashboard and view the selling-fast panel.
-  2. Check ordering, event context, and the color of each remaining count.
-  3. Choose "Manage" on a low ticket type.
-- **Expected result:** Ticket types are listed scarcest-first (VIP 2 → General 6 → Workshop 15) with event context and a remaining count colored by urgency; the critically low VIP (2 left) is highlighted in the most urgent color. "Manage" navigates to ticket management for that inventory.
+  1. Set the statement label to "EVENTA TICKETS" and Save.
+  2. Complete a successful paid checkout.
+- **Expected result:** The label is saved and appears on the attendee's card statement for later charges; the attendee receives an email receipt with VAT 7% itemized.
 
-### TC-DASH-21 — 8-seat booking boundary flags possible single-booking sell-out; empty state
-- **Traces:** US-DASH-11 · **Priority:** Medium · **Type:** Edge
-- **Preconditions:** Signed in as organizer. Booking can hold up to 8 seats.
-- **Test data:** Case A: Ticket type with exactly 8 remaining, and another with 9 remaining. Case B: no ticket type close to selling out (all comfortably above threshold).
+### TC-SET-23 — Invalid statement label and currency mismatch handling
+- **Traces:** US-SET-10  ·  **Priority:** High  ·  **Type:** Negative
+- **Preconditions:** Signed in as Admin; organization currency is THB (฿).
+- **Test data:** (a) label "OUR VERY LONG COMPANY NAME LIMITED" (>22 chars) / a label with disallowed characters "EVENTA<*>#"; (b) default currency set to USD while org currency is THB.
 - **Steps:**
-  1. Case A: open the dashboard; check whether the 8-remaining and 9-remaining types are flagged.
-  2. Case B: view the selling-fast panel with nothing low.
-- **Expected result:** Case A — the type with 8 remaining is flagged as a possible sell-out within a single booking (at/below 8); the 9-remaining type is not flagged at that threshold. Case B — panel shows "no tickets running low".
+  1. Enter an over-length / disallowed-character label and Save.
+  2. Set default charge currency to USD (different from org THB) and Save.
+- **Expected result:** Step 1 is rejected with a prompt to shorten or fix the label before it is accepted. Step 2 shows a warning about the currency mismatch but is not blocked (the save succeeds).
 
 ---
 
-## US-DASH-12 — Recent registrations table
+## US-SET-11 — Invite & manage teammates
 
-### TC-DASH-22 — Recent registrations table shows attendee, event, ฿ amount, status badge, and time, newest-first
-- **Traces:** US-DASH-12 · **Priority:** High · **Type:** Functional
-- **Preconditions:** Signed in as a team member permitted to view registrations, WITH finance access. Recent registrations exist, including one on-site walk-in.
-- **Test data:** Row 1 newest: online reg ฿1,500 Paid at 14:20; Row 2: online reg ฿0 (free) at 13:05; Row 3: walk-in ฿800 Pending at 11:50; plus a Refunded row.
+### TC-SET-24 — Invite a teammate; re-invite is re-sent not duplicated
+- **Traces:** US-SET-11  ·  **Priority:** High  ·  **Type:** Functional
+- **Preconditions:** Signed in as Admin.
+- **Test data:** New teammate "Ploy", email `ploy@eventa.co.th`, role Staff. Then re-invite the same email; then attempt to invite an already-active member `admin@eventa.co.th`.
 - **Steps:**
-  1. Open the dashboard and view the recent-registrations table.
-  2. Check ordering and each column: attendee, event, amount (฿), status badge, time.
-  3. Locate the walk-in row.
-  4. Choose "View all".
-- **Expected result:** Rows are newest-first, each with attendee, event, amount in ฿, a Paid / Pending / Refunded badge, and the time (Bangkok, localized). The walk-in follows the same amount/status rules and may show Pending until settled. "View all" navigates to the registrations list.
+  1. Invite Ploy with role Staff and send.
+  2. Filter the team list by status "Invited".
+  3. Invite `ploy@eventa.co.th` again.
+  4. Invite an already-active member `admin@eventa.co.th`.
+- **Expected result:** Ploy appears as "Invited" with role/last-active shown, receives a join link, and the status count updates. Re-inviting the same pending email re-sends the invitation without creating a duplicate. Inviting an already-active member is rejected as already in the workspace.
 
-### TC-DASH-23 — Amount hidden in table for user without finance access
-- **Traces:** US-DASH-12 · **Priority:** High · **Type:** Negative
-- **Preconditions:** Signed in as a team member permitted to view registrations but WITHOUT finance access.
-- **Test data:** Recent registrations with non-zero ฿ amounts exist.
+### TC-SET-25 — Suspend, remove, and last-Admin protection
+- **Traces:** US-SET-11  ·  **Priority:** High  ·  **Type:** Negative
+- **Preconditions:** Signed in as Admin; one active Organizer exists; you are the only remaining Admin.
+- **Test data:** Suspend the Organizer; then attempt to remove/suspend/demote yourself (the last Admin).
 - **Steps:**
-  1. Open the dashboard and view the recent-registrations table.
-- **Expected result:** The amount column is hidden while attendee, event, status badge, and time still show. Amount is not shown as ฿0 or a masked placeholder — it is absent.
+  1. Suspend the Organizer, then have them attempt to sign in.
+  2. Remove a departing member and confirm; check their past events/exports.
+  3. Attempt to remove, suspend, or demote the last remaining Admin (yourself).
+- **Expected result:** The suspended Organizer cannot sign in and is signed out, with their role preserved for later reactivation. The removed member loses access immediately while their past work is kept and they can be re-invited. Removing/suspending/demoting the last Admin is blocked so the workspace always retains an Admin.
 
 ---
 
-## US-DASH-13 — Trustworthy, always-current overview
+## US-SET-12 — Assign roles & fine-tune permissions
 
-### TC-DASH-24 — New confirmed registration updates and reconciles total, ticket-type breakdown, and recent table
-- **Traces:** US-DASH-13 · **Priority:** High · **Type:** Functional
-- **Preconditions:** Signed in as organizer with finance + registration access, viewing the dashboard. Known starting totals.
-- **Test data:** Confirm a new registration for ticket type "VIP" for ฿1,500 in another session/module.
+### TC-SET-26 — Change role takes effect immediately and is recorded
+- **Traces:** US-SET-12  ·  **Priority:** High  ·  **Type:** Functional
+- **Preconditions:** Signed in as Admin; target member "Nok" is Staff and currently using the console.
+- **Test data:** Change Nok from Staff to Organizer.
 - **Steps:**
-  1. Note the current registration total, VIP share in the ticket-type breakdown, and the top of the recent-registrations table.
-  2. Confirm a new VIP registration in the owning module.
-  3. Within the refresh window (or after a manual refresh), re-read the three surfaces.
-- **Expected result:** Within a short refresh window the total registrations KPI increments, the VIP share in the ticket-type breakdown increases, and the new row appears at the top of the recent table — and all three agree with each other. Home/dashboard themselves changed no data.
+  1. Change Nok's role to Organizer and save.
+  2. Have Nok (without signing out and in) attempt an Organizer-only action (e.g. run an event).
+  3. Open the audit record for the change.
+- **Expected result:** Nok gains Organizer capabilities immediately without re-login; the change is recorded with before/after (Staff → Organizer) and who made it. Standard scoping holds: Organizer cannot issue refunds or manage users/settings.
 
-### TC-DASH-25 — Single panel failure is isolated; refresh cadences and permission-based hiding hold
-- **Traces:** US-DASH-13 · **Priority:** High · **Type:** Edge
-- **Preconditions:** Signed in as organizer. Simulate one panel's data source failing (e.g. selling-fast) while others succeed.
-- **Test data:** One panel forced into an error/unavailable condition; user lacks finance access for a revenue figure and lacks rights to attendee personal data in one panel.
+### TC-SET-27 — Cannot self-escalate; sensitive grants are flagged
+- **Traces:** US-SET-12  ·  **Priority:** High  ·  **Type:** Negative
+- **Preconditions:** Signed in as a non-Admin with limited permissions (or an Admin attempting to exceed current access).
+- **Test data:** (a) Attempt to grant yourself more access than you currently hold; (b) grant a member the "export attendee data" / "issue refunds" capability.
 - **Steps:**
-  1. Load the surface with one panel's source failing.
-  2. Observe the failed panel vs the others.
-  3. Trigger a manual refresh and compare operational feeds vs analytics behavior.
-  4. Inspect a finance/personal-data figure the user is not permitted to see.
-- **Expected result:** Only the failing panel shows an "unavailable / retry" state; every other panel works normally. Operational feeds (today's sign-ups, alerts, selling-fast) refresh near-real-time while analytics refresh on a slightly longer cadence, and a manual refresh is available. Any figure the user isn't permitted to see (finance or attendee personal data) is hidden — never shown as zero or a placeholder. All dates, "today", days-remaining, and times read in Bangkok time and in the user's language (EN/TH).
-
+  1. Attempt to grant yourself elevated access and Save.
+  2. Grant a member a sensitive capability (export attendee data or issue refunds) and Save.
+- **Expected result:** Self-escalation beyond current access is blocked. Granting a sensitive capability succeeds but is clearly flagged in the record.
 
 ---
 
-<a id="tc-e05"></a>
+## US-SET-13 — Create custom roles
+
+### TC-SET-28 — Create a custom role with chosen capabilities
+- **Traces:** US-SET-13  ·  **Priority:** Low  ·  **Type:** Functional
+- **Preconditions:** Signed in as Admin.
+- **Test data:** New role "Volunteer" with capabilities: view registrations + check-in only.
+- **Steps:**
+  1. Open the roles overview; confirm each role shows member count, description and headline capabilities and is searchable.
+  2. Create a role "Volunteer" with the chosen capabilities.
+  3. Assign "Volunteer" to a teammate.
+- **Expected result:** The roles overview lists all roles with counts/descriptions/capabilities and supports search. "Volunteer" is created and becomes assignable to teammates.
+
+### TC-SET-29 — Duplicate role name rejected; role management never left empty
+- **Traces:** US-SET-13  ·  **Priority:** Low  ·  **Type:** Negative
+- **Preconditions:** Signed in as Admin; a role "Organizer" already exists.
+- **Test data:** Create role named "Organizer" (duplicate); then edit the only role that can manage users/roles to remove that capability.
+- **Steps:**
+  1. Attempt to create a role named "Organizer" and save.
+  2. Edit roles such that no role would be left able to manage users and roles, then save.
+- **Expected result:** The duplicate name is rejected with a request for a unique name. Any edit that would leave the workspace with no one able to manage users and roles is blocked. Saved capability edits apply to holders on their next use.
+
+
+---
+<a id="tc-e03"></a>
 
 # Create & Manage Events — Test Cases
 
-Epic E5 · Area code: EVT · Locale: Thai market (฿, VAT 7%, PromptPay, Asia/Bangkok, EN/TH)
+Epic E3 · Area code: EVT · Locale: Thai market (฿, VAT 7%, PromptPay, Asia/Bangkok, EN/TH)
 
 ---
 
@@ -1665,11 +1079,268 @@ Epic E5 · Area code: EVT · Locale: Thai market (฿, VAT 7%, PromptPay, Asia/B
 
 ---
 
-<a id="tc-e06"></a>
+<a id="tc-e04"></a>
+
+# Public Event Pages — Test Cases
+
+Epic E4 — Public Event Pages. Area code: PAGE. Locale context: Thai market, ฿ (VAT 7% inclusive), PromptPay, Asia/Bangkok timezone, EN/TH bilingual.
+
+---
+
+## US-PAGE-01 — Open a shareable event page
+
+### TC-PAGE-01 — Open a published event from its shared link (guest, no login)
+- **Traces:** US-PAGE-01  ·  **Priority:** High  ·  **Type:** Functional
+- **Preconditions:** A published in-person event exists ("Bangkok Tech Meetup") with title, date, time, location and at least one ticket tier. Tester is not signed in (guest / incognito).
+- **Test data:** Event "Bangkok Tech Meetup", 15 Aug 2026, 18:00–21:00 (Asia/Bangkok), Venue "True Digital Park, Sukhumvit", ticket "General — ฿500".
+- **Steps:**
+  1. Open the event's public shared link in a fresh browser session with no active login.
+  2. Observe the page content without interacting with any auth control.
+- **Expected result:** The page renders showing title, date, time, location and the ticket(s). No login/sign-up prompt or wall appears at any point. Dates/times display in Bangkok time. (AC: shared link shows key facts with no prompt to log in.)
+
+### TC-PAGE-02 — Link to an unpublished or non-existent event shows an "unavailable" message
+- **Traces:** US-PAGE-01  ·  **Priority:** High  ·  **Type:** Negative
+- **Preconditions:** One event exists in draft/unpublished state; a known-invalid public address is available.
+- **Test data:** (a) URL of an unpublished/draft event; (b) URL with a non-existent slug e.g. `/e/does-not-exist-2026`.
+- **Steps:**
+  1. Open the unpublished event's public URL.
+  2. Separately, open the non-existent slug URL.
+- **Expected result:** In both cases a clear "this event page isn't available" message is shown. No other event's content is displayed, and no broken/error screen appears. (AC: link to no live event shows a clear unavailable message, never the wrong event or a broken screen.)
+
+### TC-PAGE-03 — Empty sections are hidden and Thai content reads correctly in Bangkok time
+- **Traces:** US-PAGE-01  ·  **Priority:** Medium  ·  **Type:** Edge
+- **Preconditions:** A published event configured in Thai (TH) language with NO highlights, NO agenda, NO speakers and NO FAQs, but with title, date/time and one ticket.
+- **Test data:** Event "งานสัมมนากรุงเทพ", 20 ก.ย. 2026 09:00–12:00 (Asia/Bangkok), ticket "ทั่วไป — ฿300".
+- **Steps:**
+  1. Open the Thai event's public page.
+  2. Scroll through the full page looking for section headings.
+- **Expected result:** No empty section heading appears for highlights, agenda, speakers or FAQs — each absent section is omitted entirely, not shown as an empty heading. All Thai text renders correctly, and the date/time reads correctly in Thai and Bangkok time. (AC: empty sections hidden entirely; TH text and dates/times correct in Bangkok time.)
+
+---
+
+## US-PAGE-02 — Event identity and one-tap Register
+
+### TC-PAGE-04 — Register button reachable at every position and lands on registration in the same tab
+- **Traces:** US-PAGE-02  ·  **Priority:** High  ·  **Type:** Functional
+- **Preconditions:** Published event with an open registration window and at least one purchasable ticket tier.
+- **Test data:** Event "Bangkok Tech Meetup", ticket "General — ฿500", registration open.
+- **Steps:**
+  1. Open the event page; confirm a Register / Get tickets button is present in the top bar and in the hero.
+  2. Scroll to the Tickets section; confirm each tier carries its own Register button.
+  3. Scroll to the foot of the page; confirm a Register button is present.
+  4. Click one of the Register buttons.
+- **Expected result:** A Register / Get tickets button is available at the top, hero, per-ticket, and page foot. Clicking it opens the registration step for this event in the same tab (no new tab, no dead end). (AC: Register reachable at all positions; click lands on registration in the same tab.)
+
+### TC-PAGE-05 — Registration not yet open disables Register with a hint; missing cover shows branded fallback
+- **Traces:** US-PAGE-02  ·  **Priority:** Medium  ·  **Type:** Edge
+- **Preconditions:** Published event whose registration opening date is in the future, and whose cover image is unset or fails to load.
+- **Test data:** Event "Future Expo 2027", registration opens 01 Jan 2027 (today is 2026-07-27); no cover image uploaded.
+- **Steps:**
+  1. Open the event page before its registration window opens.
+  2. Inspect the Register button state and any accompanying hint.
+  3. Observe the hero background where the cover image would appear.
+- **Expected result:** The Register button is visibly unavailable (disabled) with a short "registration isn't open yet" hint; it does not lead to a dead end. The hero shows a branded background instead of a broken-image icon. (AC: registration not open → disabled Register with hint; missing/failed cover → branded background, never a broken image.)
+
+---
+
+## US-PAGE-03 — Clear about section and online-event handling
+
+### TC-PAGE-06 — Online event states "Online" and promises the join link, never exposing it or an address
+- **Traces:** US-PAGE-03  ·  **Priority:** High  ·  **Type:** Functional
+- **Preconditions:** A published online event with a configured private join link.
+- **Test data:** Event "Remote UX Workshop", type Online, private join link `https://meet.example.com/xyz-secret`.
+- **Steps:**
+  1. Open the online event's public page.
+  2. Read the details/about section thoroughly.
+  3. Search the visible page for the private join URL and for any physical address.
+- **Expected result:** The page shows "Online event" and a note that the join link is sent after registering. No physical address is shown. The private join link is never displayed publicly — only the promise of when it will be received. (AC: online event shows "Online event", join-link-after-register note, never a physical address, never the private link.)
+
+### TC-PAGE-07 — In-person event shows venue details and omits blank rows
+- **Traces:** US-PAGE-03  ·  **Priority:** Medium  ·  **Type:** Edge
+- **Preconditions:** A published in-person event with venue, date, time, category and price set, but with the street address field left blank.
+- **Test data:** Event "Chiang Mai Coffee Fair", venue "TCDC Chiang Mai", address (blank), category "Food & Drink", price ฿250.
+- **Steps:**
+  1. Open the in-person event's public page.
+  2. Review the details section row by row.
+- **Expected result:** Venue, date, time, category and price are shown. The blank address row is simply left out — no empty "Address:" label — and every other detail still renders. (AC: in-person shows venue/address/date/time/category/price; a blank detail row is omitted while the rest still shows.)
+
+---
+
+## US-PAGE-04 — Highlights, agenda and speakers
+
+### TC-PAGE-08 — Highlights, agenda and speakers render in organizer order with custom titles
+- **Traces:** US-PAGE-04  ·  **Priority:** Medium  ·  **Type:** Functional
+- **Preconditions:** A published event with 3 highlights, a 4-item agenda and 3 speakers arranged in a specific organizer order, and custom titles set for the schedule and speaker sections.
+- **Test data:** Agenda order [Registration, Keynote, Break, Panel]; speakers [Anan, Bua, Chai]; custom titles "กำหนดการ" (schedule) and "วิทยากรรับเชิญ" (speakers).
+- **Steps:**
+  1. Open the event page and scroll to Highlights, then Schedule, then Speakers.
+  2. Compare the displayed order of items against the organizer-arranged order.
+  3. Check the section headings for the schedule and speakers.
+- **Expected result:** Each list appears in the exact order the organizer arranged. The custom section titles ("กำหนดการ", "วิทยากรรับเชิญ") are used. A separate check on an event with these lists empty confirms each empty section is absent rather than shown blank. (AC: items in organizer order; custom titles used with sensible defaults otherwise; empty lists → section absent.)
+
+---
+
+## US-PAGE-05 — Ticket tiers, pricing and availability
+
+### TC-PAGE-09 — Ticket tiers show VAT-inclusive Baht pricing, Free/RSVP labels and the recommended badge
+- **Traces:** US-PAGE-05  ·  **Priority:** High  ·  **Type:** Functional
+- **Preconditions:** A published event with multiple tiers: a paid tier, a free tier, an RSVP tier, and one tier flagged as recommended. All prices are configured VAT-inclusive.
+- **Test data:** Tiers — "General ฿500" (incl. 7% VAT), "VIP ฿1,500" (marked recommended, badge "Most popular", includes ["Front seat","Swag bag"]), "Student — Free", "Waitlist — RSVP".
+- **Steps:**
+  1. Open the event page and scroll to the Tickets section.
+  2. For each tier, read its name, price, "what's included" list and Register button.
+  3. Inspect the free and RSVP tiers for any price prefix.
+  4. Inspect the recommended tier for its badge/highlight.
+- **Expected result:** Each tier shows name, price, any "what's included" list and its own Register button. Every Baht price is presented as already including 7% VAT (no separate VAT add-on at display). The free tier reads "Free" and the RSVP tier reads "RSVP" with no price prefix. The recommended tier stands out visually and shows its "Most popular" badge. (AC: per-tier fields; VAT-inclusive Baht; Free/RSVP labels; recommended badge stands out.)
+
+### TC-PAGE-10 — Sold-out tier shows "Sold out" and cannot be clicked through
+- **Traces:** US-PAGE-05  ·  **Priority:** High  ·  **Type:** Negative
+- **Preconditions:** A published event whose registration is open, with one tier at zero remaining seats and another still available.
+- **Test data:** "General ฿500" available; "VIP ฿1,500" sold out (0 seats).
+- **Steps:**
+  1. Open the event page and scroll to the sold-out VIP tier.
+  2. Read the VIP tier's button label.
+  3. Attempt to click through the VIP button to registration.
+- **Expected result:** The sold-out tier's button reads "Sold out" and is non-actionable — it cannot be clicked through to registration. The still-available tier's Register button continues to work. (AC: sold-out tier button reads "Sold out" and cannot proceed.)
+
+### TC-PAGE-11 — Registration closed disables all tier buttons; low-seat urgency line shows
+- **Traces:** US-PAGE-05  ·  **Priority:** High  ·  **Type:** Edge
+- **Preconditions:** Two scenarios available: (A) an event whose registration window has closed; (B) a still-open event with a tier at very low remaining seats.
+- **Test data:** (A) Event "Closed Summit" — registration closed. (B) Event "Almost Full" — tier "General ฿500" with 3 seats left.
+- **Steps:**
+  1. Open event (A) and inspect every tier's Register button and any page-level message.
+  2. Open event (B) and inspect the low-seat tier for an urgency line.
+- **Expected result:** For (A), all tier buttons are disabled and a "registration is closed" message is shown. For (B), an urgency line such as "Going fast — only 3 left" is displayed on the low-seat tier. (AC: registration closed → all buttons disabled + closed message; very few seats → urgency line.)
+
+---
+
+## US-PAGE-06 — Frequently asked questions
+
+### TC-PAGE-12 — FAQ opens the first answer, collapses the rest, and is expandable; absent when empty
+- **Traces:** US-PAGE-06  ·  **Priority:** Low  ·  **Type:** Functional
+- **Preconditions:** Two events: (A) published with 4 FAQ entries; (B) published with no FAQs.
+- **Test data:** (A) FAQs Q1–Q4; (B) no FAQ content.
+- **Steps:**
+  1. Open event (A); locate the FAQ section on load.
+  2. Confirm the first answer is expanded and Q2–Q4 are collapsed.
+  3. Click Q3 to expand it, and confirm it opens.
+  4. Open event (B) and look for a FAQ section.
+- **Expected result:** On (A), the first FAQ answer is open on load and the rest are collapsed; any FAQ can be expanded on click. On (B), the FAQ section is entirely absent. (AC: first answer open, rest collapsed and expandable; no FAQs → section absent.)
+
+---
+
+## US-PAGE-07 — Add the event to my calendar
+
+### TC-PAGE-13 — Add to calendar creates a Bangkok-time entry via Apple/Google/Outlook
+- **Traces:** US-PAGE-07  ·  **Priority:** Medium  ·  **Type:** Functional
+- **Preconditions:** A published in-person event with a clear start and end time, opened on a mobile viewport.
+- **Test data:** Event "Bangkok Tech Meetup", 15 Aug 2026 18:00–21:00 (Asia/Bangkok), Venue "True Digital Park".
+- **Steps:**
+  1. Open the event page on a phone and tap "Add to calendar".
+  2. Choose a provider (Apple, Google or Outlook).
+  3. Inspect the generated calendar entry's title, location, start/end and timezone.
+- **Expected result:** Apple, Google and Outlook options are offered. The resulting entry is set to Bangkok time (18:00–21:00, +07:00) with the correct event title and location. (AC: clear start/end → provider choice and a Bangkok-time entry with title and location.)
+
+### TC-PAGE-14 — Calendar entry for online events carries no join link; option hidden when time is unclear; re-add updates not duplicates
+- **Traces:** US-PAGE-07  ·  **Priority:** Medium  ·  **Type:** Edge
+- **Preconditions:** (A) A published online event with a private join link and clear times; (B) a published event with a missing/unclear time; the tester already added event (A) once.
+- **Test data:** (A) "Remote UX Workshop" online, join link private; (B) "TBD Networking Night" with no set time.
+- **Steps:**
+  1. On (A), tap Add to calendar, generate the entry and inspect it for the private join link.
+  2. Add event (A) to the same calendar a second time and inspect the calendar.
+  3. Open (B) and check whether the Add to calendar option is present.
+- **Expected result:** The online event's calendar entry contains no private join link. Re-adding the same event updates the existing entry rather than creating a duplicate. For (B), the Add to calendar option is hidden rather than producing a broken entry. (AC: online entry has no join link; missing/unclear time → option hidden; re-add updates existing entry.)
+
+---
+
+## US-PAGE-08 — Rich search results and social sharing
+
+### TC-PAGE-15 — Shared/searched link renders a rich card; share buttons copy a clean public link
+- **Traces:** US-PAGE-08  ·  **Priority:** Medium  ·  **Type:** Functional
+- **Preconditions:** A published event with title, description and cover image.
+- **Test data:** Event "Bangkok Tech Meetup", ticket from ฿500, 15 Aug 2026 18:00 (Asia/Bangkok).
+- **Steps:**
+  1. Inspect the page's share preview metadata (as a social scraper / link unfurl would consume).
+  2. Use the on-page share controls to copy the link and to share to Facebook, LINE and X.
+  3. Examine the copied/shared URL for any personal or tracking data.
+- **Expected result:** The rich card shows the correct title, description, image (or a branded default) and event details including Baht pricing and Bangkok time. Share controls allow copy-link and sharing to Facebook, LINE and X. The shared link is the clean public address with no personal data attached. (AC: rich card correct incl. ฿ and Bangkok time; share to channels; clean public link with no personal data.)
+
+### TC-PAGE-16 — Preview and unpublished pages are marked "do not index"
+- **Traces:** US-PAGE-08  ·  **Priority:** Medium  ·  **Type:** Negative
+- **Preconditions:** A preview page and an unpublished event page are reachable by URL.
+- **Test data:** A template preview URL and an unpublished event URL.
+- **Steps:**
+  1. Reach the preview page as a scraper/search engine would and inspect its indexing directives.
+  2. Repeat for the unpublished event page.
+- **Expected result:** Both the preview and the unpublished page are marked "do not index" (noindex), so neither can leak into public search results. (AC: preview/unpublished pages marked do-not-index.)
+
+---
+
+## US-PAGE-09 — Preview any template with unsaved content
+
+### TC-PAGE-17 — Preview renders live unsaved values, saves nothing, and is marked as a preview
+- **Traces:** US-PAGE-09  ·  **Priority:** High  ·  **Type:** Functional
+- **Preconditions:** An organizer is signed in and editing a new, unsaved event.
+- **Test data:** Typed title "Draft Launch Party", one highlight "Free welcome drink", event type set to "Online". Nothing saved yet.
+- **Steps:**
+  1. In the event editor, type the title and highlight and choose "Online" without saving.
+  2. Click Preview.
+  3. In the new preview tab, confirm the typed values appear and that a preview marker is shown.
+  4. Return and confirm no event/page/draft was created; verify the preview is excluded from public visitor analytics and public search.
+- **Expected result:** A new tab shows a live page with exactly the typed values ("Draft Launch Party", the highlight, Online handling). Nothing is saved — no event, page or draft is created — and the page is clearly marked as a preview. It is not counted in public visitor analytics and does not appear in public search. (AC: preview shows live unsaved values; nothing saved; marked preview; excluded from public analytics and search.)
+
+### TC-PAGE-18 — Blocked pop-up on Preview shows an allow-pop-ups hint
+- **Traces:** US-PAGE-09  ·  **Priority:** Medium  ·  **Type:** Negative
+- **Preconditions:** Organizer signed in and editing an event; browser configured to block pop-ups/new tabs.
+- **Test data:** Any valid in-progress event; pop-up blocker enabled.
+- **Steps:**
+  1. With pop-ups blocked, click Preview.
+  2. Observe the editor when no new tab opens.
+- **Expected result:** Because the new tab is blocked, a clear hint is shown telling the organizer to allow pop-ups. No silent failure. (AC: browser blocks the new tab → clear hint to allow pop-ups.)
+
+---
+
+## US-PAGE-10 — Choose a design, brand it, and publish under a stable link
+
+### TC-PAGE-19 — Choose a design, publish under a stable address, and switch designs with no content loss
+- **Traces:** US-PAGE-10  ·  **Priority:** High  ·  **Type:** Functional
+- **Preconditions:** Organizer signed in with a complete event (title, date, at least one ticket/RSVP option) ready to publish.
+- **Test data:** Event "Bangkok Tech Meetup"; designs Classic, Spotlight, Minimal, Vibrant; public address `/e/bkk-tech-meetup`.
+- **Steps:**
+  1. Choose the "Spotlight" design and publish.
+  2. Open the public address and confirm content renders in Spotlight under the stable address.
+  3. Return to the editor, switch the design to "Vibrant" and save.
+  4. Reload the public page at the same address.
+- **Expected result:** The event content renders in the chosen design at a stable public address. Switching from Spotlight to Vibrant re-renders the same content in the new design with no loss of content and the same public address. (AC: choose one of four designs, publish under a stable address, switch later with no content loss.)
+
+### TC-PAGE-20 — Publishing is blocked when title, date, or a ticket/RSVP option is missing
+- **Traces:** US-PAGE-10  ·  **Priority:** High  ·  **Type:** Negative
+- **Preconditions:** Organizer signed in editing an event missing one or more required fields.
+- **Test data:** Case (a) no title; Case (b) no date; Case (c) no ticket/RSVP option configured.
+- **Steps:**
+  1. For each case, attempt to publish the event.
+  2. Read the resulting message.
+- **Expected result:** In each case publishing is blocked, and the message states exactly what to add first (the missing title, date, or at least one ticket/RSVP option). The event does not go live. (AC: publish blocked when missing title/date/ticket-or-RSVP with a message naming what to add.)
+
+### TC-PAGE-21 — Duplicate public address rejected; invalid accent falls back; unpublish kills the link but preserves the page
+- **Traces:** US-PAGE-10  ·  **Priority:** High  ·  **Type:** Edge
+- **Preconditions:** A published event already owns the address `/e/bkk-tech-meetup`; organizer is editing a second event and a published event whose accent colour can be changed.
+- **Test data:** Duplicate slug `bkk-tech-meetup`; accent colours: valid `#E91E63`, invalid `not-a-color`; brand default accent.
+- **Steps:**
+  1. On the second event, set the public web address to the already-taken slug and save.
+  2. On a published event, set a valid accent colour and confirm buttons/highlights take that colour; then set an invalid colour value and save.
+  3. Unpublish a published event, then open its public link and confirm search visibility.
+  4. Re-publish the same event and confirm its original address still works.
+- **Expected result:** Saving a taken address is rejected with a message that the address is in use, asking for another. A valid accent colour applies to buttons and highlights; an invalid colour quietly falls back to the brand default (no error thrown). After unpublish, the public link stops working immediately and drops out of search, while the page is preserved and can be re-published under the same address. (AC: duplicate address rejected; invalid accent → brand default fallback; unpublish disables link and de-indexes yet preserves the page for re-publish.)
+
+
+---
+
+<a id="tc-e05"></a>
 
 # Sell Tickets & Run Promotions — Test Cases
 
-Epic E6 — TKT. Test basis: user stories US-TKT-01 … US-TKT-12 and their acceptance criteria.
+Epic E5 — TKT. Test basis: user stories US-TKT-01 … US-TKT-12 and their acceptance criteria.
 Locale: Thai market — ฿ (whole baht), 7% VAT recalculated at checkout, PromptPay, Asia/Bangkok time, EN/TH, 8-seat booking cap.
 
 ---
@@ -1955,304 +1626,620 @@ Locale: Thai market — ฿ (whole baht), 7% VAT recalculated at checkout, Promp
 
 ---
 
+<a id="tc-e06"></a>
+
+# Discover & Register for Events — Test Cases
+
+Area: DISC · Epic E6 — Discover & Register for Events (Attendee)
+Locale defaults: currency ฿ (THB), VAT 7%, PromptPay, Asia/Bangkok, languages EN/TH.
+
+---
+
+## US-DISC-01 — Discover and browse what's on
+
+### TC-DISC-01 — Discover grid shows upcoming events with key details, soonest-first
+- **Traces:** US-DISC-01  ·  **Priority:** High  ·  **Type:** Functional
+- **Preconditions:** At least 3 published, publicly visible upcoming events exist in different categories; one event has attendee ratings from US-DISC-13; attendee is a guest (not signed in).
+- **Test data:** Event A "Bangkok Jazz Night", category Music, date 2026-08-15, venue GMM Live House / Bangkok, organizer "Live Nation TH", price-from ฿890, 120 going, avg rating 4.6; Event B a free workshop (price "Free"); Event C paid, no reviews yet.
+- **Steps:**
+  1. Open the Discover page as a guest.
+  2. Inspect each event card in the grid.
+  3. Note the order of the cards.
+  4. Tap the Event A card.
+- **Expected result:** A grid of event cards renders. Each card shows cover image, category, title, date, venue/city, organizer, count of people going, a price-from in ฿ (Event B shows "Free"), and an average rating only where feedback exists (Event A shows 4.6; Event C shows no rating). Cards are ordered soonest-first. Tapping Event A opens its public event page with a register/get-tickets action.
+
+### TC-DISC-02 — Sold-out, selling-fast, expired, and empty-state handling
+- **Traces:** US-DISC-01  ·  **Priority:** High  ·  **Type:** Edge
+- **Preconditions:** One event is sold out; one event is nearly sold out (few seats remaining); one event already started/finished (start time in the past, Asia/Bangkok); a search term exists that matches no event.
+- **Test data:** Sold-out event "Coldplay BKK"; nearly-sold-out event "Indie Film Fest" (e.g. 6 of 400 seats left); past event "NYE Countdown 2026" (started 2026-07-26 20:00 +07); no-match keyword "zzzxxq".
+- **Steps:**
+  1. Open the Discover page and locate the sold-out event card.
+  2. Locate the nearly-sold-out event card.
+  3. Look for the already-started/finished event in the list.
+  4. Search for "zzzxxq".
+- **Expected result:** The sold-out card shows a "Waitlist" badge instead of a buy-now price; the nearly-sold-out card shows a "Selling fast" badge; the started/finished event is not shown anywhere in the list; the no-match search shows a friendly empty state suggesting a different search or category.
+
+---
+
+## US-DISC-02 — Search and filter events
+
+### TC-DISC-03 — Keyword and category filters combine (AND) and update the count
+- **Traces:** US-DISC-02  ·  **Priority:** High  ·  **Type:** Functional
+- **Preconditions:** Published events span multiple categories; at least one Music event in Bangkok whose title contains "Jazz".
+- **Test data:** Keyword "Jazz"; category "Music"; a competing "Jazz Cooking Class" event in category Food.
+- **Steps:**
+  1. Open the Discover page.
+  2. Type "Jazz" in the search box and observe the list and result count.
+  3. Select category "Music".
+  4. Select "All events" to clear the category.
+- **Expected result:** Typing "Jazz" narrows the list to events whose title, category, city, or venue matches and updates the result count. Adding category "Music" shows only events matching both keyword AND category (the Food "Jazz Cooking Class" is excluded). Selecting "All events" clears the category filter and the keyword-only results return.
+
+### TC-DISC-04 — Bilingual search, trimmed whitespace, and no-match empty state
+- **Traces:** US-DISC-02  ·  **Priority:** High  ·  **Type:** Edge
+- **Preconditions:** An event exists with a Thai title/venue and an English equivalent (e.g. venue "ไอคอนสยาม" / "IconSiam").
+- **Test data:** Thai keyword "ไอคอนสยาม"; English keyword "IconSiam"; padded keyword "  Jazz  "; combination keyword "Jazz" + category "Food" that matches nothing.
+- **Steps:**
+  1. Search "ไอคอนสยาม" (Thai) and note results.
+  2. Clear and search "IconSiam" (English).
+  3. Search "  Jazz  " with leading/trailing spaces.
+  4. Set keyword "Jazz" and category "Food" (a combination with no matching event).
+- **Expected result:** Thai and English searches both return the same matching event consistently (tone marks/accents do not break matching). The padded "  Jazz  " returns the same results as "Jazz" (stray spaces ignored). The keyword+category combination that matches nothing shows the friendly empty state.
+
+---
+
+## US-DISC-03 — Save events for later
+
+### TC-DISC-05 — Save persists and guest saves merge into account on sign-in
+- **Traces:** US-DISC-03  ·  **Priority:** Medium  ·  **Type:** Functional
+- **Preconditions:** A registered attendee account exists; several published events available; attendee starts as a guest.
+- **Test data:** Guest saves Event A and Event B; account already has Event B saved from a prior session (potential duplicate).
+- **Steps:**
+  1. As a guest, tap the save (heart) control on Event A and Event B.
+  2. Reload the Discover page and confirm both remain saved.
+  3. Sign in to the registered account (which already has Event B saved).
+  4. Sign in on a second device/browser to the same account and open saved events.
+- **Expected result:** Tapped events show as saved and stay saved after reload. On sign-in, in-session guest saves merge into the account with no duplicate for Event B. The saved events appear on the second device (saves are account-bound across devices).
+
+### TC-DISC-06 — Save failure reverts the control with a message
+- **Traces:** US-DISC-03  ·  **Priority:** Medium  ·  **Type:** Negative
+- **Preconditions:** Ability to simulate a save that cannot be recorded (e.g. network/service error on the save action).
+- **Test data:** Event C; save action forced to fail.
+- **Steps:**
+  1. Open the Discover page.
+  2. Tap the save (heart) control on Event C under the failing condition.
+  3. Observe the control state and any message.
+- **Expected result:** The save is not recorded, the heart control reverts to its unsaved state, and a brief "couldn't save right now" message is shown. No phantom saved state persists on reload.
+
+---
+
+## US-DISC-04 — Register and choose my tickets (guest or signed in)
+
+### TC-DISC-07 — Reserved-seating checkout with live totals, seat hold, and guest details
+- **Traces:** US-DISC-04  ·  **Priority:** High  ·  **Type:** Functional
+- **Preconditions:** A paid event with reserved seating and an available seat map; attendee is a guest.
+- **Test data:** Event "Bangkok Jazz Night"; ticket type "General" ฿890; service fee ฿50/seat; select 2 seats (A12, A13); guest name "Somchai P.", email somchai@example.com, mobile 08x-xxx-xxxx.
+- **Steps:**
+  1. Click "Register"/"Get tickets" on the event.
+  2. Choose exactly one ticket type (General ฿890) and confirm prices show in ฿.
+  3. On the seat map, select seats A12 and A13; observe held state and that taken seats are not selectable.
+  4. Watch the order summary and the sticky action bar as selection changes.
+  5. Enter guest name, email, and mobile number; place the order without opting into an account.
+- **Expected result:** Checkout shows the event summary and a single-choice ticket type in ฿. Chosen seats are held for the attendee during checkout; already-taken seats cannot be selected. The order summary and sticky action bar update live with subtotal (฿1,780), service fee (฿100), and total (฿1,880). Guest fields are captured, and after placing the order no account is silently created for the guest.
+
+### TC-DISC-08 — Quantity boundaries (1–8) and free-event fee/payment skip
+- **Traces:** US-DISC-04  ·  **Priority:** High  ·  **Type:** Edge
+- **Preconditions:** A general-admission or online event for quantity selection; a separate free event.
+- **Test data:** GA/online event ฿300; free event with two tiers both ฿0.
+- **Steps:**
+  1. Open checkout for the GA/online event and attempt quantity 0, then 1, then 8, then 9.
+  2. For an online event, note the join-link message; for GA, note the first-come seating note.
+  3. Open checkout for the free event and select a tier.
+  4. Proceed toward confirmation on the free event.
+- **Expected result:** Quantity is constrained to 1–8: 0 and 9 are rejected/clamped, 1 and 8 are accepted. Online events state a join link will be emailed; GA events note seating is first-come. For the free event all tiers show "Free", no service fee is added, and the payment step is skipped entirely.
+
+### TC-DISC-09 — Seat hold expiry / seat taken before confirm blocks continue without charge
+- **Traces:** US-DISC-04  ·  **Priority:** High  ·  **Type:** Negative
+- **Preconditions:** Reserved-seating event; a way to let the seat hold expire or have a chosen seat taken by another buyer before confirmation.
+- **Test data:** Seat A14 selected; hold timer allowed to expire (or A14 taken concurrently) before payment is confirmed.
+- **Steps:**
+  1. Begin checkout and select seat A14.
+  2. Wait until the seat hold expires (or have another buyer take A14) before confirming.
+  3. Attempt to continue/confirm.
+- **Expected result:** The attendee is told the seat/hold is no longer available and is asked to re-select. No charge is made for the lapsed selection, and the released seat becomes available again.
+
+---
+
+## US-DISC-05 — Pay by card or PromptPay
+
+### TC-DISC-10 — Card payment approved completes registration
+- **Traces:** US-DISC-05  ·  **Priority:** High  ·  **Type:** Functional
+- **Preconditions:** A paid order is at the payment step with a valid total in THB.
+- **Test data:** Order total ฿1,880; test card that approves; method = Card.
+- **Steps:**
+  1. At payment, choose Card.
+  2. Enter the approving test card in the secure payment provider fields and submit.
+  3. Observe the result.
+- **Expected result:** Attendee can choose card or PromptPay. On approval the flow moves to confirmation and the registration is completed. The charge settles in THB. (Card numbers are entered into the provider, not stored by Eventa.)
+
+### TC-DISC-11 — Card declined shows message, issues no ticket, allows retry/switch
+- **Traces:** US-DISC-05  ·  **Priority:** High  ·  **Type:** Negative
+- **Preconditions:** Paid order at payment step.
+- **Test data:** Order total ฿1,880; test card that declines; a second valid card; PromptPay as fallback.
+- **Steps:**
+  1. Choose Card and submit the declining test card.
+  2. Read the decline message and confirm no ticket was issued.
+  3. Retry with the valid card, or switch to PromptPay.
+- **Expected result:** A clear decline message is shown, no ticket is issued, and the attendee can try another card or switch to PromptPay. Retrying with a valid method completes the registration. The attendee is never charged for the declined attempt.
+
+### TC-DISC-12 — PromptPay QR for exact total, single issuance, and expiry releases seats
+- **Traces:** US-DISC-05  ·  **Priority:** High  ·  **Type:** Functional
+- **Preconditions:** Paid reserved-seating order at payment step.
+- **Test data:** Order total ฿1,880; held seats A12/A13; method = PromptPay with time-limited QR.
+- **Steps:**
+  1. Choose PromptPay and continue.
+  2. Verify the QR encodes the exact total ฿1,880 and shows a validity countdown.
+  3. Scenario A: complete the PromptPay payment in-app and let it settle.
+  4. Scenario B (fresh order): let the QR expire before paying, then generate a new code.
+- **Expected result:** A PromptPay QR for the exact total is shown, valid for a limited time. On settlement (A) the registration completes and exactly one ticket is issued (no double issuance on repeated webhook/confirmation). On expiry (B) no ticket is issued, the held seats are released, and a new code can be generated. The attendee is never charged twice for the same order.
+
+---
+
+## US-DISC-06 — Confirm and receive my QR ticket
+
+### TC-DISC-13 — Confirmation recap plus email with QR, VAT receipt, and calendar invite
+- **Traces:** US-DISC-06  ·  **Priority:** High  ·  **Type:** Functional
+- **Preconditions:** A valid selection with approved payment (paid event) or a free registration; attendee provided a mobile number.
+- **Test data:** Paid order, 2 seats → 2 QR tickets; email somchai@example.com; mobile provided; VAT 7% on ฿1,780 base.
+- **Steps:**
+  1. Confirm the registration.
+  2. Review the on-screen recap.
+  3. Check the confirmation email contents.
+  4. Check for a confirmation SMS.
+- **Expected result:** The registration is placed once; one QR ticket is issued per seat/ticket (2 tickets here); a "You're registered!" recap appears with links to view tickets. The confirmation email contains the QR ticket(s), an order summary, a VAT receipt (7% breakdown in ฿) for the paid order, and a calendar invite; an online event would also include a join link. Because a mobile number was provided, a confirmation SMS is also received.
+
+### TC-DISC-14 — Idempotent confirm and concurrent-seat race yield one registration/charge
+- **Traces:** US-DISC-06  ·  **Priority:** High  ·  **Type:** Negative
+- **Preconditions:** Ability to double-submit confirm and to have two attendees confirm the same seat simultaneously.
+- **Test data:** Single order double-tapped; two attendees both selecting seat B5.
+- **Steps:**
+  1. On one order, double-tap/retry the confirm action.
+  2. Verify how many registrations and charges result.
+  3. Have two attendees confirm seat B5 at the same time.
+  4. Observe both outcomes.
+- **Expected result:** Double-tap/retry creates only one registration and one charge. In the seat race only the first attendee succeeds; the second is not charged (or is refunded) and is asked to pick again. No duplicate ticket and no double charge occur.
+
+---
+
+## US-DISC-07 — View and download my QR ticket
+
+### TC-DISC-15 — Open and download a printable QR ticket with full details
+- **Traces:** US-DISC-07  ·  **Priority:** High  ·  **Type:** Functional
+- **Preconditions:** Signed-in attendee owns a valid ticket.
+- **Test data:** Ticket for "Bangkok Jazz Night", class VIP, seat A12/Row A/Gate 3, doors 18:00 (Asia/Bangkok), admission number and ticket reference present.
+- **Steps:**
+  1. Open the owned ticket.
+  2. Confirm the QR and ticket reference are shown.
+  3. Download the ticket.
+  4. Inspect the downloaded image.
+- **Expected result:** The ticket displays a scannable QR and its ticket reference. The download is a printable ticket image showing the QR, event name, date, venue, doors-open time, ticket class (VIP/General), seat/row/gate where applicable, and admission number.
+
+### TC-DISC-16 — Refunded/voided ticket is invalid; access to a non-owned ticket is refused
+- **Traces:** US-DISC-07  ·  **Priority:** High  ·  **Type:** Negative
+- **Preconditions:** One ticket has been refunded/voided; a valid ticket belongs to a different attendee.
+- **Test data:** Refunded ticket T-REF-001; another attendee's ticket T-OTHER-999.
+- **Steps:**
+  1. Open the refunded/voided ticket.
+  2. Attempt to download it as a valid pass.
+  3. Attempt to open ticket T-OTHER-999 (not owned).
+- **Expected result:** The refunded/voided ticket shows as no longer valid and cannot be downloaded as a valid pass. Attempting to open a ticket the attendee does not own is refused (access denied).
+
+---
+
+## US-DISC-08 — Sign in to my attendee account
+
+### TC-DISC-17 — Valid sign-in lands on My Events with attendee-only access and attaches guest saves
+- **Traces:** US-DISC-08  ·  **Priority:** High  ·  **Type:** Functional
+- **Preconditions:** A registered attendee account; the same browser session has guest-saved events.
+- **Test data:** Valid email/password (and/or Google/Apple); guest-saved Event A and Event B.
+- **Steps:**
+  1. As a guest, save Event A and Event B.
+  2. Sign in with valid email/password (or via Google/Apple).
+  3. Land on the account and check accessible areas.
+  4. Open saved events.
+- **Expected result:** Sign-in succeeds and lands on My Events with attendee access only (no organizer/admin console reachable). The guest-session saves are attached to the account.
+
+### TC-DISC-18 — Wrong credentials show a single generic error; repeated failures trigger lockout
+- **Traces:** US-DISC-08  ·  **Priority:** High  ·  **Type:** Negative
+- **Preconditions:** A registered account exists.
+- **Test data:** Correct email with wrong password; repeated wrong attempts past the lockout threshold; "Forgot password?" link.
+- **Steps:**
+  1. Submit a valid email with an incorrect password.
+  2. Read the error message.
+  3. Repeat failed attempts until the limit is passed.
+  4. Choose "Forgot password?".
+- **Expected result:** A single "email or password is incorrect" message appears without revealing which field was wrong. After repeated failures the attempts are temporarily blocked and the attendee is pointed to reset the password. "Forgot password?" opens the reset flow.
+
+---
+
+## US-DISC-09 — See my upcoming and past tickets
+
+### TC-DISC-19 — My Events splits upcoming/past with counts, countdown, attended badge, and empty state
+- **Traces:** US-DISC-09  ·  **Priority:** High  ·  **Type:** Functional
+- **Preconditions:** Signed-in attendee with at least one upcoming and one past registration; also a fresh account with none.
+- **Test data:** Upcoming event 6 days out and one today; past event attended with feedback still open; separate empty account.
+- **Steps:**
+  1. Open My Events on the account with registrations.
+  2. Inspect the Upcoming section (counts, countdown, ticket type, date/venue, event link, Ticket action).
+  3. Inspect the Past section (Attended badge, Leave feedback action).
+  4. Sign in with the empty account and open My Events.
+- **Expected result:** My Events shows an Upcoming and a Past section, each with a count, listing only this attendee's registrations. Upcoming items show a countdown ("6 days left", "Today"), ticket type, date and venue, an event-page link, and a "Ticket" action to open the QR. The attended past event shows an "Attended" badge and a "Leave feedback" action while feedback is open. The empty account shows an empty state inviting the attendee to discover events.
+
+---
+
+## US-DISC-10 — Review my payment history and receipts
+
+### TC-DISC-20 — Payment history tiles, transaction detail, VAT receipt, export, and refund handling
+- **Traces:** US-DISC-10  ·  **Priority:** High  ·  **Type:** Functional
+- **Preconditions:** Signed-in attendee with several transactions including one refunded; also a fresh account with none.
+- **Test data:** Paid transaction ฿1,880 (card ending 4242), invoice INV-2026-0001; PromptPay transaction ฿300; refunded transaction ฿500 (struck through); VAT 7%.
+- **Steps:**
+  1. Open Payment history and read the summary tiles (total spent, number of transactions, total refunded).
+  2. Open a transaction row and check event, invoice number, date, masked method, amount, status.
+  3. Download the receipt for a paid transaction.
+  4. Export the full history.
+  5. Sign in with the empty account and open Payment history.
+- **Expected result:** Tiles show total spent, transaction count, and total refunded. Each row shows event, invoice number, date, payment method (masked card or PromptPay), amount, and status (Paid/Refunded); the refunded amount is struck through and excluded from total spent. The downloaded receipt is a VAT receipt showing the 7% VAT breakdown in ฿. Export returns the full transaction list. The empty account shows zero tiles and an empty state.
+
+---
+
+## US-DISC-11 — Manage my profile
+
+### TC-DISC-21 — Edit and save profile, cancel discards, and details pre-fill at checkout
+- **Traces:** US-DISC-11  ·  **Priority:** High  ·  **Type:** Functional
+- **Preconditions:** Signed-in attendee on the Profile tab.
+- **Test data:** Name "Somchai Prasert", city "Bangkok", DOB 1990-05-01, bio text, valid JPG photo under 5 MB.
+- **Steps:**
+  1. Edit name, city, date of birth, and bio; save.
+  2. Make another edit and click "Cancel".
+  3. Start a new checkout and observe the contact fields.
+- **Expected result:** Valid changes are saved and confirmed. "Cancel" discards the unsaved edits (previous saved values remain). At the next checkout, contact details pre-fill from the saved profile.
+
+### TC-DISC-22 — Email/phone re-verification and photo upload validation
+- **Traces:** US-DISC-11  ·  **Priority:** High  ·  **Type:** Negative
+- **Preconditions:** Signed-in attendee on the Profile tab.
+- **Test data:** New email new@example.com; new phone 08x-xxx-xxxx; oversized photo 7 MB JPG; a GIF/BMP file; a valid 3 MB PNG.
+- **Steps:**
+  1. Change the email and save.
+  2. Change the phone and save.
+  3. Upload the 7 MB photo, then the GIF/BMP, then the valid PNG.
+- **Expected result:** The changed email is marked unverified and a verification link is sent, while the old email keeps working until confirmed. The changed phone must be confirmed by code before it is used for texts. The 7 MB photo and the non-JPG/PNG file are rejected with guidance and the current avatar is unchanged; the valid PNG is accepted.
+
+---
+
+## US-DISC-12 — Manage my notifications, display preferences, and security
+
+### TC-DISC-23 — Notification toggles, marketing exclusion, and display prefs vs Baht charges
+- **Traces:** US-DISC-12  ·  **Priority:** Medium  ·  **Type:** Functional
+- **Preconditions:** Signed-in attendee on the Settings tab.
+- **Test data:** Toggle marketing/promotions OFF, event reminders ON; set language = Thai, timezone = Asia/Bangkok, display currency = USD; a promotion send and an order confirmation.
+- **Steps:**
+  1. Toggle email notifications, event reminders, SMS alerts, and marketing/promotions; save.
+  2. With marketing OFF, trigger a promotional send.
+  3. Complete an order and check the confirmation/receipt still arrives.
+  4. Set language, timezone, and display currency, then view an event and its price.
+- **Expected result:** Toggle choices are saved and applied to future messages. With marketing off, the attendee is excluded from the promotion but still receives order confirmations and receipts (transactional always sent). Interface reflects the chosen language/timezone/currency, but all charges still settle in ฿ (THB) and event times stay anchored to each event's own timezone.
+
+### TC-DISC-24 — Password change validation and two-factor enablement
+- **Traces:** US-DISC-12  ·  **Priority:** Medium  ·  **Type:** Negative
+- **Preconditions:** Signed-in attendee on the Settings tab.
+- **Test data:** Correct current password; a wrong current password; mismatched new/confirm passwords; 2FA setup with recovery codes.
+- **Steps:**
+  1. Change password using a wrong current password.
+  2. Change password with correct current password but mismatched new/confirm fields.
+  3. Change password correctly and save.
+  4. Enable two-factor authentication and complete verification, then sign out and back in.
+- **Expected result:** Wrong current password and mismatched new passwords each show a clear error and change nothing. A correct change updates the password, sends a confirmation email, and offers to sign out other sessions. Enabling 2FA turns it on with recovery codes provided, and it is required at the next sign-in.
+
+---
+
+## US-DISC-13 — Share post-event feedback
+
+### TC-DISC-25 — Submit feedback contributes to average and resubmission updates it
+- **Traces:** US-DISC-13  ·  **Priority:** Medium  ·  **Type:** Functional
+- **Preconditions:** Signed-in attendee who attended an event with feedback open.
+- **Test data:** 4-star rating, "enjoyed the venue", heard via "friend", would recommend = Yes; later change to 5 stars.
+- **Steps:**
+  1. Open the feedback survey for the attended event.
+  2. Give a 4-star rating and fill the optional fields; submit.
+  3. Reopen the survey within the window and change the rating to 5 stars; resubmit.
+  4. Check the event's average rating on Discover.
+- **Expected result:** A thank-you confirmation appears and the rating contributes to the event's average shown on Discover. Resubmitting within the window updates the earlier response rather than creating a duplicate; the average reflects the single updated rating.
+
+### TC-DISC-26 — Missing rating is blocked; ineligible/closed feedback is disallowed
+- **Traces:** US-DISC-13  ·  **Priority:** Medium  ·  **Type:** Negative
+- **Preconditions:** An attended event with feedback open; a second event where feedback is closed or the attendee is not eligible (e.g. did not attend).
+- **Test data:** Feedback with comments filled but no star selected; a closed/ineligible event survey.
+- **Steps:**
+  1. Open the open survey, fill only the optional comments, leave the star rating unset, and submit.
+  2. Open the survey for the closed/ineligible event.
+- **Expected result:** Submitting without a star rating prompts the attendee to choose one and records nothing until a rating is chosen. For the closed/ineligible event the attendee is told feedback isn't open.
+
+---
+
+## US-DISC-14 — Delete my account
+
+### TC-DISC-27 — Account deletion with confirmation, re-verification, and non-refundable warning
+- **Traces:** US-DISC-14  ·  **Priority:** Low  ·  **Type:** Functional
+- **Preconditions:** Signed-in attendee in the Settings danger zone; attendee holds an upcoming paid, non-refundable ticket.
+- **Test data:** Upcoming paid ticket ฿1,880 marked non-refundable; identity re-verification (password/2FA); confirmation email.
+- **Steps:**
+  1. In the danger zone, choose to delete the account.
+  2. Observe the warning about upcoming non-refundable tickets.
+  3. Explicitly confirm and complete identity re-verification.
+  4. Check the resulting session and email.
+- **Expected result:** Deletion requires explicit confirmation and identity re-verification, and warns about non-refundable upcoming tickets before continuing. On confirmed re-verification, personal data is scheduled for removal, the attendee is signed out, and a confirmation email is received. (Financial/tax records are retained anonymized per legal retention.)
+
+### TC-DISC-28 — Failed identity re-verification aborts deletion
+- **Traces:** US-DISC-14  ·  **Priority:** Low  ·  **Type:** Negative
+- **Preconditions:** Signed-in attendee attempting account deletion.
+- **Test data:** Wrong password / failed 2FA at the re-verification step.
+- **Steps:**
+  1. Start account deletion and reach the identity re-verification step.
+  2. Fail re-verification (wrong password / failed 2FA).
+- **Expected result:** Deletion is aborted and the account is unchanged (still signed in, data intact, no confirmation email sent).
+
+
+---
+
 <a id="tc-e07"></a>
 
-# Build the Event Program — Test Cases
+# Communicate with Attendees — Test Cases
 
-Epic E7 — Build the Event Program. Area code: PROG. Locale context: Asia/Bangkok timezone, EN/TH bilingual content.
-
----
-
-## US-PROG-01 — See the event's schedule at a glance
-
-### TC-PROG-01 — Agenda shows only the selected event's sessions in correct slots
-- **Traces:** US-PROG-01  ·  **Priority:** High  ·  **Type:** Functional
-- **Preconditions:** Organizer signed in. Event "Bangkok Tech Summit" has sessions across 3 days; a second event "HR Forum" also has sessions.
-- **Test data:** Session "Keynote: AI in ASEAN", Day 1 09:00–10:00, type Keynote (blue); Session "Panel: FinTech", Day 2 14:00–15:00, type Panel (green); speakers assigned to each.
-- **Steps:**
-  1. Select "Bangkok Tech Summit" and open its Agenda (week view).
-  2. Inspect each session block's day/time placement.
-  3. Read the block contents (title, type colour, speaker).
-- **Expected result:** Every session appears in its correct day/time position; each block shows title, type colour and speaker name; no session from "HR Forum" is shown. (AC: correct positions, block detail, event isolation.)
-
-### TC-PROG-02 — Empty agenda shows a friendly prompt and event switch reloads correctly
-- **Traces:** US-PROG-01  ·  **Priority:** Medium  ·  **Type:** Edge
-- **Preconditions:** Organizer signed in. Event "New Meetup 2026" has zero sessions; another event has sessions.
-- **Test data:** —
-- **Steps:**
-  1. Select "New Meetup 2026" and open its Agenda.
-  2. Observe the calendar body.
-  3. Switch to an event that has sessions and let the agenda reload.
-- **Expected result:** For the empty event a friendly "no agenda yet" prompt inviting the first session is shown (not an error); after switching, only the newly selected event's sessions display. (AC: empty-state prompt, reload isolation.)
+Epic E7 — Communicate with Attendees. Area code: MSG. Locale: Thai market (฿, VAT 7%, PromptPay, Asia/Bangkok, EN/TH).
 
 ---
 
-## US-PROG-02 — Add a session to the schedule
+## US-MSG-01 — Attendees automatically get the right message at the right moment
 
-### TC-PROG-03 — Add a valid session and speaker count increments
-- **Traces:** US-PROG-02  ·  **Priority:** High  ·  **Type:** Functional
-- **Preconditions:** Organizer signed in on a chosen event. Speaker "Somsak P." exists on that event with current session count = 2. Room "Hall A" is free at the target slot.
-- **Test data:** Title "Cloud Native Workshop"; Day 2; start 13:00, end 14:30 (Asia/Bangkok); type Workshop; room Hall A; speaker Somsak P.; description optional.
+### TC-MSG-01 — Confirmation message fires on successful payment
+- **Traces:** US-MSG-01  ·  **Priority:** High  ·  **Type:** Functional
+- **Preconditions:** A published paid event with the registration-confirmation message enabled; PromptPay enabled as a payment method.
+- **Test data:** Attendee "Somchai Jai"; 1 x General ticket ฿1,000 (VAT 7% inclusive/added per event config); PromptPay payment.
 - **Steps:**
-  1. Open the add-session form for the chosen event.
-  2. Fill all fields with the test data and save.
-  3. Observe the calendar and then open speaker "Somsak P.".
-- **Expected result:** Session appears immediately at Day 2 13:00–14:30, coloured by Workshop type, showing Somsak P.; the speaker's session count reads 3. (AC: immediate placement + colour + speaker, count +1.)
+  1. As the attendee, complete registration for the event and reach the payment step.
+  2. Pay ฿1,000 via PromptPay and let the payment succeed.
+  3. Open the attendee's inbox / message channel.
+- **Expected result:** A confirmation message is received containing the ticket and order details (event name, ticket type, ฿ amount, order reference). No personalization field is left as a raw placeholder. Ties to the confirmation-on-payment acceptance criterion.
 
-### TC-PROG-04 — Reject blank title and invalid time ranges
-- **Traces:** US-PROG-02  ·  **Priority:** High  ·  **Type:** Negative
-- **Preconditions:** Organizer signed in on a chosen event whose schedulable hours are 08:00–18:00.
-- **Test data:** (a) Title blank, valid time; (b) Title "Late Session", start 16:00, end 15:00; (c) Title "Off-hours", start 19:00, end 20:00 (outside 08:00–18:00).
+### TC-MSG-02 — Reminder is sent when the reminder time arrives
+- **Traces:** US-MSG-01  ·  **Priority:** High  ·  **Type:** Functional
+- **Preconditions:** Attendee holds a confirmed ticket; reminder message enabled; event scheduled roughly one day out in Asia/Bangkok time.
+- **Test data:** Event start 2026-07-28 18:00 (Asia/Bangkok); reminder configured for one day before.
 - **Steps:**
-  1. Attempt to save case (a) with the title left blank.
-  2. Attempt to save case (b) with end time not after start.
-  3. Attempt to save case (c) with a time outside the day's schedulable hours.
-- **Expected result:** (a) Prompted to enter a session title, nothing saved; (b) told the time is invalid, nothing saved; (c) told the time is invalid / outside schedulable hours, nothing saved. No block appears on the calendar in any case. (AC: title required, end-after-start, within schedulable hours.)
+  1. Advance to (or wait for) the configured reminder time on 2026-07-27.
+  2. Open the attendee's inbox.
+- **Expected result:** A reminder message is received stating the event's time and place (date/time shown in Asia/Bangkok, venue). Ties to the day-before reminder acceptance criterion.
+
+### TC-MSG-03 — Language preference honoured with fallback; disabled message not sent
+- **Traces:** US-MSG-01  ·  **Priority:** High  ·  **Type:** Edge
+- **Preconditions:** Two attendees on the same event: one with language preference Thai, one with no preference set; event default language English. Cancellation message is turned OFF by the organizer.
+- **Test data:** Attendee A preference = TH; Attendee B preference = none; event default = EN.
+- **Steps:**
+  1. Trigger the confirmation message for both attendees on successful payment.
+  2. Inspect each attendee's received message language.
+  3. Organizer cancels the event so the cancellation trigger fires.
+  4. Check whether a cancellation message is delivered.
+- **Expected result:** Attendee A receives the message in Thai; Attendee B receives it in English (event default fallback). No cancellation message is sent to either attendee because that message type is turned off. Ties to the language-preference and message-off acceptance criteria.
 
 ---
 
-## US-PROG-03 — Update a session
+## US-MSG-02 — Keep automated messages on-brand and in the organizer's control
 
-### TC-PROG-05 — Move a session to a new slot with no clash
-- **Traces:** US-PROG-03  ·  **Priority:** High  ·  **Type:** Functional
-- **Preconditions:** Organizer signed in. Session "Design Sprint" exists Day 1 10:00–11:00 in Room B; target slot Day 1 15:00–16:00 in Room C is free of clashes.
-- **Test data:** New day Day 1, new time 15:00–16:00, new room Room C; type changed Panel → Workshop.
+### TC-MSG-04 — Edit wording and insert a personalization field
+- **Traces:** US-MSG-02  ·  **Priority:** Medium  ·  **Type:** Functional
+- **Preconditions:** Organizer signed in; registration-confirmation template open in the editor (EN and TH versions present).
+- **Test data:** New body text "Welcome [first name] to [event name]!"; personalization fields = first name, event name.
 - **Steps:**
-  1. Open "Design Sprint".
-  2. Change day/time/room to the target and change type to Workshop.
-  3. Save.
-- **Expected result:** The block relocates to Day 1 15:00–16:00 in Room C, its colour updates to the Workshop type, and the change is recorded. (AC: relocate on no-clash save, colour updates with type.)
+  1. Place the cursor in the body and insert the "first name" personalization field.
+  2. Insert the "event name" field at a second cursor position.
+  3. Edit surrounding wording and Save.
+  4. Trigger a new confirmation to a test recipient "Nok"; also inspect a previously-sent message.
+- **Expected result:** Each field appears exactly where the cursor was; the newly-sent message shows the fields filled ("Welcome Nok to ..."). Messages sent before the edit are unchanged. Ties to the edit-wording and personalization-field acceptance criteria.
 
-### TC-PROG-06 — Concurrent edit is blocked with reload prompt (optional attendee notify)
-- **Traces:** US-PROG-03  ·  **Priority:** High  ·  **Type:** Negative
-- **Preconditions:** Live event. Session "Opening Keynote" open in two browser sessions by two organizers. Session has attendees who added it to their schedule.
-- **Test data:** Colleague B changes the room and saves first; Organizer A then changes the start time (a material change) and saves.
+### TC-MSG-05 — SMS live segment count and second-segment cost warning (Thai encoding)
+- **Traces:** US-MSG-02  ·  **Priority:** Medium  ·  **Type:** Edge
+- **Preconditions:** Organizer editing an SMS message; both EN and TH bodies editable.
+- **Test data:** Thai body text long enough to cross from one segment into a second (Thai/UCS-2 uses shorter ~70-char segments); an English body just under one GSM-7 segment.
 - **Steps:**
-  1. Both users open "Opening Keynote".
-  2. Colleague B changes the room and saves successfully.
-  3. Organizer A, working on the stale copy, changes the start time and tries to save.
-  4. (Follow-up) After reloading, A re-applies the material change and saves, observing the notify option.
-- **Expected result:** A's save is refused with a message that the session changed and a prompt to reload — B's change is not silently overwritten. On the subsequent valid material change (day/time/room) to the live event, A is optionally offered to notify attendees who bookmarked it, with no message sent by default. (AC: optimistic-lock reload, optional notify defaulting to off.)
+  1. Type Thai text and watch the live character/segment counter as it approaches the single-segment limit.
+  2. Continue typing until the message crosses into a second segment.
+  3. Compare the segment threshold against the English GSM-7 body.
+- **Expected result:** A live character/segment count is displayed and reflects the actual text; when the Thai text crosses into a second segment a warning appears explaining the added cost. Thai text triggers the second segment at a lower character count than English (shorter Thai segments). Ties to the SMS segment-count/warning acceptance criterion.
+
+### TC-MSG-06 — Disable warning for legally-expected message; save validation blocks
+- **Traces:** US-MSG-02  ·  **Priority:** Medium  ·  **Type:** Negative
+- **Preconditions:** Organizer editing messages; payment-receipt message currently active with EN and TH versions.
+- **Test data:** (a) Attempt to turn off the payment-receipt message. (b) Attempt to save an active message with an empty subject. (c) Attempt to save with body referencing unsupported field "[loyalty_points]". (d) Attempt to save with the TH language version left blank.
+- **Steps:**
+  1. Toggle the payment-receipt message off.
+  2. Separately, clear the subject of an active message and Save.
+  3. Insert an unsupported personalization field and Save.
+  4. Clear the Thai body of an active channel and Save.
+- **Expected result:** (a) A warning states attendees won't receive the receipt and requires explicit confirmation before it is disabled. (b) Save is blocked citing empty subject. (c) Save is blocked citing the unsupported field. (d) Save is blocked because an active channel cannot have a blank language version. Ties to the disable-warning and save-validation acceptance criteria.
 
 ---
 
-## US-PROG-04 — Remove a session
+## US-MSG-03 — Triage everything happening across my events in one feed
 
-### TC-PROG-07 — Confirmed removal drops speaker count and clears public agenda
-- **Traces:** US-PROG-04  ·  **Priority:** High  ·  **Type:** Functional
-- **Preconditions:** Live event. Session "Startup Pitches" has speaker "Anong K." (session count = 3) and is visible on the public agenda.
-- **Test data:** —
+### TC-MSG-07 — Feed shows All/Unread counts; mark all read persists
+- **Traces:** US-MSG-03  ·  **Priority:** Medium  ·  **Type:** Functional
+- **Preconditions:** Organizer with several notifications, some unread, spanning registrations, payments, and feedback.
+- **Test data:** 12 notifications total, 5 unread.
 - **Steps:**
-  1. Choose to remove "Startup Pitches".
-  2. Read the confirmation dialog, then confirm.
-  3. Check speaker "Anong K." and the public event agenda.
-- **Expected result:** Confirmation warns that removal won't auto-notify bookmarking attendees and removes only on explicit confirm; after confirm the session is gone, Anong K. remains in the directory with count 2, and the session no longer appears on the public agenda. (AC: warning + explicit confirm, speaker retained with count −1, removed from public agenda.)
+  1. Open the notification feed.
+  2. Note the All and Unread counts and which activity is expanded.
+  3. Switch to the Unread filter.
+  4. Click "mark all read".
+  5. Reload the page and reopen the feed.
+- **Expected result:** All=12 and Unread=5 shown; most recent activity is expanded with older activity available on demand. After "mark all read" the unread count drops to 0. On the Unread filter with nothing unread, a "you're all caught up" message shows. After reload the unread count stays 0. Ties to the counts, empty-state, and persistence acceptance criteria.
 
-### TC-PROG-08 — Cancelling the confirmation changes nothing
-- **Traces:** US-PROG-04  ·  **Priority:** Medium  ·  **Type:** Negative
-- **Preconditions:** Session "Networking Break" exists with an assigned speaker.
-- **Test data:** —
+### TC-MSG-08 — Staff/Team member sees only own feed and has no compose/broadcast/log access
+- **Traces:** US-MSG-03  ·  **Priority:** Medium  ·  **Type:** Negative
+- **Preconditions:** A Staff/Team member account without finance access, part of an organizer's workspace.
+- **Test data:** Staff member "Aran"; workspace has payment and payout notifications belonging to finance-access members.
 - **Steps:**
-  1. Choose to remove "Networking Break".
-  2. In the confirmation dialog, cancel/dismiss.
-  3. Return to the agenda and check the speaker's session count.
-- **Expected result:** The session still exists in its original slot and the speaker's session count is unchanged. (AC: cancel leaves everything unchanged.)
+  1. Sign in as the Staff member and open the notification feed.
+  2. Look for other members' activity, payment/payout items, and controls to compose messages, edit templates, broadcast, view the delivery log, or manage feedback.
+- **Expected result:** Only the staff member's own personal activity is shown; payment/payout items (needing finance access) are not visible. No controls to compose, edit templates, broadcast, view the delivery log, or manage feedback are available. Ties to the Staff-scope acceptance criterion.
 
 ---
 
-## US-PROG-05 — Keep the schedule physically feasible
+## US-MSG-04 — Broadcast a one-off announcement to the right audience
 
-### TC-PROG-09 — Room double-booking is blocked with a clear message
-- **Traces:** US-PROG-05  ·  **Priority:** High  ·  **Type:** Negative
-- **Preconditions:** Organizer signed in. Room "Hall A" already booked Day 1 09:00–10:30.
-- **Test data:** New session "Second Talk", Day 1 10:00–11:00, room Hall A (overlaps existing 09:00–10:30).
+### TC-MSG-09 — Send now to checked-in attendees; recipient count matches
+- **Traces:** US-MSG-04  ·  **Priority:** Medium  ·  **Type:** Functional
+- **Preconditions:** Event with a mix of registrants; some checked in, some with missing/invalid contact details. Email and SMS channels enabled.
+- **Test data:** 50 registrants; 20 checked in; of those 20, 2 have no valid contact; announcement over Email + SMS.
 - **Steps:**
-  1. Add a new session in Hall A overlapping the existing booking.
-  2. Save.
-- **Expected result:** Save is blocked with a message naming the conflicting room (Hall A) and the clashing time; the session is not created. (AC: block on room overlap, message identifies room + time.)
+  1. Compose an announcement (subject + body), choose audience "checked-in attendees", select Email and SMS.
+  2. Send now.
+  3. Double-click / retry the send button once.
+  4. Review the recorded recipient count.
+- **Expected result:** Only the 18 checked-in attendees with a valid contact receive it; the recorded recipient count is 18 and matches who was addressed. The double-click/retry does not double-send to any recipient. Ties to the checked-in-audience and no-double-send acceptance criteria.
 
-### TC-PROG-10 — Speaker overlap warns and needs confirm; parallel tracks allowed; no self-clash
-- **Traces:** US-PROG-05  ·  **Priority:** High  ·  **Type:** Edge
-- **Preconditions:** Speaker "Ploy S." already assigned to a session Day 1 11:00–12:00 in Room A. Room C is free 11:00–12:00.
-- **Test data:** (a) New session Day 1 11:30–12:30 in Room B with speaker Ploy S. (overlaps her existing session); (b) New session Day 1 11:00–12:00 in Room C with a different speaker "Wichai T." (parallel track); (c) Open the existing 11:00–12:00 session and re-save without changes.
+### TC-MSG-10 — Schedule for future Bangkok time; validation and empty/marketing edge cases
+- **Traces:** US-MSG-04  ·  **Priority:** Medium  ·  **Type:** Negative
+- **Preconditions:** Organizer composing an announcement; audiences available (all registrants, checked-in, waitlist); marketing-class option available.
+- **Test data:** (a) Schedule 2026-08-01 09:00 Asia/Bangkok. (b) No channel selected / empty body / empty email subject. (c) Audience that resolves to nobody (empty waitlist). (d) Marketing-class announcement with one opted-out recipient among the audience.
 - **Steps:**
-  1. Create case (a) and save.
-  2. On the "assign anyway?" warning, confirm.
-  3. Create case (b) and save.
-  4. Edit case (c) and save with the same time/room/speaker.
-- **Expected result:** (a) A speaker double-booking warning appears and the session saves only after confirming "assign anyway?"; (b) both parallel sessions in different rooms with different speakers save without warning; (c) the session is not flagged as clashing with itself. (AC: speaker overlap warn+confirm, parallel tracks allowed, no self-clash.)
+  1. Schedule the announcement for the future Bangkok date/time and send.
+  2. Separately, attempt to send with no channel selected, then with an empty body, then with an empty email subject.
+  3. Choose the empty waitlist audience and send.
+  4. Send a marketing-class announcement to an audience that includes an opted-out attendee.
+- **Expected result:** (a) Announcement is recorded as Scheduled and goes out at the specified Bangkok time. (b) Each attempt is blocked with a clear reason (no channel / empty message / empty subject). (c) Nothing is sent and the organizer is told no recipients matched. (d) Delivered marketing message includes an unsubscribe option; the opted-out attendee is excluded and counted as skipped. Ties to the schedule, validation, no-recipients, and marketing-opt-out acceptance criteria.
 
 ---
 
-## US-PROG-06 — Find sessions in a busy programme
+## US-MSG-05 — Change my mind on a scheduled announcement
 
-### TC-PROG-11 — Keyword search filters by title/type (EN & TH) and clears cleanly
-- **Traces:** US-PROG-06  ·  **Priority:** Medium  ·  **Type:** Functional
-- **Preconditions:** Selected event has sessions including "Keynote: AI", a Thai-titled session "เวิร์กช็อปการตลาด" (Marketing Workshop), and several Panels.
-- **Test data:** Search terms: "keynote"; "เวิร์กช็อป"; "zznomatch".
+### TC-MSG-11 — Cancel and reschedule a not-yet-sent announcement
+- **Traces:** US-MSG-05  ·  **Priority:** Low  ·  **Type:** Functional
+- **Preconditions:** Two scheduled announcements still in the future.
+- **Test data:** Announcement X scheduled 2026-08-05 10:00 BKK (to cancel); Announcement Y scheduled 2026-08-05 10:00 BKK, rescheduled to 2026-08-06 15:00 BKK.
 - **Steps:**
-  1. Type "keynote" in the agenda search box.
-  2. Clear the box, then type the Thai term "เวิร์กช็อป".
-  3. Clear, then type "zznomatch".
-- **Expected result:** "keynote" leaves only sessions matching by title or type visible; clearing restores all; the Thai term matches the Thai-titled session (EN/TH supported); "zznomatch" shows the calendar layout with nothing highlighted — not an error. Search stays scoped to the selected event. (AC: title/type keyword filter, clear restores, no-match not an error, EN/TH.)
+  1. Cancel Announcement X.
+  2. Verify no messages are sent for X and check the history.
+  3. Reschedule Announcement Y to the later valid time and let that time pass.
+- **Expected result:** X sends no messages and no longer shows as Scheduled, but remains visible in history. Y goes out at the new time (2026-08-06 15:00 BKK) to a freshly resolved audience. Ties to the cancel and reschedule acceptance criteria.
+
+### TC-MSG-12 — Cannot change an announcement that has started sending
+- **Traces:** US-MSG-05  ·  **Priority:** Low  ·  **Type:** Negative
+- **Preconditions:** An announcement whose send has already begun.
+- **Test data:** Announcement Z currently in the process of sending.
+- **Steps:**
+  1. Attempt to cancel or reschedule Announcement Z while it is sending.
+- **Expected result:** The organizer is told the announcement can no longer be changed; no cancel/reschedule takes effect. Ties to the already-sending acceptance criterion.
 
 ---
 
-## US-PROG-07 — Switch between week and month views
+## US-MSG-06 — Prove messages were delivered and diagnose failures
 
-### TC-PROG-12 — Toggle week/month and navigate weeks stay on the same event
-- **Traces:** US-PROG-07  ·  **Priority:** Low  ·  **Type:** Functional
-- **Preconditions:** Selected multi-week event with sessions in one week only.
-- **Test data:** —
+### TC-MSG-13 — Delivery log per-recipient with statuses; failures surfaced
+- **Traces:** US-MSG-06  ·  **Priority:** Medium  ·  **Type:** Functional
+- **Preconditions:** Admin with attendee-view access; messages have gone out across email and SMS, including a provider-reported SMS failure, an opened email, and a failed critical message (ticket/receipt).
+- **Test data:** Recipients: email opened (Nok), SMS undelivered (Anan), receipt email failed (Ploy).
 - **Steps:**
-  1. From week view, switch to month view and observe the day-by-day overview; drill back into a day to return to week view.
-  2. From week view, navigate to the previous and next week and read the date/month labels.
-  3. Navigate to a week beyond the event's scheduled weeks.
-- **Expected result:** Month view shows a day-by-day overview drillable back to the time-slot week layout; navigating weeks shifts dates and the month label while staying on the same event; a week beyond the schedule shows an empty week with correct dates and never sessions from another event. (AC: week/month toggle, week navigation labels, empty out-of-range week.)
+  1. Open the delivery log.
+  2. Locate the entries for Nok, Anan, and Ploy.
+  3. Review how critical-message failures are presented.
+- **Expected result:** One entry per recipient shows recipient, message type, channel, status, and time. Anan's entry shows SMS channel with Failed status; Nok's entry advances to Opened once confirmed; Ploy's failed ticket/receipt is surfaced for follow-up. Statuses reflect only what the provider confirmed. Ties to the log-contents, failed-SMS, opened, and critical-failure acceptance criteria.
+
+### TC-MSG-14 — Delivery log access restricted; Staff denied
+- **Traces:** US-MSG-06  ·  **Priority:** Medium  ·  **Type:** Negative
+- **Preconditions:** A Staff member without attendee-view access; the log exposes attendee contact details.
+- **Test data:** Staff member "Aran".
+- **Steps:**
+  1. Sign in as the Staff member.
+  2. Attempt to open the delivery log.
+- **Expected result:** Access is denied; the log (containing attendee contact details) is available only to organizers/admins with attendee-view access. Ties to the log-access-restriction note.
 
 ---
 
-## US-PROG-08 — Browse and filter the speaker directory
+## US-MSG-07 — Export the delivery log for records
 
-### TC-PROG-13 — Directory shows key details with card/list layouts and event filter
-- **Traces:** US-PROG-08  ·  **Priority:** High  ·  **Type:** Functional
-- **Preconditions:** Organizer signed in. Multiple speakers across two events; some rated, some unrated.
-- **Test data:** Filter by event "Bangkok Tech Summit".
+### TC-MSG-15 — Export permitted with audit; denied / empty-view edge cases
+- **Traces:** US-MSG-07  ·  **Priority:** Low  ·  **Type:** Negative
+- **Preconditions:** (a) Organizer with attendee-export permission and a non-empty log view; (b) Staff member or user lacking export permission; (c) A log view filtered to zero rows.
+- **Test data:** Current log view = 25 entries (case a); filtered view = 0 entries (case c).
 - **Steps:**
-  1. Open the speaker directory.
-  2. Inspect a speaker entry for name, role, contact, session count and rating.
-  3. Toggle between card and list layout.
-  4. Apply the event filter "Bangkok Tech Summit".
-- **Expected result:** Each speaker shows name, role, contact, session count and rating; card/list layouts both render; after filtering, only "Bangkok Tech Summit" speakers appear and the displayed count reflects the filtered total. (AC: key details visible, layout switch, event filter + count.)
-
-### TC-PROG-14 — Search by name/role/email; no-match shows prompt not error
-- **Traces:** US-PROG-08  ·  **Priority:** Medium  ·  **Type:** Edge
-- **Preconditions:** Directory has speakers spanning multiple pages, including "Napat Chai" (role Speaker, email napat@example.co.th).
-- **Test data:** Search terms: "napat"; "nonexistent@nowhere".
-- **Steps:**
-  1. Navigate to page 2 of the directory.
-  2. Search "napat".
-  3. Clear and search "nonexistent@nowhere".
-- **Expected result:** Searching "napat" shows only matching speakers and the list returns to the first page; the no-match search shows a "no speakers found" prompt, not an error. (AC: name/role/email search, reset to first page, no-match prompt.)
+  1. As the permitted organizer, export the current log view.
+  2. As a Staff / no-export-permission user, view the log and look for the export option.
+  3. As the permitted organizer, filter the view to zero rows and attempt to export.
+- **Expected result:** (a) A file of the current log view (25 entries) downloads and the export is recorded for audit. (b) The export option is unavailable. (c) The organizer is told there is nothing to export. Ties to the export-with-audit, permission, and nothing-to-export acceptance criteria.
 
 ---
 
-## US-PROG-09 — Add a speaker to the line-up
+## US-MSG-08 — Measure attendee satisfaction across all my events
 
-### TC-PROG-15 — Add a valid speaker starting at zero sessions and unrated
-- **Traces:** US-PROG-09  ·  **Priority:** High  ·  **Type:** Functional
-- **Preconditions:** Organizer signed in with a chosen event selected.
-- **Test data:** Photo valid JPG within size limit; name "Kanya Wong"; role "CTO, ThaiCloud"; email kanya@thaicloud.co.th; bio short text; topic "Serverless"; event = chosen event; website https://thaicloud.co.th; social https://linkedin.com/in/kanyawong.
+### TC-MSG-16 — Portfolio KPIs weighted by responses; no-responses events handled
+- **Traces:** US-MSG-08  ·  **Priority:** Medium  ·  **Type:** Functional
+- **Preconditions:** Organizer with several events; some have collected feedback, at least one has none.
+- **Test data:** Event A 100 responses avg 4.5; Event B 10 responses avg 3.0; Event C 0 responses.
 - **Steps:**
-  1. Open the add-speaker form.
-  2. Fill all fields with valid data and save.
-  3. Open the new speaker's card.
-- **Expected result:** A speaker profile is created and assigned to the chosen event, session count = 0, and shown with an unrated indicator (not a zero score). (AC: profile created + assigned, zero sessions, unrated until feedback.)
+  1. Open the feedback overview.
+  2. Read the portfolio KPIs (total responses, average rating, NPS, completion rate) and the per-event cards.
+  3. Inspect Event C's card.
+- **Expected result:** Portfolio KPIs shown; the average is weighted by each event's response count (A weighted more heavily than B) and Event C does not distort the averages. Event C's card clearly shows "no responses yet" rather than misleading numbers. Ties to the portfolio-KPI, weighting, and no-responses acceptance criteria.
 
-### TC-PROG-16 — Reject blank/invalid/duplicate email, oversize photo and malformed links
-- **Traces:** US-PROG-09  ·  **Priority:** High  ·  **Type:** Negative
-- **Preconditions:** A speaker with email taken@example.com already exists.
-- **Test data:** (a) Name blank; (b) email "not-an-email"; (c) email "taken@example.com" (duplicate); (d) photo a 20 MB .bmp (wrong type / too large); (e) website "htp:/broken link".
+### TC-MSG-17 — Event search filter and drill-down rating-bar filtering
+- **Traces:** US-MSG-08  ·  **Priority:** Medium  ·  **Type:** Functional
+- **Preconditions:** Organizer on the feedback overview with multiple events, one named "Bangkok Tech Meetup".
+- **Test data:** Search term "Bangkok"; then a non-matching term "zzzz"; drill into an event and click the 5-star rating bar.
 - **Steps:**
-  1. Attempt to save with the name blank (a).
-  2. Attempt to save with an invalid email (b).
-  3. Attempt to save with the duplicate email (c).
-  4. Attempt to save with the oversize/wrong-type photo (d).
-  5. Attempt to save with the malformed website link (e).
-- **Expected result:** (a)/(b) asked to correct the name/email, nothing saved; (c) told a speaker with that email already exists, nothing saved; (d) told the accepted format and size limit, photo not accepted; (e) asked to enter a valid link rather than have it silently dropped. No speaker is created in any case. (AC: required name+email, valid email, duplicate email, photo type/size, valid links.)
+  1. Type "Bangkok" in the event search.
+  2. Type a term matching no event.
+  3. Open an event's detail; review its KPIs, rating distribution, and surveys; click the 5-star rating bar.
+- **Expected result:** The grid filters to matching events for "Bangkok"; a clear empty state shows when none match. The event detail shows its KPIs, rating distribution, and surveys; clicking the 5-star bar filters the responses to that rating. Ties to the search-filter and drill-down acceptance criteria.
 
 ---
 
-## US-PROG-10 — Keep a speaker's profile up to date
+## US-MSG-09 — Build and manage surveys for my events
 
-### TC-PROG-17 — Edit a speaker's role and see it reflected on the live public page
-- **Traces:** US-PROG-10  ·  **Priority:** High  ·  **Type:** Functional
-- **Preconditions:** Speaker "Anon Ratana" (role "Engineer, OldCo") appears on a live event's public speakers section.
-- **Test data:** New role "VP Engineering, NewCo".
+### TC-MSG-18 — Create survey as Draft; validation blocks invalid questions
+- **Traces:** US-MSG-09  ·  **Priority:** Medium  ·  **Type:** Negative
+- **Preconditions:** Organizer with an event to attach a survey to.
+- **Test data:** Valid survey: title "Post-Event Feedback" + one rating question. Invalid: a multiple-choice question with one option; a question with blank text.
 - **Steps:**
-  1. Open speaker "Anon Ratana" and change the role/company.
-  2. Save.
-  3. View the live event's public speakers section.
-- **Expected result:** The card shows the new role, the change is recorded, and the public speakers section reflects the update. (AC: card updates + recorded, public page reflects change.)
+  1. Create a survey with a title and one rating question against the event and Save.
+  2. Confirm where it appears and whether it collects responses.
+  3. Add a multiple-choice question with only one option and Save.
+  4. Add a question with blank text and Save.
+- **Expected result:** The valid survey is created as a Draft under that event, appears in its surveys list, and collects nothing until made live. Saving is blocked with a clear reason when a multiple-choice question has fewer than two options, and when a question's text is blank. Ties to the create-draft and question-validation acceptance criteria.
 
-### TC-PROG-18 — Duplicate email and concurrent edit are both refused
-- **Traces:** US-PROG-10  ·  **Priority:** High  ·  **Type:** Negative
-- **Preconditions:** Speaker A being edited; speaker B already uses email dup@example.com. Speaker A is also open in a second organizer's session.
-- **Test data:** (a) Change A's email to dup@example.com; (b) Colleague changes A and saves first, then this organizer saves the stale copy.
+### TC-MSG-19 — Survey lifecycle: duplicate, close/reopen, delete with confirm
+- **Traces:** US-MSG-09  ·  **Priority:** Medium  ·  **Type:** Functional
+- **Preconditions:** An existing live survey with collected responses.
+- **Test data:** Survey "Post-Event Feedback" with 30 responses.
 - **Steps:**
-  1. Change speaker A's email to dup@example.com and save.
-  2. Separately, have a colleague edit and save speaker A first, then attempt to save this stale copy.
-- **Expected result:** (a) The duplicate-email message appears and nothing is saved; (b) told the speaker changed and asked to reload, so no work is silently lost. (AC: duplicate-email guard, optimistic-lock reload.)
+  1. Duplicate the survey.
+  2. Close the live survey, then attempt to submit a response (via the attendee portal) and confirm it is rejected.
+  3. Reopen the survey and confirm responses are accepted again.
+  4. Delete the survey (which has responses).
+- **Expected result:** Duplicating produces a fresh Draft copy with zero responses next to the original. Closing stops it accepting responses; reopening resumes acceptance. Deleting a survey with responses requires explicit confirmation before removal. Ties to the duplicate, close/reopen, and delete-confirmation acceptance criteria.
 
 ---
 
-## US-PROG-11 — Remove a speaker
+## US-MSG-10 — Browse and filter individual feedback responses
 
-### TC-PROG-19 — Confirmed deletion keeps sessions and clears the live public page
-- **Traces:** US-PROG-11  ·  **Priority:** High  ·  **Type:** Functional
-- **Preconditions:** Speaker "Preeya M." assigned to 3 sessions and shown on a live event's public agenda/speakers section.
-- **Test data:** —
+### TC-MSG-20 — Filter responses, paginate range, and empty-state
+- **Traces:** US-MSG-10  ·  **Priority:** Low  ·  **Type:** Functional
+- **Preconditions:** Organizer with attendee-view access on an event that has many responses across multiple surveys and ratings.
+- **Test data:** 47 responses; page size 20; filter by rating = 5; then a filter combination matching zero responses.
 - **Steps:**
-  1. Choose to delete "Preeya M.".
-  2. Read the confirmation warning, then confirm.
-  3. Check the 3 sessions and the public event pages.
-- **Expected result:** Confirmation warns the speaker will be removed from all their sessions and the action cannot be undone; after confirm the speaker disappears from the directory, the 3 sessions remain but no longer list Preeya M., and she no longer appears in the public agenda or speakers section. (AC: sessions retained without speaker, irreversible warning, removed from public.)
-
-### TC-PROG-20 — Cancelling deletion leaves speaker and assignments intact
-- **Traces:** US-PROG-11  ·  **Priority:** Medium  ·  **Type:** Negative
-- **Preconditions:** Speaker "Preeya M." assigned to 3 sessions.
-- **Test data:** —
-- **Steps:**
-  1. Choose to delete "Preeya M.".
-  2. Cancel the confirmation dialog.
-  3. Re-check the speaker and her session assignments.
-- **Expected result:** The speaker and all 3 assignments are unchanged. (AC: cancel leaves speaker and assignments intact.)
-
----
-
-## US-PROG-12 — Assign speakers to their sessions and balance the line-up
-
-### TC-PROG-21 — Assigning a second session updates count and shows initials
-- **Traces:** US-PROG-12  ·  **Priority:** Medium  ·  **Type:** Functional
-- **Preconditions:** Speaker "Ratcha B." (initials RB) currently carries 1 session on the selected event; a second non-overlapping session exists.
-- **Test data:** Assign Ratcha B. to the second session.
-- **Steps:**
-  1. Open the second session and assign speaker Ratcha B. (add to existing speakers).
-  2. Save.
-  3. Check the speaker's session count and the session's displayed speaker.
-- **Expected result:** Assignment is saved, the speaker's session count reads two, the session shows the speaker (initials RB), and the session's displayed speaker updates. (AC: count reads two + initials, assignments saved + displayed speaker updates.)
-
-### TC-PROG-22 — Cross-event assignment refused; overlapping assignment warns
-- **Traces:** US-PROG-12  ·  **Priority:** Medium  ·  **Type:** Negative
-- **Preconditions:** Speaker "Guest X" belongs to a different event. On the current event, speaker "Malee T." already has a session Day 1 10:00–11:00.
-- **Test data:** (a) Assign Guest X to a session on the current event; (b) assign Malee T. to a session Day 1 10:30–11:30 (overlaps her existing).
-- **Steps:**
-  1. Attempt to assign Guest X to a current-event session and save.
-  2. Assign Malee T. to the overlapping session and save.
-- **Expected result:** (a) Told Guest X belongs to another event and the assignment is refused; (b) the double-booking warning appears and the save proceeds only after confirming. (AC: cross-event assignment refused, overlap warn + confirm.)
-
----
-
-## US-PROG-13 — See how speakers were rated
-
-### TC-PROG-23 — Rated speaker shows aggregate score with reviews and reflects new feedback
-- **Traces:** US-PROG-13  ·  **Priority:** Medium  ·  **Type:** Functional
-- **Preconditions:** Admin signed in. Speaker "Chai N." has post-session feedback averaging 4.9.
-- **Test data:** —
-- **Steps:**
-  1. View Chai N.'s card and read the rating.
-  2. Open the speaker's reviews.
-  3. After new feedback arrives, re-open the speaker's card.
-- **Expected result:** The card shows "4.9"; the reviews show the underlying feedback that produced the score; after new feedback the rating reflects the latest results. Rating is read-only (not hand-editable). (AC: aggregate score display, underlying reviews, latest feedback reflected.)
-
-### TC-PROG-24 — Brand-new speaker shows an unrated indicator, not zero
-- **Traces:** US-PROG-13  ·  **Priority:** Medium  ·  **Type:** Edge
-- **Preconditions:** Admin signed in. Speaker "Fern S." has no feedback yet.
-- **Test data:** —
-- **Steps:**
-  1. View Fern S.'s card.
-  2. Inspect the rating area.
-- **Expected result:** The card shows an unrated indicator, not a zero score. (AC: no feedback shows unrated, not 0.)
+  1. Filter responses by rating = 5 (and/or a specific survey) and review the list.
+  2. Move from page 1 to page 2 to page 3 and read the "showing X–Y of N" range.
+  3. Apply a filter combination that matches no responses.
+- **Expected result:** The list narrows to matching responses and paginates, each row showing respondent, survey, rating, comment, and date. The "showing X–Y of N" range updates correctly across pages (e.g. 1–20, 21–40, 41–47 of 47). When no responses match, a clear "no responses match these filters" message shows. Ties to the filter, pagination-range, and empty-state acceptance criteria.
 
 
 ---
@@ -2633,257 +2620,9 @@ Roles referenced: Organizer, Admin (full), Staff (view + door check-in), Attende
 
 <a id="tc-e09"></a>
 
-# Coordinate Meetings — Test Cases
-
-Area code: MTG · Epic E9 — Coordinate Meetings
-Locale assumptions: Asia/Bangkok timezone, EN/TH content, ฿ (VAT not applicable to this epic — no money fields).
-
----
-
-## US-MTG-01 — See meetings organized by Today / Upcoming / Past
-
-### TC-MTG-01 — Meetings group correctly into Today / Upcoming / Past with live counts
-- **Traces:** US-MTG-01 · **Priority:** High · **Type:** Functional
-- **Preconditions:** Logged in as Event Organizer. Google Calendar connected. At least one meeting scheduled for today, two for a future day, and one in the past, all in Bangkok time.
-- **Test data:** Meeting A "Venue walkthrough" today 14:00–15:00; Meeting B "Sponsor sync" tomorrow 09:00–09:30; Meeting C "Speaker brief" tomorrow 11:00–11:30; Meeting D "Post-event review" 3 days ago 10:00–11:00.
-- **Steps:**
-  1. Open the Meetings console.
-  2. Read the Today, Upcoming and Past tab counts.
-  3. Open the Today tab and inspect Meeting A's time label.
-  4. Open the Upcoming tab and read the order of Meetings B and C.
-  5. Open the Past tab.
-- **Expected result:** Today count = 1 (Meeting A, shown as "Today · 14:00 – 15:00" and marked as today); Upcoming count = 2 with Meeting B (09:00) listed before Meeting C (11:00), earliest-start first; Past count = 1 (Meeting D). Each tab count matches the number of rows shown.
-
-### TC-MTG-02 — Grouping is computed in Bangkok time regardless of viewer timezone
-- **Traces:** US-MTG-01 · **Priority:** Medium · **Type:** Edge
-- **Preconditions:** Logged in as Event Organizer. One meeting scheduled for late today Bangkok time.
-- **Test data:** Meeting "Late vendor call" today 23:30–23:59 Asia/Bangkok. Viewer device/browser set to a non-Thai timezone (e.g., America/New_York, where that instant is still the previous day).
-- **Steps:**
-  1. Set the local device timezone to America/New_York.
-  2. Open the Meetings console and view the Today tab.
-- **Expected result:** The meeting still appears under Today (its Bangkok date), not under Past or Upcoming, confirming grouping is derived from Bangkok time and independent of the viewer's location.
-
-### TC-MTG-03 — Meeting row shows all at-a-glance details
-- **Traces:** US-MTG-01 · **Priority:** Medium · **Type:** Functional
-- **Preconditions:** Logged in as Event Organizer. One video, one in-person and one phone meeting exist.
-- **Test data:** Video meeting with Google Meet link; In-person meeting on event "Tech Summit BKK" (venue "BITEC Hall 2"); Phone meeting.
-- **Steps:**
-  1. Open the Meetings console.
-  2. Inspect each meeting row.
-- **Expected result:** Each row shows title, guest name and their role, related event, meeting type, mode (video / in person / phone), and location — join link for video, venue name ("BITEC Hall 2") for in person, and "Phone call" for phone.
-
----
-
-## US-MTG-02 — Find a specific meeting in a long list
-
-### TC-MTG-04 — Search by title/person/role/event/type matches and resets to first page
-- **Traces:** US-MTG-02 · **Priority:** High · **Type:** Functional
-- **Preconditions:** Logged in as Event Organizer. Many meetings booked spanning multiple pages. On the All tab, currently viewing page 3.
-- **Test data:** Search term "Somchai" (a guest name appearing on 2 meetings). Also verify a Thai-language term "ผู้สนับสนุน" (sponsor) matches Thai content.
-- **Steps:**
-  1. From page 3, type "Somchai" into the search box and apply it.
-  2. Observe the result list and current page.
-  3. Clear the search, type the Thai term "ผู้สนับสนุน" and apply.
-- **Expected result:** Only meetings whose title, person, role, event or type match "Somchai" remain, and the list returns to page 1. The Thai search returns matching Thai-content meetings — search works equally for Thai and English.
-
-### TC-MTG-05 — Type filter combines with the active time tab
-- **Traces:** US-MTG-02 · **Priority:** Medium · **Type:** Functional
-- **Preconditions:** Logged in as Event Organizer. Upcoming tab has meetings of several types (Venue, Sponsor, Vendor, Speaker, Internal).
-- **Test data:** Filter type = "Sponsor". Active tab = Upcoming.
-- **Steps:**
-  1. Open the Upcoming tab.
-  2. Set the type filter to Sponsor.
-- **Expected result:** Only upcoming Sponsor-type meetings are shown; meetings of other types and non-upcoming Sponsor meetings are excluded — the type filter is combined with the current time tab.
-
-### TC-MTG-06 — No results message and paging summary
-- **Traces:** US-MTG-02 · **Priority:** Medium · **Type:** Negative
-- **Preconditions:** Logged in as Event Organizer with a long meeting list.
-- **Test data:** (a) Search "zzzznomatch"; (b) rows-per-page = 10 on a list of 23 meetings.
-- **Steps:**
-  1. Search for "zzzznomatch" that matches nothing.
-  2. Clear the search; set rows per page to 10 and move to page 2.
-- **Expected result:** (a) A clear "No meetings match your filters" message is shown, no rows. (b) The summary reads "showing 11–20 of 23 meetings" on page 2 and updates correctly as rows-per-page and page change.
-
----
-
-## US-MTG-03 — Schedule a meeting with a speaker, sponsor, venue or vendor
-
-### TC-MTG-07 — Schedule a valid meeting and see it in the correct group
-- **Traces:** US-MTG-03 · **Priority:** High · **Type:** Functional
-- **Preconditions:** Logged in as Event Organizer. Calendar connected.
-- **Test data:** Title "Keynote speaker briefing"; date tomorrow; start 10:00, end 10:45; type Speaker; mode Video; guest "Anong Phromma", email anong@example.com; related event "Tech Summit BKK"; notes "Confirm slides".
-- **Steps:**
-  1. Open the schedule panel.
-  2. Fill in all required fields with the test data.
-  3. Save.
-- **Expected result:** A new meeting is created with status Scheduled and appears under Upcoming (tomorrow), earliest-start ordered. Confirms the happy-path creation criterion.
-
-### TC-MTG-08 — Validation blocks bad title, past date and non-forward end time
-- **Traces:** US-MTG-03 · **Priority:** High · **Type:** Negative
-- **Preconditions:** Logged in as Event Organizer. Schedule panel open.
-- **Test data:** (a) Title blank / single character "x"; (b) date = yesterday; (c) start 14:00, end 13:30 (end not after start).
-- **Steps:**
-  1. Leave the title blank (then try one character), attempt to save.
-  2. Set the date to yesterday, attempt to save.
-  3. Set start 14:00 and end 13:30, attempt to save.
-- **Expected result:** Save is blocked in each case with a specific, field-level message telling exactly what to fix (title too short/required; date cannot be in the past; end time must be after start). No meeting is created.
-
-### TC-MTG-09 — Location derives from mode; double-submit creates only one meeting
-- **Traces:** US-MTG-03 · **Priority:** Medium · **Type:** Edge
-- **Preconditions:** Logged in as Event Organizer. Event "Tech Summit BKK" has venue "BITEC Hall 2".
-- **Test data:** Meeting X mode In person on event "Tech Summit BKK"; Meeting Y mode Phone. Rapid double-click on Save for one submission.
-- **Steps:**
-  1. Create Meeting X with mode In person tied to "Tech Summit BKK" and save.
-  2. Create Meeting Y with mode Phone and save.
-  3. On a third valid meeting, click Save twice in rapid succession.
-- **Expected result:** Meeting X shows location = event venue "BITEC Hall 2"; Meeting Y shows location = "Phone call". The double-submitted meeting is created exactly once, not duplicated.
-
----
-
-## US-MTG-04 — Have invites, video links and reminders handled automatically
-
-### TC-MTG-10 — Video meeting auto-generates Meet link, invite and 15-min reminder
-- **Traces:** US-MTG-04 · **Priority:** High · **Type:** Functional
-- **Preconditions:** Logged in as Event Organizer. Google Calendar connected and healthy.
-- **Test data:** Video meeting "Sponsor kickoff", tomorrow 15:00–15:30 Bangkok, guest email partner@example.com.
-- **Steps:**
-  1. Schedule the video meeting and save.
-  2. Inspect the saved meeting and the guest-facing invite.
-- **Expected result:** A Google Meet link is created and attached to the meeting and included in the invite; the guest receives a calendar invite for 15:00–15:30 Asia/Bangkok; both organizer and guest have a 15-minute-before reminder set.
-
-### TC-MTG-11 — Meeting saved when calendar not connected; prompted to connect
-- **Traces:** US-MTG-04 · **Priority:** High · **Type:** Negative
-- **Preconditions:** Logged in as Event Organizer. Workspace Google Calendar NOT connected.
-- **Test data:** Any valid video meeting.
-- **Steps:**
-  1. Schedule a valid meeting and save.
-- **Expected result:** The meeting is still saved (nothing lost) and flagged as not synced; the organizer is prompted to connect the calendar so the invite and Meet link can be sent. No error discards the meeting.
-
-### TC-MTG-12 — Calendar service briefly unavailable — meeting kept, marked not synced, retry sends invite
-- **Traces:** US-MTG-04 · **Priority:** Medium · **Type:** Edge
-- **Preconditions:** Logged in as Event Organizer. Calendar connected but the calendar service is temporarily unreachable at save time.
-- **Test data:** Valid video meeting scheduled during the outage; service restored afterward.
-- **Steps:**
-  1. Save the meeting while the calendar service is unavailable.
-  2. Observe the meeting's sync state and the retry option.
-  3. Restore the service and trigger/allow retry.
-- **Expected result:** The meeting is kept and marked "not yet synced" with a retry option; nothing is lost. Once the service is reachable and retry runs, the invite (and Meet link) go out and the meeting shows as synced.
-
----
-
-## US-MTG-05 — Reschedule or edit a meeting
-
-### TC-MTG-13 — Reschedule updates the existing invite, shifts reminder, re-notifies guest
-- **Traces:** US-MTG-05 · **Priority:** High · **Type:** Functional
-- **Preconditions:** Logged in as Event Organizer. An existing synced video meeting with a guest invite already sent.
-- **Test data:** Move "Sponsor kickoff" from tomorrow 15:00–15:30 to tomorrow 17:00–17:30.
-- **Steps:**
-  1. Open the meeting and change start/end to 17:00–17:30.
-  2. Save.
-  3. Inspect the guest invite and reminder.
-- **Expected result:** The guest's existing invite is updated in place (not duplicated), the 15-minute reminder shifts to the new 17:00 start, and the guest is re-notified of the new time.
-
-### TC-MTG-14 — Changing mode video → in person removes Meet link and shows venue
-- **Traces:** US-MTG-05 · **Priority:** Medium · **Type:** Functional
-- **Preconditions:** Logged in as Event Organizer. A synced video meeting with a Meet link, tied to event "Tech Summit BKK" (venue "BITEC Hall 2").
-- **Test data:** Change mode from Video to In person.
-- **Steps:**
-  1. Open the meeting and switch mode to In person.
-  2. Save and inspect the meeting.
-- **Expected result:** The Google Meet link is removed and the location shows the event's venue "BITEC Hall 2"; no stale join link remains and no Join button is offered.
-
-### TC-MTG-15 — Concurrent edit conflict and cancelled-meeting edit block
-- **Traces:** US-MTG-05 · **Priority:** Medium · **Type:** Negative
-- **Preconditions:** Logged in as Event Organizer. Two sessions (or Admin + Organizer) have the same meeting open. Separately, one cancelled meeting exists.
-- **Test data:** Session 1 and Session 2 both open Meeting M; Session 2 saves a change first. Cancelled Meeting N.
-- **Steps:**
-  1. In Session 2, change and save Meeting M.
-  2. In Session 1, change and try to save Meeting M.
-  3. Attempt to edit cancelled Meeting N.
-- **Expected result:** Session 1 is told the meeting changed and asked to reload before saving — no silent overwrite of Session 2's edit. Cancelled Meeting N cannot be edited (edit is not offered / is blocked).
-
----
-
-## US-MTG-06 — Cancel a meeting
-
-### TC-MTG-16 — Cancel with reason marks Cancelled, removes from calendar, notifies guest
-- **Traces:** US-MTG-06 · **Priority:** Medium · **Type:** Functional
-- **Preconditions:** Logged in as Event Organizer. A scheduled, not-yet-happened meeting with an invite already sent.
-- **Test data:** Cancel reason "Speaker unavailable".
-- **Steps:**
-  1. Open the scheduled meeting and choose Cancel.
-  2. Enter the reason "Speaker unavailable" and confirm.
-  3. Reload the Meetings list and inspect counts and row actions.
-- **Expected result:** The meeting is marked Cancelled, removed from the guest's calendar, and the guest receives a cancellation notice that includes the reason "Speaker unavailable". After reload it no longer counts toward Today or Upcoming and offers no Join or Edit; the record is retained as Cancelled.
-
-### TC-MTG-17 — Dismissing the cancel confirmation changes nothing
-- **Traces:** US-MTG-06 · **Priority:** Low · **Type:** Negative
-- **Preconditions:** Logged in as Event Organizer. A scheduled meeting exists.
-- **Test data:** N/A.
-- **Steps:**
-  1. Open the meeting and click Cancel.
-  2. Dismiss/close the confirmation without confirming.
-- **Expected result:** The meeting remains Scheduled and unchanged; no cancellation notice is sent and it still counts in its time group.
-
----
-
-## US-MTG-07 — Join a video meeting in one click
-
-### TC-MTG-18 — Join opens link in a new tab; unavailable for past and not-ready links
-- **Traces:** US-MTG-07 · **Priority:** High · **Type:** Functional
-- **Preconditions:** Logged in as Event Organizer. A today video meeting with a ready Meet link; a past video meeting; an upcoming video meeting whose link is not yet ready (unsynced).
-- **Test data:** Today video meeting (ready link); Past video meeting; Upcoming video meeting (link pending).
-- **Steps:**
-  1. On the today video meeting with a ready link, click Join.
-  2. Inspect the past video meeting row.
-  3. Inspect the upcoming video meeting whose link is not ready.
-- **Expected result:** Join opens the meeting in a new browser tab for the ready link; the past video meeting shows no Join button; the not-ready meeting's Join is unavailable with a hint to retry the calendar sync.
-
----
-
-## US-MTG-08 — Connect and manage the workspace Google Calendar
-
-### TC-MTG-19 — Admin connects the workspace Google Calendar; header shows connected
-- **Traces:** US-MTG-08 · **Priority:** Medium · **Type:** Functional
-- **Preconditions:** Logged in as Admin. Workspace calendar currently disconnected.
-- **Test data:** Valid Google account authorization for the workspace.
-- **Steps:**
-  1. Open Meetings and start the Google Calendar connection.
-  2. Complete the Google authorization successfully.
-  3. Observe the Meetings header status.
-- **Expected result:** The workspace is marked connected and the Meetings header shows a connected status. Subsequently scheduled meetings sync normally.
-
-### TC-MTG-20 — Non-Admin sees no connect/disconnect control; expired connection prompts reconnect
-- **Traces:** US-MTG-08 · **Priority:** Medium · **Type:** Negative
-- **Preconditions:** (a) Logged in as Event Organizer (non-Admin). (b) Separately, workspace connection has expired/been revoked.
-- **Test data:** N/A.
-- **Steps:**
-  1. As a non-Admin Organizer, open Meetings and look for calendar connect/disconnect controls.
-  2. With the connection expired, as Admin/Organizer trigger a sync (e.g., schedule a meeting).
-- **Expected result:** The non-Admin sees no connect/disconnect control. When the connection is expired/revoked, the user is prompted to reconnect rather than sync failing silently; meetings scheduled while disconnected are saved but flagged not synced.
-
----
-
-## US-MTG-09 — Be warned about overlapping meetings
-
-### TC-MTG-21 — Overlap warning appears but never blocks saving
-- **Traces:** US-MTG-09 · **Priority:** Low · **Type:** Edge
-- **Preconditions:** Logged in as Event Organizer. An existing meeting tomorrow 10:00–11:00.
-- **Test data:** New meeting tomorrow 10:30–11:15 (overlaps the existing one).
-- **Steps:**
-  1. Schedule the new overlapping meeting and click Save.
-  2. Observe the warning.
-  3. Choose to continue/schedule anyway.
-- **Expected result:** A "this overlaps another meeting — schedule anyway?" warning is shown; choosing to continue saves the meeting normally. The warning is advisory and never blocks the save — the organizer stays in control.
-
-
----
-
-<a id="tc-e10"></a>
-
 # Get Paid & Manage Finances — Test Cases
 
-Epic E10 — Get Paid & Manage Finances. Area code: **FIN**. Locale defaults: ฿ (VAT-inclusive), VAT 7%, Asia/Bangkok time, EN/TH, PromptPay / Card / Bank transfer. RBAC baseline: Admin = full control; Organizer = view/invoice/export only; Staff & Attendee = no finance access.
+Epic E9 — Get Paid & Manage Finances. Area code: **FIN**. Locale defaults: ฿ (VAT-inclusive), VAT 7%, Asia/Bangkok time, EN/TH, PromptPay / Card / Bank transfer. RBAC baseline: Admin = full control; Organizer = view/invoice/export only; Staff & Attendee = no finance access.
 
 ---
 
@@ -3215,11 +2954,857 @@ Epic E10 — Get Paid & Manage Finances. Area code: **FIN**. Locale defaults: �
 
 ---
 
+<a id="tc-e10"></a>
+
+# Build the Event Program — Test Cases
+
+Epic E10 — Build the Event Program. Area code: PROG. Locale context: Asia/Bangkok timezone, EN/TH bilingual content.
+
+---
+
+## US-PROG-01 — See the event's schedule at a glance
+
+### TC-PROG-01 — Agenda shows only the selected event's sessions in correct slots
+- **Traces:** US-PROG-01  ·  **Priority:** High  ·  **Type:** Functional
+- **Preconditions:** Organizer signed in. Event "Bangkok Tech Summit" has sessions across 3 days; a second event "HR Forum" also has sessions.
+- **Test data:** Session "Keynote: AI in ASEAN", Day 1 09:00–10:00, type Keynote (blue); Session "Panel: FinTech", Day 2 14:00–15:00, type Panel (green); speakers assigned to each.
+- **Steps:**
+  1. Select "Bangkok Tech Summit" and open its Agenda (week view).
+  2. Inspect each session block's day/time placement.
+  3. Read the block contents (title, type colour, speaker).
+- **Expected result:** Every session appears in its correct day/time position; each block shows title, type colour and speaker name; no session from "HR Forum" is shown. (AC: correct positions, block detail, event isolation.)
+
+### TC-PROG-02 — Empty agenda shows a friendly prompt and event switch reloads correctly
+- **Traces:** US-PROG-01  ·  **Priority:** Medium  ·  **Type:** Edge
+- **Preconditions:** Organizer signed in. Event "New Meetup 2026" has zero sessions; another event has sessions.
+- **Test data:** —
+- **Steps:**
+  1. Select "New Meetup 2026" and open its Agenda.
+  2. Observe the calendar body.
+  3. Switch to an event that has sessions and let the agenda reload.
+- **Expected result:** For the empty event a friendly "no agenda yet" prompt inviting the first session is shown (not an error); after switching, only the newly selected event's sessions display. (AC: empty-state prompt, reload isolation.)
+
+---
+
+## US-PROG-02 — Add a session to the schedule
+
+### TC-PROG-03 — Add a valid session and speaker count increments
+- **Traces:** US-PROG-02  ·  **Priority:** High  ·  **Type:** Functional
+- **Preconditions:** Organizer signed in on a chosen event. Speaker "Somsak P." exists on that event with current session count = 2. Room "Hall A" is free at the target slot.
+- **Test data:** Title "Cloud Native Workshop"; Day 2; start 13:00, end 14:30 (Asia/Bangkok); type Workshop; room Hall A; speaker Somsak P.; description optional.
+- **Steps:**
+  1. Open the add-session form for the chosen event.
+  2. Fill all fields with the test data and save.
+  3. Observe the calendar and then open speaker "Somsak P.".
+- **Expected result:** Session appears immediately at Day 2 13:00–14:30, coloured by Workshop type, showing Somsak P.; the speaker's session count reads 3. (AC: immediate placement + colour + speaker, count +1.)
+
+### TC-PROG-04 — Reject blank title and invalid time ranges
+- **Traces:** US-PROG-02  ·  **Priority:** High  ·  **Type:** Negative
+- **Preconditions:** Organizer signed in on a chosen event whose schedulable hours are 08:00–18:00.
+- **Test data:** (a) Title blank, valid time; (b) Title "Late Session", start 16:00, end 15:00; (c) Title "Off-hours", start 19:00, end 20:00 (outside 08:00–18:00).
+- **Steps:**
+  1. Attempt to save case (a) with the title left blank.
+  2. Attempt to save case (b) with end time not after start.
+  3. Attempt to save case (c) with a time outside the day's schedulable hours.
+- **Expected result:** (a) Prompted to enter a session title, nothing saved; (b) told the time is invalid, nothing saved; (c) told the time is invalid / outside schedulable hours, nothing saved. No block appears on the calendar in any case. (AC: title required, end-after-start, within schedulable hours.)
+
+---
+
+## US-PROG-03 — Update a session
+
+### TC-PROG-05 — Move a session to a new slot with no clash
+- **Traces:** US-PROG-03  ·  **Priority:** High  ·  **Type:** Functional
+- **Preconditions:** Organizer signed in. Session "Design Sprint" exists Day 1 10:00–11:00 in Room B; target slot Day 1 15:00–16:00 in Room C is free of clashes.
+- **Test data:** New day Day 1, new time 15:00–16:00, new room Room C; type changed Panel → Workshop.
+- **Steps:**
+  1. Open "Design Sprint".
+  2. Change day/time/room to the target and change type to Workshop.
+  3. Save.
+- **Expected result:** The block relocates to Day 1 15:00–16:00 in Room C, its colour updates to the Workshop type, and the change is recorded. (AC: relocate on no-clash save, colour updates with type.)
+
+### TC-PROG-06 — Concurrent edit is blocked with reload prompt (optional attendee notify)
+- **Traces:** US-PROG-03  ·  **Priority:** High  ·  **Type:** Negative
+- **Preconditions:** Live event. Session "Opening Keynote" open in two browser sessions by two organizers. Session has attendees who added it to their schedule.
+- **Test data:** Colleague B changes the room and saves first; Organizer A then changes the start time (a material change) and saves.
+- **Steps:**
+  1. Both users open "Opening Keynote".
+  2. Colleague B changes the room and saves successfully.
+  3. Organizer A, working on the stale copy, changes the start time and tries to save.
+  4. (Follow-up) After reloading, A re-applies the material change and saves, observing the notify option.
+- **Expected result:** A's save is refused with a message that the session changed and a prompt to reload — B's change is not silently overwritten. On the subsequent valid material change (day/time/room) to the live event, A is optionally offered to notify attendees who bookmarked it, with no message sent by default. (AC: optimistic-lock reload, optional notify defaulting to off.)
+
+---
+
+## US-PROG-04 — Remove a session
+
+### TC-PROG-07 — Confirmed removal drops speaker count and clears public agenda
+- **Traces:** US-PROG-04  ·  **Priority:** High  ·  **Type:** Functional
+- **Preconditions:** Live event. Session "Startup Pitches" has speaker "Anong K." (session count = 3) and is visible on the public agenda.
+- **Test data:** —
+- **Steps:**
+  1. Choose to remove "Startup Pitches".
+  2. Read the confirmation dialog, then confirm.
+  3. Check speaker "Anong K." and the public event agenda.
+- **Expected result:** Confirmation warns that removal won't auto-notify bookmarking attendees and removes only on explicit confirm; after confirm the session is gone, Anong K. remains in the directory with count 2, and the session no longer appears on the public agenda. (AC: warning + explicit confirm, speaker retained with count −1, removed from public agenda.)
+
+### TC-PROG-08 — Cancelling the confirmation changes nothing
+- **Traces:** US-PROG-04  ·  **Priority:** Medium  ·  **Type:** Negative
+- **Preconditions:** Session "Networking Break" exists with an assigned speaker.
+- **Test data:** —
+- **Steps:**
+  1. Choose to remove "Networking Break".
+  2. In the confirmation dialog, cancel/dismiss.
+  3. Return to the agenda and check the speaker's session count.
+- **Expected result:** The session still exists in its original slot and the speaker's session count is unchanged. (AC: cancel leaves everything unchanged.)
+
+---
+
+## US-PROG-05 — Keep the schedule physically feasible
+
+### TC-PROG-09 — Room double-booking is blocked with a clear message
+- **Traces:** US-PROG-05  ·  **Priority:** High  ·  **Type:** Negative
+- **Preconditions:** Organizer signed in. Room "Hall A" already booked Day 1 09:00–10:30.
+- **Test data:** New session "Second Talk", Day 1 10:00–11:00, room Hall A (overlaps existing 09:00–10:30).
+- **Steps:**
+  1. Add a new session in Hall A overlapping the existing booking.
+  2. Save.
+- **Expected result:** Save is blocked with a message naming the conflicting room (Hall A) and the clashing time; the session is not created. (AC: block on room overlap, message identifies room + time.)
+
+### TC-PROG-10 — Speaker overlap warns and needs confirm; parallel tracks allowed; no self-clash
+- **Traces:** US-PROG-05  ·  **Priority:** High  ·  **Type:** Edge
+- **Preconditions:** Speaker "Ploy S." already assigned to a session Day 1 11:00–12:00 in Room A. Room C is free 11:00–12:00.
+- **Test data:** (a) New session Day 1 11:30–12:30 in Room B with speaker Ploy S. (overlaps her existing session); (b) New session Day 1 11:00–12:00 in Room C with a different speaker "Wichai T." (parallel track); (c) Open the existing 11:00–12:00 session and re-save without changes.
+- **Steps:**
+  1. Create case (a) and save.
+  2. On the "assign anyway?" warning, confirm.
+  3. Create case (b) and save.
+  4. Edit case (c) and save with the same time/room/speaker.
+- **Expected result:** (a) A speaker double-booking warning appears and the session saves only after confirming "assign anyway?"; (b) both parallel sessions in different rooms with different speakers save without warning; (c) the session is not flagged as clashing with itself. (AC: speaker overlap warn+confirm, parallel tracks allowed, no self-clash.)
+
+---
+
+## US-PROG-06 — Find sessions in a busy programme
+
+### TC-PROG-11 — Keyword search filters by title/type (EN & TH) and clears cleanly
+- **Traces:** US-PROG-06  ·  **Priority:** Medium  ·  **Type:** Functional
+- **Preconditions:** Selected event has sessions including "Keynote: AI", a Thai-titled session "เวิร์กช็อปการตลาด" (Marketing Workshop), and several Panels.
+- **Test data:** Search terms: "keynote"; "เวิร์กช็อป"; "zznomatch".
+- **Steps:**
+  1. Type "keynote" in the agenda search box.
+  2. Clear the box, then type the Thai term "เวิร์กช็อป".
+  3. Clear, then type "zznomatch".
+- **Expected result:** "keynote" leaves only sessions matching by title or type visible; clearing restores all; the Thai term matches the Thai-titled session (EN/TH supported); "zznomatch" shows the calendar layout with nothing highlighted — not an error. Search stays scoped to the selected event. (AC: title/type keyword filter, clear restores, no-match not an error, EN/TH.)
+
+---
+
+## US-PROG-07 — Switch between week and month views
+
+### TC-PROG-12 — Toggle week/month and navigate weeks stay on the same event
+- **Traces:** US-PROG-07  ·  **Priority:** Low  ·  **Type:** Functional
+- **Preconditions:** Selected multi-week event with sessions in one week only.
+- **Test data:** —
+- **Steps:**
+  1. From week view, switch to month view and observe the day-by-day overview; drill back into a day to return to week view.
+  2. From week view, navigate to the previous and next week and read the date/month labels.
+  3. Navigate to a week beyond the event's scheduled weeks.
+- **Expected result:** Month view shows a day-by-day overview drillable back to the time-slot week layout; navigating weeks shifts dates and the month label while staying on the same event; a week beyond the schedule shows an empty week with correct dates and never sessions from another event. (AC: week/month toggle, week navigation labels, empty out-of-range week.)
+
+---
+
+## US-PROG-08 — Browse and filter the speaker directory
+
+### TC-PROG-13 — Directory shows key details with card/list layouts and event filter
+- **Traces:** US-PROG-08  ·  **Priority:** High  ·  **Type:** Functional
+- **Preconditions:** Organizer signed in. Multiple speakers across two events; some rated, some unrated.
+- **Test data:** Filter by event "Bangkok Tech Summit".
+- **Steps:**
+  1. Open the speaker directory.
+  2. Inspect a speaker entry for name, role, contact, session count and rating.
+  3. Toggle between card and list layout.
+  4. Apply the event filter "Bangkok Tech Summit".
+- **Expected result:** Each speaker shows name, role, contact, session count and rating; card/list layouts both render; after filtering, only "Bangkok Tech Summit" speakers appear and the displayed count reflects the filtered total. (AC: key details visible, layout switch, event filter + count.)
+
+### TC-PROG-14 — Search by name/role/email; no-match shows prompt not error
+- **Traces:** US-PROG-08  ·  **Priority:** Medium  ·  **Type:** Edge
+- **Preconditions:** Directory has speakers spanning multiple pages, including "Napat Chai" (role Speaker, email napat@example.co.th).
+- **Test data:** Search terms: "napat"; "nonexistent@nowhere".
+- **Steps:**
+  1. Navigate to page 2 of the directory.
+  2. Search "napat".
+  3. Clear and search "nonexistent@nowhere".
+- **Expected result:** Searching "napat" shows only matching speakers and the list returns to the first page; the no-match search shows a "no speakers found" prompt, not an error. (AC: name/role/email search, reset to first page, no-match prompt.)
+
+---
+
+## US-PROG-09 — Add a speaker to the line-up
+
+### TC-PROG-15 — Add a valid speaker starting at zero sessions and unrated
+- **Traces:** US-PROG-09  ·  **Priority:** High  ·  **Type:** Functional
+- **Preconditions:** Organizer signed in with a chosen event selected.
+- **Test data:** Photo valid JPG within size limit; name "Kanya Wong"; role "CTO, ThaiCloud"; email kanya@thaicloud.co.th; bio short text; topic "Serverless"; event = chosen event; website https://thaicloud.co.th; social https://linkedin.com/in/kanyawong.
+- **Steps:**
+  1. Open the add-speaker form.
+  2. Fill all fields with valid data and save.
+  3. Open the new speaker's card.
+- **Expected result:** A speaker profile is created and assigned to the chosen event, session count = 0, and shown with an unrated indicator (not a zero score). (AC: profile created + assigned, zero sessions, unrated until feedback.)
+
+### TC-PROG-16 — Reject blank/invalid/duplicate email, oversize photo and malformed links
+- **Traces:** US-PROG-09  ·  **Priority:** High  ·  **Type:** Negative
+- **Preconditions:** A speaker with email taken@example.com already exists.
+- **Test data:** (a) Name blank; (b) email "not-an-email"; (c) email "taken@example.com" (duplicate); (d) photo a 20 MB .bmp (wrong type / too large); (e) website "htp:/broken link".
+- **Steps:**
+  1. Attempt to save with the name blank (a).
+  2. Attempt to save with an invalid email (b).
+  3. Attempt to save with the duplicate email (c).
+  4. Attempt to save with the oversize/wrong-type photo (d).
+  5. Attempt to save with the malformed website link (e).
+- **Expected result:** (a)/(b) asked to correct the name/email, nothing saved; (c) told a speaker with that email already exists, nothing saved; (d) told the accepted format and size limit, photo not accepted; (e) asked to enter a valid link rather than have it silently dropped. No speaker is created in any case. (AC: required name+email, valid email, duplicate email, photo type/size, valid links.)
+
+---
+
+## US-PROG-10 — Keep a speaker's profile up to date
+
+### TC-PROG-17 — Edit a speaker's role and see it reflected on the live public page
+- **Traces:** US-PROG-10  ·  **Priority:** High  ·  **Type:** Functional
+- **Preconditions:** Speaker "Anon Ratana" (role "Engineer, OldCo") appears on a live event's public speakers section.
+- **Test data:** New role "VP Engineering, NewCo".
+- **Steps:**
+  1. Open speaker "Anon Ratana" and change the role/company.
+  2. Save.
+  3. View the live event's public speakers section.
+- **Expected result:** The card shows the new role, the change is recorded, and the public speakers section reflects the update. (AC: card updates + recorded, public page reflects change.)
+
+### TC-PROG-18 — Duplicate email and concurrent edit are both refused
+- **Traces:** US-PROG-10  ·  **Priority:** High  ·  **Type:** Negative
+- **Preconditions:** Speaker A being edited; speaker B already uses email dup@example.com. Speaker A is also open in a second organizer's session.
+- **Test data:** (a) Change A's email to dup@example.com; (b) Colleague changes A and saves first, then this organizer saves the stale copy.
+- **Steps:**
+  1. Change speaker A's email to dup@example.com and save.
+  2. Separately, have a colleague edit and save speaker A first, then attempt to save this stale copy.
+- **Expected result:** (a) The duplicate-email message appears and nothing is saved; (b) told the speaker changed and asked to reload, so no work is silently lost. (AC: duplicate-email guard, optimistic-lock reload.)
+
+---
+
+## US-PROG-11 — Remove a speaker
+
+### TC-PROG-19 — Confirmed deletion keeps sessions and clears the live public page
+- **Traces:** US-PROG-11  ·  **Priority:** High  ·  **Type:** Functional
+- **Preconditions:** Speaker "Preeya M." assigned to 3 sessions and shown on a live event's public agenda/speakers section.
+- **Test data:** —
+- **Steps:**
+  1. Choose to delete "Preeya M.".
+  2. Read the confirmation warning, then confirm.
+  3. Check the 3 sessions and the public event pages.
+- **Expected result:** Confirmation warns the speaker will be removed from all their sessions and the action cannot be undone; after confirm the speaker disappears from the directory, the 3 sessions remain but no longer list Preeya M., and she no longer appears in the public agenda or speakers section. (AC: sessions retained without speaker, irreversible warning, removed from public.)
+
+### TC-PROG-20 — Cancelling deletion leaves speaker and assignments intact
+- **Traces:** US-PROG-11  ·  **Priority:** Medium  ·  **Type:** Negative
+- **Preconditions:** Speaker "Preeya M." assigned to 3 sessions.
+- **Test data:** —
+- **Steps:**
+  1. Choose to delete "Preeya M.".
+  2. Cancel the confirmation dialog.
+  3. Re-check the speaker and her session assignments.
+- **Expected result:** The speaker and all 3 assignments are unchanged. (AC: cancel leaves speaker and assignments intact.)
+
+---
+
+## US-PROG-12 — Assign speakers to their sessions and balance the line-up
+
+### TC-PROG-21 — Assigning a second session updates count and shows initials
+- **Traces:** US-PROG-12  ·  **Priority:** Medium  ·  **Type:** Functional
+- **Preconditions:** Speaker "Ratcha B." (initials RB) currently carries 1 session on the selected event; a second non-overlapping session exists.
+- **Test data:** Assign Ratcha B. to the second session.
+- **Steps:**
+  1. Open the second session and assign speaker Ratcha B. (add to existing speakers).
+  2. Save.
+  3. Check the speaker's session count and the session's displayed speaker.
+- **Expected result:** Assignment is saved, the speaker's session count reads two, the session shows the speaker (initials RB), and the session's displayed speaker updates. (AC: count reads two + initials, assignments saved + displayed speaker updates.)
+
+### TC-PROG-22 — Cross-event assignment refused; overlapping assignment warns
+- **Traces:** US-PROG-12  ·  **Priority:** Medium  ·  **Type:** Negative
+- **Preconditions:** Speaker "Guest X" belongs to a different event. On the current event, speaker "Malee T." already has a session Day 1 10:00–11:00.
+- **Test data:** (a) Assign Guest X to a session on the current event; (b) assign Malee T. to a session Day 1 10:30–11:30 (overlaps her existing).
+- **Steps:**
+  1. Attempt to assign Guest X to a current-event session and save.
+  2. Assign Malee T. to the overlapping session and save.
+- **Expected result:** (a) Told Guest X belongs to another event and the assignment is refused; (b) the double-booking warning appears and the save proceeds only after confirming. (AC: cross-event assignment refused, overlap warn + confirm.)
+
+---
+
+## US-PROG-13 — See how speakers were rated
+
+### TC-PROG-23 — Rated speaker shows aggregate score with reviews and reflects new feedback
+- **Traces:** US-PROG-13  ·  **Priority:** Medium  ·  **Type:** Functional
+- **Preconditions:** Admin signed in. Speaker "Chai N." has post-session feedback averaging 4.9.
+- **Test data:** —
+- **Steps:**
+  1. View Chai N.'s card and read the rating.
+  2. Open the speaker's reviews.
+  3. After new feedback arrives, re-open the speaker's card.
+- **Expected result:** The card shows "4.9"; the reviews show the underlying feedback that produced the score; after new feedback the rating reflects the latest results. Rating is read-only (not hand-editable). (AC: aggregate score display, underlying reviews, latest feedback reflected.)
+
+### TC-PROG-24 — Brand-new speaker shows an unrated indicator, not zero
+- **Traces:** US-PROG-13  ·  **Priority:** Medium  ·  **Type:** Edge
+- **Preconditions:** Admin signed in. Speaker "Fern S." has no feedback yet.
+- **Test data:** —
+- **Steps:**
+  1. View Fern S.'s card.
+  2. Inspect the rating area.
+- **Expected result:** The card shows an unrated indicator, not a zero score. (AC: no feedback shows unrated, not 0.)
+
+
+---
+
 <a id="tc-e11"></a>
+
+# Organizer Home & Dashboard — Test Cases
+
+Area: DASH · Epic E11 — Organizer Home & Dashboard
+Locale defaults: Currency ฿ (THB), VAT 7% tracked separately, timezone Asia/Bangkok, languages EN/TH.
+
+---
+
+## US-DASH-01 — Daily operations home
+
+### TC-DASH-01 — Home greets organizer by name in chosen language, using Bangkok time
+- **Traces:** US-DASH-01 · **Priority:** High · **Type:** Functional
+- **Preconditions:** Organizer account "Somchai" exists; UI language set to Thai; device locale/timezone set to a non-Bangkok zone (e.g. Europe/Berlin).
+- **Test data:** Force Bangkok wall-clock to 08:15 (morning) while the device clock reads 03:15 CEST.
+- **Steps:**
+  1. Sign in as the organizer.
+  2. Land on the home screen.
+  3. Read the greeting text.
+- **Expected result:** A time-of-day greeting for MORNING is shown, addressed to the organizer by name, rendered in Thai. The greeting reflects Bangkok time (morning) even though the device is in an earlier timezone. Home only summarizes/links — no record is modified.
+
+### TC-DASH-02 — "New event" launches the event creation flow
+- **Traces:** US-DASH-01 · **Priority:** High · **Type:** Functional
+- **Preconditions:** Signed in as organizer on the home screen.
+- **Test data:** —
+- **Steps:**
+  1. Choose "New event".
+- **Expected result:** The event creation flow opens. No event record is created merely by opening it (home never changes records itself).
+
+### TC-DASH-03 — Attendee is refused access to the admin home
+- **Traces:** US-DASH-01 · **Priority:** High · **Type:** Negative
+- **Preconditions:** A pure Attendee account (no team-member role) is signed in.
+- **Test data:** Direct navigation to the admin home URL.
+- **Steps:**
+  1. As the Attendee, attempt to open the organizer/admin home.
+- **Expected result:** Access is refused (not authorized / redirected away). No organizer home data, greeting, or panels are rendered.
+
+---
+
+## US-DASH-02 — Today's registrations at a glance
+
+### TC-DASH-04 — Today's sign-up count and newest previews shown for team member with registration access
+- **Traces:** US-DASH-02 · **Priority:** High · **Type:** Functional
+- **Preconditions:** Signed in as a team member permitted to view registrations. Several registrations exist for events, some created today (Bangkok calendar day), some earlier.
+- **Test data:** 3 registrations today at 09:05, 11:40, 14:20 (Bangkok); 1 registration from yesterday 23:50 Bangkok that must NOT count as today.
+- **Steps:**
+  1. Open home and read the registrations panel count badge.
+  2. Inspect the previewed newest sign-ups.
+  3. Choose "View all registrations".
+- **Expected result:** Count badge shows 3 (today only, Bangkok calendar day; yesterday's late entry excluded). Newest sign-ups preview each show attendee name, their event + ticket type, and the time (Bangkok, in the UI language). "View all registrations" navigates to the registrations list.
+
+### TC-DASH-05 — Empty state when no one has registered today
+- **Traces:** US-DASH-02 · **Priority:** Medium · **Type:** Edge
+- **Preconditions:** Signed in as a team member with registration access. No registrations exist with a Bangkok "today" timestamp (older registrations may exist).
+- **Test data:** Last registration was yesterday 22:00 Bangkok.
+- **Steps:**
+  1. Open home and view the today's-registrations panel.
+- **Expected result:** Panel clearly shows "no registrations yet today" (not a zero-count list of previews and not stale entries).
+
+---
+
+## US-DASH-03 — Today's meetings
+
+### TC-DASH-06 — Today's meetings previewed earliest-first with empty-state and schedule shortcut verified
+- **Traces:** US-DASH-03 · **Priority:** Medium · **Type:** Functional
+- **Preconditions:** Signed in as organizer.
+- **Test data:** Two meetings scheduled today (Bangkok): "Sponsor sync" 15:00–15:30 with counterpart "Nok"; "Vendor call" 10:00–10:45 with counterpart "Arun". No meetings scheduled after these for today.
+- **Steps:**
+  1. Open home and read the meetings count badge and preview order.
+  2. Verify each preview shows title, time range, and counterpart.
+  3. Choose "Schedule meeting".
+- **Expected result:** Count badge shows 2; meetings are previewed earliest-first ("Vendor call" 10:00–10:45 before "Sponsor sync" 15:00–15:30), each with title, time range (Bangkok), and counterpart. "Schedule meeting" opens the meeting creation flow. (If no meetings existed today, the panel would instead show "no meetings scheduled today".)
+
+---
+
+## US-DASH-04 — Upcoming events progress
+
+### TC-DASH-07 — Upcoming event card shows days-remaining chip, attendee preview, and capacity progress
+- **Traces:** US-DASH-04 · **Priority:** Medium · **Type:** Functional
+- **Preconditions:** Signed in as organizer. Multiple upcoming events exist. Today's Bangkok date is 2026-07-27.
+- **Test data:** Event A starts 2026-08-01 (5 days out), capacity 100, sold 83; Event B starts 2026-08-10; some attendees registered on Event A.
+- **Steps:**
+  1. Open home and view the upcoming-events panel.
+  2. Read Event A's days-remaining chip, attendee preview, and progress bar.
+  3. Confirm ordering of cards.
+- **Expected result:** Event A card shows a days-remaining chip ("5 days" / Thai equivalent), a preview of who's attending, and a progress bar reading 83% (83 of 100 seats). Soonest-starting event (A) appears before B; only a small number of cards shown, with a link to the full events list.
+
+### TC-DASH-08 — Event starting today shows "Today" chip; empty state when no upcoming events
+- **Traces:** US-DASH-04 · **Priority:** Medium · **Type:** Edge
+- **Preconditions:** Signed in as organizer. Bangkok "today" is well defined.
+- **Test data:** Case A: Event C starts today (Bangkok). Case B: no upcoming events at all.
+- **Steps:**
+  1. Case A: open home, read Event C's chip.
+  2. Case B: with no upcoming events, open home and view the panel.
+- **Expected result:** Case A — Event C's chip reads "Today" (localized). Case B — panel shows "no upcoming events".
+
+---
+
+## US-DASH-05 — Active-events activity share
+
+### TC-DASH-09 — Activity-share ring shows per-event share, legend, and total; empty state
+- **Traces:** US-DASH-05 · **Priority:** Low · **Type:** Functional
+- **Preconditions:** Signed in as organizer.
+- **Test data:** Case A: 3 active events with differing sign-up activity. Case B: 0 active events.
+- **Steps:**
+  1. Case A: open home; inspect the ring, its color-keyed legend of event names, and the center number.
+  2. Choose "See all".
+  3. Case B: with no active events, view the panel.
+- **Expected result:** Case A — ring shows each event's share of activity, a color-keyed legend of event names, and the total count of active events (3) in the center; "See all" navigates to the events list. Case B — panel shows "no active events".
+
+---
+
+## US-DASH-06 — Operational alerts
+
+### TC-DASH-10 — Alerts listed most-urgent-first, each linking to its module; resolved alert clears on refresh
+- **Traces:** US-DASH-06 · **Priority:** High · **Type:** Functional
+- **Preconditions:** Signed in as organizer with full access. Multiple unresolved actionable issues exist (e.g. a pending approval, an unconfirmed speaker, a pending reply).
+- **Test data:** At least three alerts of differing severity.
+- **Steps:**
+  1. Open home and read the alerts panel: severity indicators, text, and ordering.
+  2. Click one alert and confirm it links to the correct resolving module.
+  3. Resolve that issue in its owning module, return to home, and refresh.
+- **Expected result:** Each alert shows a clear severity indicator + text, most urgent first, with a link to the right module. Resolving is done only in the module (never on home). After the issue is resolved, the alert is gone on the next home refresh.
+
+### TC-DASH-11 — Finance alert hidden from user without finance access; all-caught-up empty state
+- **Traces:** US-DASH-06 · **Priority:** High · **Type:** Negative
+- **Preconditions:** A declined-payment (finance) alert exists in the workspace.
+- **Test data:** Case A: signed in as a staff member WITHOUT finance access. Case B: a user with no outstanding actionable items.
+- **Steps:**
+  1. Case A: open home; scan the alerts panel for the declined-payment (finance) alert.
+  2. Case B: with nothing outstanding, view the alerts panel.
+- **Expected result:** Case A — the finance/declined-payment alert is NOT shown to the user without finance access (non-finance alerts still show normally). Case B — panel shows "you're all caught up".
+
+---
+
+## US-DASH-07 — Website template shortcuts
+
+### TC-DASH-12 — Template shortcut opens landing-pages area; shortcuts reflect current template set on reload
+- **Traces:** US-DASH-07 · **Priority:** Low · **Type:** Functional
+- **Preconditions:** Signed in as organizer; templates panel is shown with the current set of landing-page templates.
+- **Test data:** Available templates set changes (one added/removed) between the two loads.
+- **Steps:**
+  1. Choose a template shortcut from the panel.
+  2. Change the available template set, then reload home.
+  3. Re-inspect the templates panel.
+- **Expected result:** Choosing a template navigates to the landing-pages area to work with it. After reload, the shortcuts reflect the current set (added template appears, removed template disappears).
+
+---
+
+## US-DASH-08 — Performance KPIs at a glance
+
+### TC-DASH-13 — KPI cards render five headline metrics with period-over-period change
+- **Traces:** US-DASH-08 · **Priority:** High · **Type:** Functional
+- **Preconditions:** Signed in as Admin with finance access. Data exists for the current and previous comparable periods.
+- **Test data:** Registrations up vs prior period; ticket revenue e.g. ฿128,500 (net of VAT and refunds); some upcoming events; check-in rate lower than prior period; capacity filled with a value.
+- **Steps:**
+  1. Open the dashboard and wait for KPI cards to load.
+  2. Read each card: total registrations, ticket revenue, upcoming events, check-in rate, capacity filled.
+  3. Read the change indicator on each.
+- **Expected result:** All five KPI cards render. Ticket revenue is shown in ฿, net of VAT and refunds (7% VAT not surfaced). Registrations show an upward, positive-colored change; check-in rate (worsened) shows a downward, warning-colored change. Each card shows change versus the previous comparable period.
+
+### TC-DASH-14 — Ticket revenue KPI withheld from user without finance access
+- **Traces:** US-DASH-08 · **Priority:** High · **Type:** Negative
+- **Preconditions:** Signed in as a team member WITHOUT finance access.
+- **Test data:** Revenue data exists for the period.
+- **Steps:**
+  1. Open the dashboard and inspect the KPI cards.
+- **Expected result:** The ticket-revenue figure is not disclosed (hidden entirely — never shown as ฿0 or a placeholder). The other four KPI cards render normally.
+
+### TC-DASH-15 — Metric with no data shows neutral empty state, not a misleading value
+- **Traces:** US-DASH-08 · **Priority:** Medium · **Type:** Edge
+- **Preconditions:** Signed in as Admin. At least one KPI (e.g. check-in rate) has no data for the selected period (no events required check-in yet).
+- **Test data:** Period with zero check-in-eligible activity.
+- **Steps:**
+  1. Open the dashboard and read the affected KPI card.
+- **Expected result:** The card shows a neutral, empty state rather than a misleading value (e.g. not a fabricated 0% or 100%, and not a false change arrow).
+
+---
+
+## US-DASH-09 — Revenue trend with time-range toggle
+
+### TC-DASH-16 — Revenue chart defaults to yearly and toggles Week/Month without page reload
+- **Traces:** US-DASH-09 · **Priority:** High · **Type:** Functional
+- **Preconditions:** Signed in as organizer with finance access. Revenue exists across weeks, months, and the year.
+- **Test data:** Yearly total e.g. ฿1,240,000 with change vs previous year; distinct Week and Month totals.
+- **Steps:**
+  1. Open the dashboard and observe the default revenue view.
+  2. Note the period total and change indicator.
+  3. Switch to Month, then to Week.
+- **Expected result:** Revenue view defaults to Yearly, showing the period total (฿) and its change vs the previous period. Switching to Month then Week updates the chart, headline total, and change to that range without a full page reload. The yearly total agrees with the ticket-revenue KPI for the same scope/period.
+
+### TC-DASH-17 — Revenue section entirely hidden without finance access; empty period shows zero/neutral
+- **Traces:** US-DASH-09 · **Priority:** High · **Type:** Negative
+- **Preconditions:** Case A: signed in WITHOUT finance access. Case B: signed in WITH finance access but the selected period has zero revenue.
+- **Test data:** Case B: a Week with no ticket sales.
+- **Steps:**
+  1. Case A: open the dashboard and look for the revenue section.
+  2. Case B: select the empty Week and view the chart.
+- **Expected result:** Case A — the revenue section is not shown at all (not zeroed, not a locked placeholder). Case B — the chart shows an empty (zero) result with a neutral change.
+
+---
+
+## US-DASH-10 — Registrations by ticket type
+
+### TC-DASH-18 — Ticket-type breakdown shows shares, counts, percentages, and center total, largest-first; reconciles with KPI
+- **Traces:** US-DASH-10 · **Priority:** Medium · **Type:** Functional
+- **Preconditions:** Signed in as organizer. Registrations exist across multiple ticket types for the current scope.
+- **Test data:** Total 200 registrations — General 120 (60%), VIP 50 (25%), Early Bird 30 (15%).
+- **Steps:**
+  1. Open the dashboard and view the ticket-type breakdown.
+  2. Check each segment's count and percentage and the center total.
+  3. Compare the center total against the total-registrations KPI for the same scope.
+- **Expected result:** Breakdown lists each ticket type's share with count and percentage, largest share first (General → VIP → Early Bird), and shows 200 in the center. The center total equals the total-registrations KPI for the same scope. (If the mix later changes and the dashboard refreshes, the breakdown updates to match.)
+
+### TC-DASH-19 — Empty state when there are no registrations
+- **Traces:** US-DASH-10 · **Priority:** Medium · **Type:** Edge
+- **Preconditions:** Signed in as organizer for a scope with zero registrations.
+- **Test data:** New workspace / event with no sign-ups.
+- **Steps:**
+  1. Open the dashboard and view the ticket-type panel.
+- **Expected result:** Panel shows "no registrations yet" (no empty ring with misleading segments).
+
+---
+
+## US-DASH-11 — Tickets selling fast
+
+### TC-DASH-20 — Low-inventory ticket types listed scarcest-first with urgency coloring and Manage link
+- **Traces:** US-DASH-11 · **Priority:** Medium · **Type:** Functional
+- **Preconditions:** Signed in as organizer. Several ticket types are low on remaining inventory.
+- **Test data:** VIP 2 left (critical), General 6 left (warning), Workshop 15 left (normal), each with its event context.
+- **Steps:**
+  1. Open the dashboard and view the selling-fast panel.
+  2. Check ordering, event context, and the color of each remaining count.
+  3. Choose "Manage" on a low ticket type.
+- **Expected result:** Ticket types are listed scarcest-first (VIP 2 → General 6 → Workshop 15) with event context and a remaining count colored by urgency; the critically low VIP (2 left) is highlighted in the most urgent color. "Manage" navigates to ticket management for that inventory.
+
+### TC-DASH-21 — 8-seat booking boundary flags possible single-booking sell-out; empty state
+- **Traces:** US-DASH-11 · **Priority:** Medium · **Type:** Edge
+- **Preconditions:** Signed in as organizer. Booking can hold up to 8 seats.
+- **Test data:** Case A: Ticket type with exactly 8 remaining, and another with 9 remaining. Case B: no ticket type close to selling out (all comfortably above threshold).
+- **Steps:**
+  1. Case A: open the dashboard; check whether the 8-remaining and 9-remaining types are flagged.
+  2. Case B: view the selling-fast panel with nothing low.
+- **Expected result:** Case A — the type with 8 remaining is flagged as a possible sell-out within a single booking (at/below 8); the 9-remaining type is not flagged at that threshold. Case B — panel shows "no tickets running low".
+
+---
+
+## US-DASH-12 — Recent registrations table
+
+### TC-DASH-22 — Recent registrations table shows attendee, event, ฿ amount, status badge, and time, newest-first
+- **Traces:** US-DASH-12 · **Priority:** High · **Type:** Functional
+- **Preconditions:** Signed in as a team member permitted to view registrations, WITH finance access. Recent registrations exist, including one on-site walk-in.
+- **Test data:** Row 1 newest: online reg ฿1,500 Paid at 14:20; Row 2: online reg ฿0 (free) at 13:05; Row 3: walk-in ฿800 Pending at 11:50; plus a Refunded row.
+- **Steps:**
+  1. Open the dashboard and view the recent-registrations table.
+  2. Check ordering and each column: attendee, event, amount (฿), status badge, time.
+  3. Locate the walk-in row.
+  4. Choose "View all".
+- **Expected result:** Rows are newest-first, each with attendee, event, amount in ฿, a Paid / Pending / Refunded badge, and the time (Bangkok, localized). The walk-in follows the same amount/status rules and may show Pending until settled. "View all" navigates to the registrations list.
+
+### TC-DASH-23 — Amount hidden in table for user without finance access
+- **Traces:** US-DASH-12 · **Priority:** High · **Type:** Negative
+- **Preconditions:** Signed in as a team member permitted to view registrations but WITHOUT finance access.
+- **Test data:** Recent registrations with non-zero ฿ amounts exist.
+- **Steps:**
+  1. Open the dashboard and view the recent-registrations table.
+- **Expected result:** The amount column is hidden while attendee, event, status badge, and time still show. Amount is not shown as ฿0 or a masked placeholder — it is absent.
+
+---
+
+## US-DASH-13 — Trustworthy, always-current overview
+
+### TC-DASH-24 — New confirmed registration updates and reconciles total, ticket-type breakdown, and recent table
+- **Traces:** US-DASH-13 · **Priority:** High · **Type:** Functional
+- **Preconditions:** Signed in as organizer with finance + registration access, viewing the dashboard. Known starting totals.
+- **Test data:** Confirm a new registration for ticket type "VIP" for ฿1,500 in another session/module.
+- **Steps:**
+  1. Note the current registration total, VIP share in the ticket-type breakdown, and the top of the recent-registrations table.
+  2. Confirm a new VIP registration in the owning module.
+  3. Within the refresh window (or after a manual refresh), re-read the three surfaces.
+- **Expected result:** Within a short refresh window the total registrations KPI increments, the VIP share in the ticket-type breakdown increases, and the new row appears at the top of the recent table — and all three agree with each other. Home/dashboard themselves changed no data.
+
+### TC-DASH-25 — Single panel failure is isolated; refresh cadences and permission-based hiding hold
+- **Traces:** US-DASH-13 · **Priority:** High · **Type:** Edge
+- **Preconditions:** Signed in as organizer. Simulate one panel's data source failing (e.g. selling-fast) while others succeed.
+- **Test data:** One panel forced into an error/unavailable condition; user lacks finance access for a revenue figure and lacks rights to attendee personal data in one panel.
+- **Steps:**
+  1. Load the surface with one panel's source failing.
+  2. Observe the failed panel vs the others.
+  3. Trigger a manual refresh and compare operational feeds vs analytics behavior.
+  4. Inspect a finance/personal-data figure the user is not permitted to see.
+- **Expected result:** Only the failing panel shows an "unavailable / retry" state; every other panel works normally. Operational feeds (today's sign-ups, alerts, selling-fast) refresh near-real-time while analytics refresh on a slightly longer cadence, and a manual refresh is available. Any figure the user isn't permitted to see (finance or attendee personal data) is hidden — never shown as zero or a placeholder. All dates, "today", days-remaining, and times read in Bangkok time and in the user's language (EN/TH).
+
+
+---
+
+<a id="tc-e12"></a>
+
+# Coordinate Meetings — Test Cases
+
+Area code: MTG · Epic E12 — Coordinate Meetings
+Locale assumptions: Asia/Bangkok timezone, EN/TH content, ฿ (VAT not applicable to this epic — no money fields).
+
+---
+
+## US-MTG-01 — See meetings organized by Today / Upcoming / Past
+
+### TC-MTG-01 — Meetings group correctly into Today / Upcoming / Past with live counts
+- **Traces:** US-MTG-01 · **Priority:** High · **Type:** Functional
+- **Preconditions:** Logged in as Event Organizer. Google Calendar connected. At least one meeting scheduled for today, two for a future day, and one in the past, all in Bangkok time.
+- **Test data:** Meeting A "Venue walkthrough" today 14:00–15:00; Meeting B "Sponsor sync" tomorrow 09:00–09:30; Meeting C "Speaker brief" tomorrow 11:00–11:30; Meeting D "Post-event review" 3 days ago 10:00–11:00.
+- **Steps:**
+  1. Open the Meetings console.
+  2. Read the Today, Upcoming and Past tab counts.
+  3. Open the Today tab and inspect Meeting A's time label.
+  4. Open the Upcoming tab and read the order of Meetings B and C.
+  5. Open the Past tab.
+- **Expected result:** Today count = 1 (Meeting A, shown as "Today · 14:00 – 15:00" and marked as today); Upcoming count = 2 with Meeting B (09:00) listed before Meeting C (11:00), earliest-start first; Past count = 1 (Meeting D). Each tab count matches the number of rows shown.
+
+### TC-MTG-02 — Grouping is computed in Bangkok time regardless of viewer timezone
+- **Traces:** US-MTG-01 · **Priority:** Medium · **Type:** Edge
+- **Preconditions:** Logged in as Event Organizer. One meeting scheduled for late today Bangkok time.
+- **Test data:** Meeting "Late vendor call" today 23:30–23:59 Asia/Bangkok. Viewer device/browser set to a non-Thai timezone (e.g., America/New_York, where that instant is still the previous day).
+- **Steps:**
+  1. Set the local device timezone to America/New_York.
+  2. Open the Meetings console and view the Today tab.
+- **Expected result:** The meeting still appears under Today (its Bangkok date), not under Past or Upcoming, confirming grouping is derived from Bangkok time and independent of the viewer's location.
+
+### TC-MTG-03 — Meeting row shows all at-a-glance details
+- **Traces:** US-MTG-01 · **Priority:** Medium · **Type:** Functional
+- **Preconditions:** Logged in as Event Organizer. One video, one in-person and one phone meeting exist.
+- **Test data:** Video meeting with Google Meet link; In-person meeting on event "Tech Summit BKK" (venue "BITEC Hall 2"); Phone meeting.
+- **Steps:**
+  1. Open the Meetings console.
+  2. Inspect each meeting row.
+- **Expected result:** Each row shows title, guest name and their role, related event, meeting type, mode (video / in person / phone), and location — join link for video, venue name ("BITEC Hall 2") for in person, and "Phone call" for phone.
+
+---
+
+## US-MTG-02 — Find a specific meeting in a long list
+
+### TC-MTG-04 — Search by title/person/role/event/type matches and resets to first page
+- **Traces:** US-MTG-02 · **Priority:** High · **Type:** Functional
+- **Preconditions:** Logged in as Event Organizer. Many meetings booked spanning multiple pages. On the All tab, currently viewing page 3.
+- **Test data:** Search term "Somchai" (a guest name appearing on 2 meetings). Also verify a Thai-language term "ผู้สนับสนุน" (sponsor) matches Thai content.
+- **Steps:**
+  1. From page 3, type "Somchai" into the search box and apply it.
+  2. Observe the result list and current page.
+  3. Clear the search, type the Thai term "ผู้สนับสนุน" and apply.
+- **Expected result:** Only meetings whose title, person, role, event or type match "Somchai" remain, and the list returns to page 1. The Thai search returns matching Thai-content meetings — search works equally for Thai and English.
+
+### TC-MTG-05 — Type filter combines with the active time tab
+- **Traces:** US-MTG-02 · **Priority:** Medium · **Type:** Functional
+- **Preconditions:** Logged in as Event Organizer. Upcoming tab has meetings of several types (Venue, Sponsor, Vendor, Speaker, Internal).
+- **Test data:** Filter type = "Sponsor". Active tab = Upcoming.
+- **Steps:**
+  1. Open the Upcoming tab.
+  2. Set the type filter to Sponsor.
+- **Expected result:** Only upcoming Sponsor-type meetings are shown; meetings of other types and non-upcoming Sponsor meetings are excluded — the type filter is combined with the current time tab.
+
+### TC-MTG-06 — No results message and paging summary
+- **Traces:** US-MTG-02 · **Priority:** Medium · **Type:** Negative
+- **Preconditions:** Logged in as Event Organizer with a long meeting list.
+- **Test data:** (a) Search "zzzznomatch"; (b) rows-per-page = 10 on a list of 23 meetings.
+- **Steps:**
+  1. Search for "zzzznomatch" that matches nothing.
+  2. Clear the search; set rows per page to 10 and move to page 2.
+- **Expected result:** (a) A clear "No meetings match your filters" message is shown, no rows. (b) The summary reads "showing 11–20 of 23 meetings" on page 2 and updates correctly as rows-per-page and page change.
+
+---
+
+## US-MTG-03 — Schedule a meeting with a speaker, sponsor, venue or vendor
+
+### TC-MTG-07 — Schedule a valid meeting and see it in the correct group
+- **Traces:** US-MTG-03 · **Priority:** High · **Type:** Functional
+- **Preconditions:** Logged in as Event Organizer. Calendar connected.
+- **Test data:** Title "Keynote speaker briefing"; date tomorrow; start 10:00, end 10:45; type Speaker; mode Video; guest "Anong Phromma", email anong@example.com; related event "Tech Summit BKK"; notes "Confirm slides".
+- **Steps:**
+  1. Open the schedule panel.
+  2. Fill in all required fields with the test data.
+  3. Save.
+- **Expected result:** A new meeting is created with status Scheduled and appears under Upcoming (tomorrow), earliest-start ordered. Confirms the happy-path creation criterion.
+
+### TC-MTG-08 — Validation blocks bad title, past date and non-forward end time
+- **Traces:** US-MTG-03 · **Priority:** High · **Type:** Negative
+- **Preconditions:** Logged in as Event Organizer. Schedule panel open.
+- **Test data:** (a) Title blank / single character "x"; (b) date = yesterday; (c) start 14:00, end 13:30 (end not after start).
+- **Steps:**
+  1. Leave the title blank (then try one character), attempt to save.
+  2. Set the date to yesterday, attempt to save.
+  3. Set start 14:00 and end 13:30, attempt to save.
+- **Expected result:** Save is blocked in each case with a specific, field-level message telling exactly what to fix (title too short/required; date cannot be in the past; end time must be after start). No meeting is created.
+
+### TC-MTG-09 — Location derives from mode; double-submit creates only one meeting
+- **Traces:** US-MTG-03 · **Priority:** Medium · **Type:** Edge
+- **Preconditions:** Logged in as Event Organizer. Event "Tech Summit BKK" has venue "BITEC Hall 2".
+- **Test data:** Meeting X mode In person on event "Tech Summit BKK"; Meeting Y mode Phone. Rapid double-click on Save for one submission.
+- **Steps:**
+  1. Create Meeting X with mode In person tied to "Tech Summit BKK" and save.
+  2. Create Meeting Y with mode Phone and save.
+  3. On a third valid meeting, click Save twice in rapid succession.
+- **Expected result:** Meeting X shows location = event venue "BITEC Hall 2"; Meeting Y shows location = "Phone call". The double-submitted meeting is created exactly once, not duplicated.
+
+---
+
+## US-MTG-04 — Have invites, video links and reminders handled automatically
+
+### TC-MTG-10 — Video meeting auto-generates Meet link, invite and 15-min reminder
+- **Traces:** US-MTG-04 · **Priority:** High · **Type:** Functional
+- **Preconditions:** Logged in as Event Organizer. Google Calendar connected and healthy.
+- **Test data:** Video meeting "Sponsor kickoff", tomorrow 15:00–15:30 Bangkok, guest email partner@example.com.
+- **Steps:**
+  1. Schedule the video meeting and save.
+  2. Inspect the saved meeting and the guest-facing invite.
+- **Expected result:** A Google Meet link is created and attached to the meeting and included in the invite; the guest receives a calendar invite for 15:00–15:30 Asia/Bangkok; both organizer and guest have a 15-minute-before reminder set.
+
+### TC-MTG-11 — Meeting saved when calendar not connected; prompted to connect
+- **Traces:** US-MTG-04 · **Priority:** High · **Type:** Negative
+- **Preconditions:** Logged in as Event Organizer. Workspace Google Calendar NOT connected.
+- **Test data:** Any valid video meeting.
+- **Steps:**
+  1. Schedule a valid meeting and save.
+- **Expected result:** The meeting is still saved (nothing lost) and flagged as not synced; the organizer is prompted to connect the calendar so the invite and Meet link can be sent. No error discards the meeting.
+
+### TC-MTG-12 — Calendar service briefly unavailable — meeting kept, marked not synced, retry sends invite
+- **Traces:** US-MTG-04 · **Priority:** Medium · **Type:** Edge
+- **Preconditions:** Logged in as Event Organizer. Calendar connected but the calendar service is temporarily unreachable at save time.
+- **Test data:** Valid video meeting scheduled during the outage; service restored afterward.
+- **Steps:**
+  1. Save the meeting while the calendar service is unavailable.
+  2. Observe the meeting's sync state and the retry option.
+  3. Restore the service and trigger/allow retry.
+- **Expected result:** The meeting is kept and marked "not yet synced" with a retry option; nothing is lost. Once the service is reachable and retry runs, the invite (and Meet link) go out and the meeting shows as synced.
+
+---
+
+## US-MTG-05 — Reschedule or edit a meeting
+
+### TC-MTG-13 — Reschedule updates the existing invite, shifts reminder, re-notifies guest
+- **Traces:** US-MTG-05 · **Priority:** High · **Type:** Functional
+- **Preconditions:** Logged in as Event Organizer. An existing synced video meeting with a guest invite already sent.
+- **Test data:** Move "Sponsor kickoff" from tomorrow 15:00–15:30 to tomorrow 17:00–17:30.
+- **Steps:**
+  1. Open the meeting and change start/end to 17:00–17:30.
+  2. Save.
+  3. Inspect the guest invite and reminder.
+- **Expected result:** The guest's existing invite is updated in place (not duplicated), the 15-minute reminder shifts to the new 17:00 start, and the guest is re-notified of the new time.
+
+### TC-MTG-14 — Changing mode video → in person removes Meet link and shows venue
+- **Traces:** US-MTG-05 · **Priority:** Medium · **Type:** Functional
+- **Preconditions:** Logged in as Event Organizer. A synced video meeting with a Meet link, tied to event "Tech Summit BKK" (venue "BITEC Hall 2").
+- **Test data:** Change mode from Video to In person.
+- **Steps:**
+  1. Open the meeting and switch mode to In person.
+  2. Save and inspect the meeting.
+- **Expected result:** The Google Meet link is removed and the location shows the event's venue "BITEC Hall 2"; no stale join link remains and no Join button is offered.
+
+### TC-MTG-15 — Concurrent edit conflict and cancelled-meeting edit block
+- **Traces:** US-MTG-05 · **Priority:** Medium · **Type:** Negative
+- **Preconditions:** Logged in as Event Organizer. Two sessions (or Admin + Organizer) have the same meeting open. Separately, one cancelled meeting exists.
+- **Test data:** Session 1 and Session 2 both open Meeting M; Session 2 saves a change first. Cancelled Meeting N.
+- **Steps:**
+  1. In Session 2, change and save Meeting M.
+  2. In Session 1, change and try to save Meeting M.
+  3. Attempt to edit cancelled Meeting N.
+- **Expected result:** Session 1 is told the meeting changed and asked to reload before saving — no silent overwrite of Session 2's edit. Cancelled Meeting N cannot be edited (edit is not offered / is blocked).
+
+---
+
+## US-MTG-06 — Cancel a meeting
+
+### TC-MTG-16 — Cancel with reason marks Cancelled, removes from calendar, notifies guest
+- **Traces:** US-MTG-06 · **Priority:** Medium · **Type:** Functional
+- **Preconditions:** Logged in as Event Organizer. A scheduled, not-yet-happened meeting with an invite already sent.
+- **Test data:** Cancel reason "Speaker unavailable".
+- **Steps:**
+  1. Open the scheduled meeting and choose Cancel.
+  2. Enter the reason "Speaker unavailable" and confirm.
+  3. Reload the Meetings list and inspect counts and row actions.
+- **Expected result:** The meeting is marked Cancelled, removed from the guest's calendar, and the guest receives a cancellation notice that includes the reason "Speaker unavailable". After reload it no longer counts toward Today or Upcoming and offers no Join or Edit; the record is retained as Cancelled.
+
+### TC-MTG-17 — Dismissing the cancel confirmation changes nothing
+- **Traces:** US-MTG-06 · **Priority:** Low · **Type:** Negative
+- **Preconditions:** Logged in as Event Organizer. A scheduled meeting exists.
+- **Test data:** N/A.
+- **Steps:**
+  1. Open the meeting and click Cancel.
+  2. Dismiss/close the confirmation without confirming.
+- **Expected result:** The meeting remains Scheduled and unchanged; no cancellation notice is sent and it still counts in its time group.
+
+---
+
+## US-MTG-07 — Join a video meeting in one click
+
+### TC-MTG-18 — Join opens link in a new tab; unavailable for past and not-ready links
+- **Traces:** US-MTG-07 · **Priority:** High · **Type:** Functional
+- **Preconditions:** Logged in as Event Organizer. A today video meeting with a ready Meet link; a past video meeting; an upcoming video meeting whose link is not yet ready (unsynced).
+- **Test data:** Today video meeting (ready link); Past video meeting; Upcoming video meeting (link pending).
+- **Steps:**
+  1. On the today video meeting with a ready link, click Join.
+  2. Inspect the past video meeting row.
+  3. Inspect the upcoming video meeting whose link is not ready.
+- **Expected result:** Join opens the meeting in a new browser tab for the ready link; the past video meeting shows no Join button; the not-ready meeting's Join is unavailable with a hint to retry the calendar sync.
+
+---
+
+## US-MTG-08 — Connect and manage the workspace Google Calendar
+
+### TC-MTG-19 — Admin connects the workspace Google Calendar; header shows connected
+- **Traces:** US-MTG-08 · **Priority:** Medium · **Type:** Functional
+- **Preconditions:** Logged in as Admin. Workspace calendar currently disconnected.
+- **Test data:** Valid Google account authorization for the workspace.
+- **Steps:**
+  1. Open Meetings and start the Google Calendar connection.
+  2. Complete the Google authorization successfully.
+  3. Observe the Meetings header status.
+- **Expected result:** The workspace is marked connected and the Meetings header shows a connected status. Subsequently scheduled meetings sync normally.
+
+### TC-MTG-20 — Non-Admin sees no connect/disconnect control; expired connection prompts reconnect
+- **Traces:** US-MTG-08 · **Priority:** Medium · **Type:** Negative
+- **Preconditions:** (a) Logged in as Event Organizer (non-Admin). (b) Separately, workspace connection has expired/been revoked.
+- **Test data:** N/A.
+- **Steps:**
+  1. As a non-Admin Organizer, open Meetings and look for calendar connect/disconnect controls.
+  2. With the connection expired, as Admin/Organizer trigger a sync (e.g., schedule a meeting).
+- **Expected result:** The non-Admin sees no connect/disconnect control. When the connection is expired/revoked, the user is prompted to reconnect rather than sync failing silently; meetings scheduled while disconnected are saved but flagged not synced.
+
+---
+
+## US-MTG-09 — Be warned about overlapping meetings
+
+### TC-MTG-21 — Overlap warning appears but never blocks saving
+- **Traces:** US-MTG-09 · **Priority:** Low · **Type:** Edge
+- **Preconditions:** Logged in as Event Organizer. An existing meeting tomorrow 10:00–11:00.
+- **Test data:** New meeting tomorrow 10:30–11:15 (overlaps the existing one).
+- **Steps:**
+  1. Schedule the new overlapping meeting and click Save.
+  2. Observe the warning.
+  3. Choose to continue/schedule anyway.
+- **Expected result:** A "this overlaps another meeting — schedule anyway?" warning is shown; choosing to continue saves the meeting normally. The warning is advisory and never blocks the save — the organizer stays in control.
+
+
+---
+
+<a id="tc-e13"></a>
 
 # Measure Performance (Reports) — Test Cases
 
-Area: RPT · Epic E11 — Measure Performance (Reports)
+Area: RPT · Epic E13 — Measure Performance (Reports)
 Locale notes applied throughout: currency ฿ (THB), VAT 7%, Asia/Bangkok timezone, EN/TH text, bank accounts masked to last 4 digits.
 
 ---
@@ -3525,588 +4110,3 @@ Locale notes applied throughout: currency ฿ (THB), VAT 7%, Asia/Bangkok timezo
 
 ---
 
-<a id="tc-e12"></a>
-
-# Communicate with Attendees — Test Cases
-
-Epic E12 — Communicate with Attendees. Area code: MSG. Locale: Thai market (฿, VAT 7%, PromptPay, Asia/Bangkok, EN/TH).
-
----
-
-## US-MSG-01 — Attendees automatically get the right message at the right moment
-
-### TC-MSG-01 — Confirmation message fires on successful payment
-- **Traces:** US-MSG-01  ·  **Priority:** High  ·  **Type:** Functional
-- **Preconditions:** A published paid event with the registration-confirmation message enabled; PromptPay enabled as a payment method.
-- **Test data:** Attendee "Somchai Jai"; 1 x General ticket ฿1,000 (VAT 7% inclusive/added per event config); PromptPay payment.
-- **Steps:**
-  1. As the attendee, complete registration for the event and reach the payment step.
-  2. Pay ฿1,000 via PromptPay and let the payment succeed.
-  3. Open the attendee's inbox / message channel.
-- **Expected result:** A confirmation message is received containing the ticket and order details (event name, ticket type, ฿ amount, order reference). No personalization field is left as a raw placeholder. Ties to the confirmation-on-payment acceptance criterion.
-
-### TC-MSG-02 — Reminder is sent when the reminder time arrives
-- **Traces:** US-MSG-01  ·  **Priority:** High  ·  **Type:** Functional
-- **Preconditions:** Attendee holds a confirmed ticket; reminder message enabled; event scheduled roughly one day out in Asia/Bangkok time.
-- **Test data:** Event start 2026-07-28 18:00 (Asia/Bangkok); reminder configured for one day before.
-- **Steps:**
-  1. Advance to (or wait for) the configured reminder time on 2026-07-27.
-  2. Open the attendee's inbox.
-- **Expected result:** A reminder message is received stating the event's time and place (date/time shown in Asia/Bangkok, venue). Ties to the day-before reminder acceptance criterion.
-
-### TC-MSG-03 — Language preference honoured with fallback; disabled message not sent
-- **Traces:** US-MSG-01  ·  **Priority:** High  ·  **Type:** Edge
-- **Preconditions:** Two attendees on the same event: one with language preference Thai, one with no preference set; event default language English. Cancellation message is turned OFF by the organizer.
-- **Test data:** Attendee A preference = TH; Attendee B preference = none; event default = EN.
-- **Steps:**
-  1. Trigger the confirmation message for both attendees on successful payment.
-  2. Inspect each attendee's received message language.
-  3. Organizer cancels the event so the cancellation trigger fires.
-  4. Check whether a cancellation message is delivered.
-- **Expected result:** Attendee A receives the message in Thai; Attendee B receives it in English (event default fallback). No cancellation message is sent to either attendee because that message type is turned off. Ties to the language-preference and message-off acceptance criteria.
-
----
-
-## US-MSG-02 — Keep automated messages on-brand and in the organizer's control
-
-### TC-MSG-04 — Edit wording and insert a personalization field
-- **Traces:** US-MSG-02  ·  **Priority:** Medium  ·  **Type:** Functional
-- **Preconditions:** Organizer signed in; registration-confirmation template open in the editor (EN and TH versions present).
-- **Test data:** New body text "Welcome [first name] to [event name]!"; personalization fields = first name, event name.
-- **Steps:**
-  1. Place the cursor in the body and insert the "first name" personalization field.
-  2. Insert the "event name" field at a second cursor position.
-  3. Edit surrounding wording and Save.
-  4. Trigger a new confirmation to a test recipient "Nok"; also inspect a previously-sent message.
-- **Expected result:** Each field appears exactly where the cursor was; the newly-sent message shows the fields filled ("Welcome Nok to ..."). Messages sent before the edit are unchanged. Ties to the edit-wording and personalization-field acceptance criteria.
-
-### TC-MSG-05 — SMS live segment count and second-segment cost warning (Thai encoding)
-- **Traces:** US-MSG-02  ·  **Priority:** Medium  ·  **Type:** Edge
-- **Preconditions:** Organizer editing an SMS message; both EN and TH bodies editable.
-- **Test data:** Thai body text long enough to cross from one segment into a second (Thai/UCS-2 uses shorter ~70-char segments); an English body just under one GSM-7 segment.
-- **Steps:**
-  1. Type Thai text and watch the live character/segment counter as it approaches the single-segment limit.
-  2. Continue typing until the message crosses into a second segment.
-  3. Compare the segment threshold against the English GSM-7 body.
-- **Expected result:** A live character/segment count is displayed and reflects the actual text; when the Thai text crosses into a second segment a warning appears explaining the added cost. Thai text triggers the second segment at a lower character count than English (shorter Thai segments). Ties to the SMS segment-count/warning acceptance criterion.
-
-### TC-MSG-06 — Disable warning for legally-expected message; save validation blocks
-- **Traces:** US-MSG-02  ·  **Priority:** Medium  ·  **Type:** Negative
-- **Preconditions:** Organizer editing messages; payment-receipt message currently active with EN and TH versions.
-- **Test data:** (a) Attempt to turn off the payment-receipt message. (b) Attempt to save an active message with an empty subject. (c) Attempt to save with body referencing unsupported field "[loyalty_points]". (d) Attempt to save with the TH language version left blank.
-- **Steps:**
-  1. Toggle the payment-receipt message off.
-  2. Separately, clear the subject of an active message and Save.
-  3. Insert an unsupported personalization field and Save.
-  4. Clear the Thai body of an active channel and Save.
-- **Expected result:** (a) A warning states attendees won't receive the receipt and requires explicit confirmation before it is disabled. (b) Save is blocked citing empty subject. (c) Save is blocked citing the unsupported field. (d) Save is blocked because an active channel cannot have a blank language version. Ties to the disable-warning and save-validation acceptance criteria.
-
----
-
-## US-MSG-03 — Triage everything happening across my events in one feed
-
-### TC-MSG-07 — Feed shows All/Unread counts; mark all read persists
-- **Traces:** US-MSG-03  ·  **Priority:** Medium  ·  **Type:** Functional
-- **Preconditions:** Organizer with several notifications, some unread, spanning registrations, payments, and feedback.
-- **Test data:** 12 notifications total, 5 unread.
-- **Steps:**
-  1. Open the notification feed.
-  2. Note the All and Unread counts and which activity is expanded.
-  3. Switch to the Unread filter.
-  4. Click "mark all read".
-  5. Reload the page and reopen the feed.
-- **Expected result:** All=12 and Unread=5 shown; most recent activity is expanded with older activity available on demand. After "mark all read" the unread count drops to 0. On the Unread filter with nothing unread, a "you're all caught up" message shows. After reload the unread count stays 0. Ties to the counts, empty-state, and persistence acceptance criteria.
-
-### TC-MSG-08 — Staff/Team member sees only own feed and has no compose/broadcast/log access
-- **Traces:** US-MSG-03  ·  **Priority:** Medium  ·  **Type:** Negative
-- **Preconditions:** A Staff/Team member account without finance access, part of an organizer's workspace.
-- **Test data:** Staff member "Aran"; workspace has payment and payout notifications belonging to finance-access members.
-- **Steps:**
-  1. Sign in as the Staff member and open the notification feed.
-  2. Look for other members' activity, payment/payout items, and controls to compose messages, edit templates, broadcast, view the delivery log, or manage feedback.
-- **Expected result:** Only the staff member's own personal activity is shown; payment/payout items (needing finance access) are not visible. No controls to compose, edit templates, broadcast, view the delivery log, or manage feedback are available. Ties to the Staff-scope acceptance criterion.
-
----
-
-## US-MSG-04 — Broadcast a one-off announcement to the right audience
-
-### TC-MSG-09 — Send now to checked-in attendees; recipient count matches
-- **Traces:** US-MSG-04  ·  **Priority:** Medium  ·  **Type:** Functional
-- **Preconditions:** Event with a mix of registrants; some checked in, some with missing/invalid contact details. Email and SMS channels enabled.
-- **Test data:** 50 registrants; 20 checked in; of those 20, 2 have no valid contact; announcement over Email + SMS.
-- **Steps:**
-  1. Compose an announcement (subject + body), choose audience "checked-in attendees", select Email and SMS.
-  2. Send now.
-  3. Double-click / retry the send button once.
-  4. Review the recorded recipient count.
-- **Expected result:** Only the 18 checked-in attendees with a valid contact receive it; the recorded recipient count is 18 and matches who was addressed. The double-click/retry does not double-send to any recipient. Ties to the checked-in-audience and no-double-send acceptance criteria.
-
-### TC-MSG-10 — Schedule for future Bangkok time; validation and empty/marketing edge cases
-- **Traces:** US-MSG-04  ·  **Priority:** Medium  ·  **Type:** Negative
-- **Preconditions:** Organizer composing an announcement; audiences available (all registrants, checked-in, waitlist); marketing-class option available.
-- **Test data:** (a) Schedule 2026-08-01 09:00 Asia/Bangkok. (b) No channel selected / empty body / empty email subject. (c) Audience that resolves to nobody (empty waitlist). (d) Marketing-class announcement with one opted-out recipient among the audience.
-- **Steps:**
-  1. Schedule the announcement for the future Bangkok date/time and send.
-  2. Separately, attempt to send with no channel selected, then with an empty body, then with an empty email subject.
-  3. Choose the empty waitlist audience and send.
-  4. Send a marketing-class announcement to an audience that includes an opted-out attendee.
-- **Expected result:** (a) Announcement is recorded as Scheduled and goes out at the specified Bangkok time. (b) Each attempt is blocked with a clear reason (no channel / empty message / empty subject). (c) Nothing is sent and the organizer is told no recipients matched. (d) Delivered marketing message includes an unsubscribe option; the opted-out attendee is excluded and counted as skipped. Ties to the schedule, validation, no-recipients, and marketing-opt-out acceptance criteria.
-
----
-
-## US-MSG-05 — Change my mind on a scheduled announcement
-
-### TC-MSG-11 — Cancel and reschedule a not-yet-sent announcement
-- **Traces:** US-MSG-05  ·  **Priority:** Low  ·  **Type:** Functional
-- **Preconditions:** Two scheduled announcements still in the future.
-- **Test data:** Announcement X scheduled 2026-08-05 10:00 BKK (to cancel); Announcement Y scheduled 2026-08-05 10:00 BKK, rescheduled to 2026-08-06 15:00 BKK.
-- **Steps:**
-  1. Cancel Announcement X.
-  2. Verify no messages are sent for X and check the history.
-  3. Reschedule Announcement Y to the later valid time and let that time pass.
-- **Expected result:** X sends no messages and no longer shows as Scheduled, but remains visible in history. Y goes out at the new time (2026-08-06 15:00 BKK) to a freshly resolved audience. Ties to the cancel and reschedule acceptance criteria.
-
-### TC-MSG-12 — Cannot change an announcement that has started sending
-- **Traces:** US-MSG-05  ·  **Priority:** Low  ·  **Type:** Negative
-- **Preconditions:** An announcement whose send has already begun.
-- **Test data:** Announcement Z currently in the process of sending.
-- **Steps:**
-  1. Attempt to cancel or reschedule Announcement Z while it is sending.
-- **Expected result:** The organizer is told the announcement can no longer be changed; no cancel/reschedule takes effect. Ties to the already-sending acceptance criterion.
-
----
-
-## US-MSG-06 — Prove messages were delivered and diagnose failures
-
-### TC-MSG-13 — Delivery log per-recipient with statuses; failures surfaced
-- **Traces:** US-MSG-06  ·  **Priority:** Medium  ·  **Type:** Functional
-- **Preconditions:** Admin with attendee-view access; messages have gone out across email and SMS, including a provider-reported SMS failure, an opened email, and a failed critical message (ticket/receipt).
-- **Test data:** Recipients: email opened (Nok), SMS undelivered (Anan), receipt email failed (Ploy).
-- **Steps:**
-  1. Open the delivery log.
-  2. Locate the entries for Nok, Anan, and Ploy.
-  3. Review how critical-message failures are presented.
-- **Expected result:** One entry per recipient shows recipient, message type, channel, status, and time. Anan's entry shows SMS channel with Failed status; Nok's entry advances to Opened once confirmed; Ploy's failed ticket/receipt is surfaced for follow-up. Statuses reflect only what the provider confirmed. Ties to the log-contents, failed-SMS, opened, and critical-failure acceptance criteria.
-
-### TC-MSG-14 — Delivery log access restricted; Staff denied
-- **Traces:** US-MSG-06  ·  **Priority:** Medium  ·  **Type:** Negative
-- **Preconditions:** A Staff member without attendee-view access; the log exposes attendee contact details.
-- **Test data:** Staff member "Aran".
-- **Steps:**
-  1. Sign in as the Staff member.
-  2. Attempt to open the delivery log.
-- **Expected result:** Access is denied; the log (containing attendee contact details) is available only to organizers/admins with attendee-view access. Ties to the log-access-restriction note.
-
----
-
-## US-MSG-07 — Export the delivery log for records
-
-### TC-MSG-15 — Export permitted with audit; denied / empty-view edge cases
-- **Traces:** US-MSG-07  ·  **Priority:** Low  ·  **Type:** Negative
-- **Preconditions:** (a) Organizer with attendee-export permission and a non-empty log view; (b) Staff member or user lacking export permission; (c) A log view filtered to zero rows.
-- **Test data:** Current log view = 25 entries (case a); filtered view = 0 entries (case c).
-- **Steps:**
-  1. As the permitted organizer, export the current log view.
-  2. As a Staff / no-export-permission user, view the log and look for the export option.
-  3. As the permitted organizer, filter the view to zero rows and attempt to export.
-- **Expected result:** (a) A file of the current log view (25 entries) downloads and the export is recorded for audit. (b) The export option is unavailable. (c) The organizer is told there is nothing to export. Ties to the export-with-audit, permission, and nothing-to-export acceptance criteria.
-
----
-
-## US-MSG-08 — Measure attendee satisfaction across all my events
-
-### TC-MSG-16 — Portfolio KPIs weighted by responses; no-responses events handled
-- **Traces:** US-MSG-08  ·  **Priority:** Medium  ·  **Type:** Functional
-- **Preconditions:** Organizer with several events; some have collected feedback, at least one has none.
-- **Test data:** Event A 100 responses avg 4.5; Event B 10 responses avg 3.0; Event C 0 responses.
-- **Steps:**
-  1. Open the feedback overview.
-  2. Read the portfolio KPIs (total responses, average rating, NPS, completion rate) and the per-event cards.
-  3. Inspect Event C's card.
-- **Expected result:** Portfolio KPIs shown; the average is weighted by each event's response count (A weighted more heavily than B) and Event C does not distort the averages. Event C's card clearly shows "no responses yet" rather than misleading numbers. Ties to the portfolio-KPI, weighting, and no-responses acceptance criteria.
-
-### TC-MSG-17 — Event search filter and drill-down rating-bar filtering
-- **Traces:** US-MSG-08  ·  **Priority:** Medium  ·  **Type:** Functional
-- **Preconditions:** Organizer on the feedback overview with multiple events, one named "Bangkok Tech Meetup".
-- **Test data:** Search term "Bangkok"; then a non-matching term "zzzz"; drill into an event and click the 5-star rating bar.
-- **Steps:**
-  1. Type "Bangkok" in the event search.
-  2. Type a term matching no event.
-  3. Open an event's detail; review its KPIs, rating distribution, and surveys; click the 5-star rating bar.
-- **Expected result:** The grid filters to matching events for "Bangkok"; a clear empty state shows when none match. The event detail shows its KPIs, rating distribution, and surveys; clicking the 5-star bar filters the responses to that rating. Ties to the search-filter and drill-down acceptance criteria.
-
----
-
-## US-MSG-09 — Build and manage surveys for my events
-
-### TC-MSG-18 — Create survey as Draft; validation blocks invalid questions
-- **Traces:** US-MSG-09  ·  **Priority:** Medium  ·  **Type:** Negative
-- **Preconditions:** Organizer with an event to attach a survey to.
-- **Test data:** Valid survey: title "Post-Event Feedback" + one rating question. Invalid: a multiple-choice question with one option; a question with blank text.
-- **Steps:**
-  1. Create a survey with a title and one rating question against the event and Save.
-  2. Confirm where it appears and whether it collects responses.
-  3. Add a multiple-choice question with only one option and Save.
-  4. Add a question with blank text and Save.
-- **Expected result:** The valid survey is created as a Draft under that event, appears in its surveys list, and collects nothing until made live. Saving is blocked with a clear reason when a multiple-choice question has fewer than two options, and when a question's text is blank. Ties to the create-draft and question-validation acceptance criteria.
-
-### TC-MSG-19 — Survey lifecycle: duplicate, close/reopen, delete with confirm
-- **Traces:** US-MSG-09  ·  **Priority:** Medium  ·  **Type:** Functional
-- **Preconditions:** An existing live survey with collected responses.
-- **Test data:** Survey "Post-Event Feedback" with 30 responses.
-- **Steps:**
-  1. Duplicate the survey.
-  2. Close the live survey, then attempt to submit a response (via the attendee portal) and confirm it is rejected.
-  3. Reopen the survey and confirm responses are accepted again.
-  4. Delete the survey (which has responses).
-- **Expected result:** Duplicating produces a fresh Draft copy with zero responses next to the original. Closing stops it accepting responses; reopening resumes acceptance. Deleting a survey with responses requires explicit confirmation before removal. Ties to the duplicate, close/reopen, and delete-confirmation acceptance criteria.
-
----
-
-## US-MSG-10 — Browse and filter individual feedback responses
-
-### TC-MSG-20 — Filter responses, paginate range, and empty-state
-- **Traces:** US-MSG-10  ·  **Priority:** Low  ·  **Type:** Functional
-- **Preconditions:** Organizer with attendee-view access on an event that has many responses across multiple surveys and ratings.
-- **Test data:** 47 responses; page size 20; filter by rating = 5; then a filter combination matching zero responses.
-- **Steps:**
-  1. Filter responses by rating = 5 (and/or a specific survey) and review the list.
-  2. Move from page 1 to page 2 to page 3 and read the "showing X–Y of N" range.
-  3. Apply a filter combination that matches no responses.
-- **Expected result:** The list narrows to matching responses and paginates, each row showing respondent, survey, rating, comment, and date. The "showing X–Y of N" range updates correctly across pages (e.g. 1–20, 21–40, 41–47 of 47). When no responses match, a clear "no responses match these filters" message shows. Ties to the filter, pagination-range, and empty-state acceptance criteria.
-
-
----
-
-<a id="tc-e13"></a>
-
-# Configure the Workspace & Team — Test Cases
-
-Epic E13 — Configure the Workspace & Team. Area code: **SET**. Locale defaults: ฿ THB, VAT 7%, Asia/Bangkok, EN/TH.
-
----
-
-## US-SET-01 — My profile & preferences
-
-### TC-SET-01 — Edit name and phone, save and cancel
-- **Traces:** US-SET-01  ·  **Priority:** High  ·  **Type:** Functional
-- **Preconditions:** Signed in as any team member with an existing profile (name, email, phone populated).
-- **Test data:** New name "Somchai Rattana", new phone "+66 81 234 5678".
-- **Steps:**
-  1. Open My Profile; confirm the page loads with current name, email, phone, timezone, language and photo, all editable.
-  2. Change name to "Somchai Rattana" and phone to "+66 81 234 5678", then Save.
-  3. Reopen the page, edit the name again, then choose Cancel.
-- **Expected result:** After step 2 the new name and phone are persisted and a confirmation is shown. After step 3 all fields revert to their last-saved values ("Somchai Rattana"), with no change kept.
-
-### TC-SET-02 — Change email keeps old sign-in and marks new address unverified
-- **Traces:** US-SET-01  ·  **Priority:** High  ·  **Type:** Functional
-- **Preconditions:** Signed in with a verified email on file.
-- **Test data:** Current email `somchai@old.co.th`; new email `somchai@new.co.th`.
-- **Steps:**
-  1. Open My Profile and change email to `somchai@new.co.th`, then Save.
-  2. Observe the email status shown for the new address.
-  3. Sign out and sign back in using the original email `somchai@old.co.th`.
-- **Expected result:** The new email is shown as "unverified" and a confirmation link is sent to `somchai@new.co.th`. The original sign-in email keeps working until the new one is verified. A confirmation of the change is displayed.
-
-### TC-SET-03 — Timezone Bangkok and language Thai apply to dates and copy
-- **Traces:** US-SET-01  ·  **Priority:** Medium  ·  **Type:** Edge
-- **Preconditions:** Signed in; profile currently on a non-Bangkok timezone / English.
-- **Test data:** Timezone "Asia/Bangkok (GMT+7)", language "ไทย (Thai)".
-- **Steps:**
-  1. Set timezone to Asia/Bangkok and language to Thai, then Save.
-  2. Navigate to a screen showing timestamps (e.g. an event or activity list) and open a menu.
-- **Expected result:** Dates/times render in Asia/Bangkok (GMT+7) and menu labels and copy render in Thai. Change persists across navigation.
-
----
-
-## US-SET-02 — Change my password
-
-### TC-SET-04 — Successful password change signs out other sessions
-- **Traces:** US-SET-02  ·  **Priority:** High  ·  **Type:** Functional
-- **Preconditions:** Signed in; the same account is also signed in on a second device/browser.
-- **Test data:** Current password `OldPass!9`; new password `NewPass#7` (8+ chars, has a number and a symbol).
-- **Steps:**
-  1. Open Change Password, enter current `OldPass!9` and new `NewPass#7` with matching confirmation, then Submit.
-  2. On the second device, attempt any authenticated action.
-- **Expected result:** Password is updated with a confirmation shown; a "password was changed" email is sent; the second device is signed out and forced to re-authenticate.
-
-### TC-SET-05 — Weak, mismatched, or wrong-current password is refused
-- **Traces:** US-SET-02  ·  **Priority:** High  ·  **Type:** Negative
-- **Preconditions:** Signed in with password `OldPass!9`.
-- **Test data:** (a) new `abc` / confirm `abc` (too weak, no number+symbol, <8); (b) new `NewPass#7` / confirm `NewPass#8` (mismatch); (c) current `WrongPass!1` + valid new `NewPass#7`.
-- **Steps:**
-  1. Attempt case (a) and Submit.
-  2. Attempt case (b) and Submit.
-  3. Attempt case (c) and Submit.
-- **Expected result:** Each case is rejected with a specific reason (weak password / confirmation mismatch / wrong current password). The password remains `OldPass!9` in all cases and nothing is changed.
-
----
-
-## US-SET-03 — Two-factor authentication & recovery codes
-
-### TC-SET-06 — Enable 2FA and receive 8 recovery codes
-- **Traces:** US-SET-03  ·  **Priority:** Medium  ·  **Type:** Functional
-- **Preconditions:** Signed in; 2FA currently off; authenticator app available.
-- **Test data:** Valid current 6-digit TOTP code from the paired authenticator.
-- **Steps:**
-  1. Start 2FA setup, scan the displayed QR/secret with the authenticator app.
-  2. Enter the current 6-digit code and confirm.
-  3. Note the recovery codes presented and download them.
-- **Expected result:** 2FA is turned on and exactly 8 one-time recovery codes are shown once (downloadable). Codes are not shown again after leaving the screen.
-
-### TC-SET-07 — Wrong/expired code leaves 2FA off; disable requires re-confirmation
-- **Traces:** US-SET-03  ·  **Priority:** Medium  ·  **Type:** Negative
-- **Preconditions:** Signed in. For part B, 2FA is already on and the workspace does not force 2FA for everyone.
-- **Test data:** Wrong code `000000` / a code that has expired; valid re-confirmation credential for disable.
-- **Steps:**
-  1. During setup, enter `000000` (or an expired code) and try to finish.
-  2. With 2FA on, choose to turn it off and complete the required identity re-confirmation.
-- **Expected result:** Step 1 keeps 2FA off with a prompt to try again. Step 2 requires re-confirming identity before disabling, and an email is sent that 2FA was disabled. (If the workspace requires 2FA for everyone, the disable option is unavailable to the member.)
-
-### TC-SET-08 — Regenerate recovery codes invalidates old set
-- **Traces:** US-SET-03  ·  **Priority:** Medium  ·  **Type:** Edge
-- **Preconditions:** Signed in; 2FA on; running low on recovery codes.
-- **Test data:** One previously issued (still-unused) recovery code.
-- **Steps:**
-  1. Regenerate recovery codes and save the new set.
-  2. Attempt to authenticate/step-up using one of the OLD codes.
-- **Expected result:** A fresh set of 8 codes is issued; all old codes stop working (the old-code attempt is rejected).
-
----
-
-## US-SET-04 — Review & sign out my active sessions
-
-### TC-SET-09 — Session list marks current device with no sign-out control
-- **Traces:** US-SET-04  ·  **Priority:** Medium  ·  **Type:** Functional
-- **Preconditions:** Signed in on at least two devices/browsers.
-- **Test data:** Current device plus one other session.
-- **Steps:**
-  1. Open Active Sessions and review the list.
-- **Expected result:** Each session shows device, rough location and how recently it was used. The current device is clearly marked and has no "sign out" control; other sessions do.
-
-### TC-SET-10 — Sign out one device and sign out all other sessions
-- **Traces:** US-SET-04  ·  **Priority:** Medium  ·  **Type:** Functional
-- **Preconditions:** Signed in on the current device plus two other sessions.
-- **Test data:** One unfamiliar device entry.
-- **Steps:**
-  1. Sign out the unfamiliar device and confirm; observe the list.
-  2. On that device, attempt an authenticated request.
-  3. Choose "Sign out all other sessions" and confirm.
-- **Expected result:** The signed-out device is logged out on its next attempt and its entry disappears. After step 3 every session except the current device is signed out; the current device stays signed in.
-
----
-
-## US-SET-05 — Security & access audit log
-
-### TC-SET-11 — Role change appears newest-first and is immutable
-- **Traces:** US-SET-05  ·  **Priority:** Medium  ·  **Type:** Functional
-- **Preconditions:** Signed in as Admin; a teammate's role was just changed (e.g. Staff → Organizer).
-- **Test data:** Teammate "Nok", change Staff → Organizer.
-- **Steps:**
-  1. Open the audit log and locate the role-change entry.
-  2. Attempt to edit or delete any entry from anywhere in the product.
-- **Expected result:** Entry shows who changed it, from Staff to Organizer, and when. Entries are ordered newest-first and no edit/delete control exists anywhere.
-
-### TC-SET-12 — Export records a new entry and masks secrets
-- **Traces:** US-SET-05  ·  **Priority:** Medium  ·  **Type:** Functional
-- **Preconditions:** Signed in as Admin; log contains an entry referencing a saved payment key.
-- **Test data:** Export date range 2026-07-01 to 2026-07-27.
-- **Steps:**
-  1. Export the audit log for the given date range and let the download complete.
-  2. Reopen the log and confirm the export was logged.
-  3. Open the entry that involves a saved payment key.
-- **Expected result:** A file scoped to that date range downloads; the export action itself is recorded as a new audit entry. The secret-bearing entry shows only a masked hint, never the full value.
-
----
-
-## US-SET-06 — Notification preferences
-
-### TC-SET-13 — Toggle email/SMS per topic independently and honor the setting
-- **Traces:** US-SET-06  ·  **Priority:** Medium  ·  **Type:** Functional
-- **Preconditions:** Signed in with a phone number on file.
-- **Test data:** Topics registrations, payments, reminders, product updates. Turn SMS off for "reminders" while leaving email on.
-- **Steps:**
-  1. Open Notification Preferences and toggle email and SMS per topic; turn SMS off for "reminders".
-  2. Trigger a reminder event.
-- **Expected result:** Each topic exposes independent email and SMS switches. After turning SMS off for reminders, no reminder SMS is delivered while the reminder email still sends.
-
-### TC-SET-14 — SMS switches unavailable without a phone; receipts always send
-- **Traces:** US-SET-06  ·  **Priority:** Medium  ·  **Type:** Edge
-- **Preconditions:** Signed in with no phone number on file; payment alerts turned off.
-- **Test data:** Account with empty phone field; a successful payment event.
-- **Steps:**
-  1. Open Notification Preferences and inspect the SMS switches.
-  2. With payment alerts off, complete a successful payment.
-- **Expected result:** SMS switches are unavailable with a prompt to add a phone number. Despite payment alerts being off, the required transactional receipt (VAT 7% itemized) still sends; only the optional payment alert is suppressed.
-
----
-
-## US-SET-07 — Organization profile, tax details & branding
-
-### TC-SET-15 — Save valid org identity; VAT 7% itemized on future receipts
-- **Traces:** US-SET-07  ·  **Priority:** High  ·  **Type:** Functional
-- **Preconditions:** Signed in as Admin.
-- **Test data:** Org name "Eventa Thailand Co., Ltd.", Bangkok address, website `https://eventa.co.th`, 13-digit Thai tax ID `0105558000000`.
-- **Steps:**
-  1. Fill in name, address, website and the 13-digit tax ID, then Save.
-  2. Issue a new receipt after saving.
-  3. Change the address, then view a previously issued document.
-- **Expected result:** Details are saved and appear on documents issued from then on; the new receipt itemizes VAT 7%. The previously issued document is unchanged — only future documents use the new address.
-
-### TC-SET-16 — Invalid tax ID or website is rejected
-- **Traces:** US-SET-07  ·  **Priority:** High  ·  **Type:** Negative
-- **Preconditions:** Signed in as Admin with valid details already saved.
-- **Test data:** (a) tax ID `12345` (not 13 digits); (b) website `not-a-url`.
-- **Steps:**
-  1. Enter tax ID `12345` and Save.
-  2. Restore the valid tax ID, enter website `not-a-url`, and Save.
-- **Expected result:** Each save is blocked with a specific validation message (tax ID must be 13 digits / invalid website). Nothing is saved and previously stored valid details remain intact.
-
-### TC-SET-17 — Organizer/Staff cannot change organization settings
-- **Traces:** US-SET-07  ·  **Priority:** Medium  ·  **Type:** Negative
-- **Preconditions:** Signed in as an Organizer (repeat as Staff).
-- **Test data:** Any org field.
-- **Steps:**
-  1. Navigate to the Organization Profile page.
-- **Expected result:** The page is read-only or hidden; no field is editable and no save/change action is available for non-Admin roles.
-
----
-
-## US-SET-08 — Connect our payment account
-
-### TC-SET-18 — Test connection, then go live; test-mode banner shown
-- **Traces:** US-SET-08  ·  **Priority:** High  ·  **Type:** Functional
-- **Preconditions:** Signed in as Admin; no live payment account connected yet.
-- **Test data:** Valid test-mode credentials, then valid live credentials.
-- **Steps:**
-  1. Enter test-mode credentials; confirm the payments page shows a banner that no real charges happen until going live.
-  2. Choose "Test connection".
-  3. Enter valid live credentials and Save.
-- **Expected result:** In test mode the reminder banner is shown. "Test connection" reports whether credentials work with no money moving (or a clear failure reason). After connecting live credentials the workspace shows "Connected" and can accept real payments. Saved sensitive details are never shown back in full.
-
-### TC-SET-19 — Disconnect switches off paid checkout, free events unaffected
-- **Traces:** US-SET-08  ·  **Priority:** High  ·  **Type:** Functional
-- **Preconditions:** Signed in as Admin; payments connected; existing paid orders and payouts on record; at least one free event and one paid event.
-- **Test data:** Disconnect confirmation.
-- **Steps:**
-  1. Disconnect the payment account and confirm.
-  2. Attempt checkout on a paid event, then register for a free event.
-  3. Review past orders and payouts.
-- **Expected result:** Paid checkout is switched off; free-event registration keeps working; past orders and payouts remain untouched.
-
----
-
-## US-SET-09 — Choose payment methods at checkout
-
-### TC-SET-20 — Enable PromptPay and disable a method reflect at checkout
-- **Traces:** US-SET-09  ·  **Priority:** High  ·  **Type:** Functional
-- **Preconditions:** Signed in as Admin; payments connected; cards and PromptPay available.
-- **Test data:** Enable PromptPay; disable cards.
-- **Steps:**
-  1. Enable PromptPay and disable cards, then save.
-  2. As an attendee, start checkout on a paid ฿ event and review the payment options.
-- **Expected result:** PromptPay is offered at checkout; cards no longer appear on new orders.
-
-### TC-SET-21 — Cannot switch off the last remaining method
-- **Traces:** US-SET-09  ·  **Priority:** High  ·  **Type:** Negative
-- **Preconditions:** Signed in as Admin; still selling paid tickets; only one payment method (e.g. PromptPay) currently enabled.
-- **Test data:** Attempt to disable PromptPay (the last enabled method).
-- **Steps:**
-  1. Turn off the only remaining enabled method and save.
-- **Expected result:** The action is blocked with a prompt to keep at least one method enabled; the method stays on. (A wallet method whose prerequisites are unmet stays off with guidance on what to complete.)
-
----
-
-## US-SET-10 — Checkout & receipt preferences
-
-### TC-SET-22 — Statement label ≤22 chars saved; email receipt itemizes VAT 7%
-- **Traces:** US-SET-10  ·  **Priority:** High  ·  **Type:** Functional
-- **Preconditions:** Signed in as Admin; payments connected; "email receipts" on.
-- **Test data:** Statement label "EVENTA TICKETS" (14 chars); a successful ฿ payment.
-- **Steps:**
-  1. Set the statement label to "EVENTA TICKETS" and Save.
-  2. Complete a successful paid checkout.
-- **Expected result:** The label is saved and appears on the attendee's card statement for later charges; the attendee receives an email receipt with VAT 7% itemized.
-
-### TC-SET-23 — Invalid statement label and currency mismatch handling
-- **Traces:** US-SET-10  ·  **Priority:** High  ·  **Type:** Negative
-- **Preconditions:** Signed in as Admin; organization currency is THB (฿).
-- **Test data:** (a) label "OUR VERY LONG COMPANY NAME LIMITED" (>22 chars) / a label with disallowed characters "EVENTA<*>#"; (b) default currency set to USD while org currency is THB.
-- **Steps:**
-  1. Enter an over-length / disallowed-character label and Save.
-  2. Set default charge currency to USD (different from org THB) and Save.
-- **Expected result:** Step 1 is rejected with a prompt to shorten or fix the label before it is accepted. Step 2 shows a warning about the currency mismatch but is not blocked (the save succeeds).
-
----
-
-## US-SET-11 — Invite & manage teammates
-
-### TC-SET-24 — Invite a teammate; re-invite is re-sent not duplicated
-- **Traces:** US-SET-11  ·  **Priority:** High  ·  **Type:** Functional
-- **Preconditions:** Signed in as Admin.
-- **Test data:** New teammate "Ploy", email `ploy@eventa.co.th`, role Staff. Then re-invite the same email; then attempt to invite an already-active member `admin@eventa.co.th`.
-- **Steps:**
-  1. Invite Ploy with role Staff and send.
-  2. Filter the team list by status "Invited".
-  3. Invite `ploy@eventa.co.th` again.
-  4. Invite an already-active member `admin@eventa.co.th`.
-- **Expected result:** Ploy appears as "Invited" with role/last-active shown, receives a join link, and the status count updates. Re-inviting the same pending email re-sends the invitation without creating a duplicate. Inviting an already-active member is rejected as already in the workspace.
-
-### TC-SET-25 — Suspend, remove, and last-Admin protection
-- **Traces:** US-SET-11  ·  **Priority:** High  ·  **Type:** Negative
-- **Preconditions:** Signed in as Admin; one active Organizer exists; you are the only remaining Admin.
-- **Test data:** Suspend the Organizer; then attempt to remove/suspend/demote yourself (the last Admin).
-- **Steps:**
-  1. Suspend the Organizer, then have them attempt to sign in.
-  2. Remove a departing member and confirm; check their past events/exports.
-  3. Attempt to remove, suspend, or demote the last remaining Admin (yourself).
-- **Expected result:** The suspended Organizer cannot sign in and is signed out, with their role preserved for later reactivation. The removed member loses access immediately while their past work is kept and they can be re-invited. Removing/suspending/demoting the last Admin is blocked so the workspace always retains an Admin.
-
----
-
-## US-SET-12 — Assign roles & fine-tune permissions
-
-### TC-SET-26 — Change role takes effect immediately and is recorded
-- **Traces:** US-SET-12  ·  **Priority:** High  ·  **Type:** Functional
-- **Preconditions:** Signed in as Admin; target member "Nok" is Staff and currently using the console.
-- **Test data:** Change Nok from Staff to Organizer.
-- **Steps:**
-  1. Change Nok's role to Organizer and save.
-  2. Have Nok (without signing out and in) attempt an Organizer-only action (e.g. run an event).
-  3. Open the audit record for the change.
-- **Expected result:** Nok gains Organizer capabilities immediately without re-login; the change is recorded with before/after (Staff → Organizer) and who made it. Standard scoping holds: Organizer cannot issue refunds or manage users/settings.
-
-### TC-SET-27 — Cannot self-escalate; sensitive grants are flagged
-- **Traces:** US-SET-12  ·  **Priority:** High  ·  **Type:** Negative
-- **Preconditions:** Signed in as a non-Admin with limited permissions (or an Admin attempting to exceed current access).
-- **Test data:** (a) Attempt to grant yourself more access than you currently hold; (b) grant a member the "export attendee data" / "issue refunds" capability.
-- **Steps:**
-  1. Attempt to grant yourself elevated access and Save.
-  2. Grant a member a sensitive capability (export attendee data or issue refunds) and Save.
-- **Expected result:** Self-escalation beyond current access is blocked. Granting a sensitive capability succeeds but is clearly flagged in the record.
-
----
-
-## US-SET-13 — Create custom roles
-
-### TC-SET-28 — Create a custom role with chosen capabilities
-- **Traces:** US-SET-13  ·  **Priority:** Low  ·  **Type:** Functional
-- **Preconditions:** Signed in as Admin.
-- **Test data:** New role "Volunteer" with capabilities: view registrations + check-in only.
-- **Steps:**
-  1. Open the roles overview; confirm each role shows member count, description and headline capabilities and is searchable.
-  2. Create a role "Volunteer" with the chosen capabilities.
-  3. Assign "Volunteer" to a teammate.
-- **Expected result:** The roles overview lists all roles with counts/descriptions/capabilities and supports search. "Volunteer" is created and becomes assignable to teammates.
-
-### TC-SET-29 — Duplicate role name rejected; role management never left empty
-- **Traces:** US-SET-13  ·  **Priority:** Low  ·  **Type:** Negative
-- **Preconditions:** Signed in as Admin; a role "Organizer" already exists.
-- **Test data:** Create role named "Organizer" (duplicate); then edit the only role that can manage users/roles to remove that capability.
-- **Steps:**
-  1. Attempt to create a role named "Organizer" and save.
-  2. Edit roles such that no role would be left able to manage users and roles, then save.
-- **Expected result:** The duplicate name is rejected with a request for a unique name. Any edit that would leave the workspace with no one able to manage users and roles is blocked. Saved capability edits apply to holders on their next use.
-
-
----

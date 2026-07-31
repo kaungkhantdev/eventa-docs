@@ -28,31 +28,31 @@ Grouped by product area, with route and the backlog epic each screen serves (tra
 ### Attendee portal & public (guest-facing)
 | Screen | Route | Epic |
 |---|---|---|
-| Discover events | `/portal/discover` | E1 |
-| Register & checkout (tickets, seats, card/PromptPay) | `/portal/register` | E1 |
-| My account (tickets · payments · profile · settings) | `/portal/my-events` | E1 |
-| Post-event survey | `/portal/survey` | E1 |
-| Attendee sign-in | `/portal/login` | E3 |
-| Public event page — Aurora / Noir / Minimal / Atlas | `/landing/{aurora,noir,minimal,atlas}` | E2 |
+| Discover events | `/portal/discover` | E6 |
+| Register & checkout (tickets, seats, card/PromptPay) | `/portal/register` | E6 |
+| My account (tickets · payments · profile · settings) | `/portal/my-events` | E6 |
+| Post-event survey | `/portal/survey` | E6 |
+| Attendee sign-in | `/portal/login` | E1 |
+| Public event page — Aurora / Noir / Minimal / Atlas | `/landing/{aurora,noir,minimal,atlas}` | E4 |
 
 ### Organizer authentication
 | Screen | Route | Epic |
 |---|---|---|
-| Sign in · Register · Forgot password | `/auth/{login,register,forgot-password}` | E3 |
+| Sign in · Register · Forgot password | `/auth/{login,register,forgot-password}` | E1 |
 
 ### Admin console (`/admin/*`)
 | Area | Screens (routes) | Epic |
 |---|---|---|
-| Overview | `home`, `dashboard` | E4 |
-| Events | `events`, `events-upcoming`, `event-form` (create wizard), `event-detail`, `event-categories`, `landing-pages` | E5 |
-| Ticketing | `tickets`, `discounts` | E6 |
-| Program | `agenda`, `speakers` | E7 |
+| Overview | `home`, `dashboard` | E11 |
+| Events | `events`, `events-upcoming`, `event-form` (create wizard), `event-detail`, `event-categories`, `landing-pages` | E3 |
+| Ticketing | `tickets`, `discounts` | E5 |
+| Program | `agenda`, `speakers` | E10 |
 | Attendees & check-in | `registrations`, `attendees`, `check-in`, `check-in-tool` | E8 |
-| Meetings | `meetings` | E9 |
-| Finance | `payments`, `payouts`, `invoices`, `taxes` | E10 |
-| Insights | `reports`, `reports-income`, `-transactions`, `-payouts`, `-registrations`, `-attendance`, `-discounts`, `-events` | E11 |
-| Engagement | `notifications`, `messaging-templates`, `messaging-announcements`, `messaging-log`, `feedback`, `feedback-detail` | E12 |
-| Settings & team | `settings-profile`, `-security`, `-notifications`, `-organization`, `-payments`, `users`, `roles` | E13 |
+| Meetings | `meetings` | E12 |
+| Finance | `payments`, `payouts`, `invoices`, `taxes` | E9 |
+| Insights | `reports`, `reports-income`, `-transactions`, `-payouts`, `-registrations`, `-attendance`, `-discounts`, `-events` | E13 |
+| Engagement | `notifications`, `messaging-templates`, `messaging-announcements`, `messaging-log`, `feedback`, `feedback-detail` | E7 |
+| Settings & team | `settings-profile`, `-security`, `-notifications`, `-organization`, `-payments`, `users`, `roles` | E2 |
 
 *System:* a 404 screen for unknown routes.
 

@@ -6,7 +6,7 @@ as a product backlog.
 ## Documents
 - **[functional-requirements.md](functional-requirements.md)** — the **product backlog**: 13
   epics broken into **161 user stories** (`As a <role>, I want <goal>, so that <benefit>`), each
-  with business-observable acceptance criteria and a **MoSCoW** priority (88 Must / 58 Should /
+  with business-observable acceptance criteria and a **MoSCoW** priority (89 Must / 57 Should /
   15 Could). The **Must** stories define the MVP; each epic opens with its business goal and
   success measures.
 - **[non-functional-requirements.md](non-functional-requirements.md)** — **46 quality

@@ -48,6 +48,10 @@ Change one link and the others should follow. Some specifics that require readin
 - **Requirements are a product backlog, not a flat list.** `01-.../functional-requirements.md` holds
   **13 epics (`E1`–`E13`) → 161 user stories** in Product-Owner voice (`As a … I want … so that …`) with
   MoSCoW priorities; `non-functional-requirements.md` holds the quality requirements (`NFR-*`).
+  **The epics are ordered by build dependency, not by feature area** — `E1` Accounts is first because
+  it is the only epic that needs nothing, and `E6` Discover & Register comes sixth because it needs a
+  published event (`E3`+`E4`) and a ticket model (`E5`) to exist first. Read them top to bottom and
+  you have a viable build sequence.
 - **`01-.../user-story-map.md` is a derived view of that backlog** — the same stories re-cut by a
   **16-activity journey backbone** (4 acts, both personas, organizer→attendee handoff) × **3 release
   bands** tied to the plan's M3/M4/M5 gates. Its invariant: **every `US-*` appears exactly once**
@@ -55,7 +59,7 @@ Change one link and the others should follow. Some specifics that require readin
   deliberately stores no story titles, dates or MoSCoW totals, so it is *not* another place counts
   can drift; only add/remove/re-prioritise forces an edit. Two release-vs-priority exceptions are
   recorded in both the map and `02-.../project-plan.md` §4.1 (`US-REG-04` Should→R1;
-  six E9 Must stories→R2) — change one, change the other.
+  six E12 Must stories→R2) — change one, change the other.
 - **Architecture is layered:** `software-architecture.md` is the baseline SAD (NestJS modular monolith +
   RabbitMQ consumers + **transactional outbox**, synchronous checkout; C4 views + **ADRs**). `entities.md`
   is the schema **source of truth** (47 tables); `erd.md` is **derived from it** — keep them consistent
@@ -71,7 +75,14 @@ Change one link and the others should follow. Some specifics that require readin
 ## ID & anchor conventions (stable references — never renumber)
 
 - `US-<AREA>-<n>` user stories · `TC-<AREA>-<n>` test cases — same **AREA** codes:
-  `DISC, PAGE, ACC, DASH, EVT, TKT, PROG, REG, MTG, FIN, RPT, MSG, SET` (one per epic E1–E13).
+  `DISC, PAGE, ACC, DASH, EVT, TKT, PROG, REG, MTG, FIN, RPT, MSG, SET` (one per epic, E1–E13).
+  **These are the stable ids and must never be renumbered** — they are cited from the test cases, the
+  plan's WBS, the story map and the service repos' commit history. Note the AREA code is *not* derived
+  from the epic number: `E1` Accounts holds `US-ACC-*`, `E6` Discover holds `US-DISC-*`. Always resolve
+  an epic by its AREA code, never by assuming `E<n>` ↔ the nth AREA.
+- **Epic numbers `E1`–`E13` were renumbered once** (2026-07-30) to put the backlog in build-dependency
+  order; the AREA codes and every `US-*`/`TC-*` id were untouched. Do not renumber them again — if the
+  order needs to change, record the new sequence in `user-story-map.md` instead.
 - `NFR-<THEME>-<n>` quality requirements · `ADR-<n>` architecture decisions (in `software-architecture.md`).
 - The big consolidated docs use explicit HTML anchors for in-document links: **`<a id="epic-eNN">`** in the
   backlog and **`<a id="tc-eNN">`** in the test cases (with a table-of-contents up top). Link to a section

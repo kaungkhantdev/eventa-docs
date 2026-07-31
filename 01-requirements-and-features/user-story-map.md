@@ -61,22 +61,22 @@ repeat organizer re-enters the journey there rather than at activity 1.
 
 | # | Activity | Persona | What it covers | Feeding epics |
 |---|----------|---------|----------------|---------------|
-| 1 | Open the workspace | Organizer | Org profile, tax details, branding, payment account, checkout prefs, teammates & roles | [E13](functional-requirements.md#epic-e13) |
-| 2 | Sign in & stay secure | Organizer | Account creation, sign-in, password reset, 2FA, sessions, personal profile & prefs | [E3](functional-requirements.md#epic-e03), [E13](functional-requirements.md#epic-e13) |
-| 3 | Create the event | Organizer | Wizard, drafts, basics, date/time/location, seating model, categories, calendar | [E5](functional-requirements.md#epic-e05) |
-| 4 | Decide what's sold | Organizer | Ticket types, pricing, capacity, registration rules, inventory, availability | [E5](functional-requirements.md#epic-e05), [E6](functional-requirements.md#epic-e06) |
-| 5 | Build the programme | Organizer | Sessions, schedule feasibility, speaker directory & line-up | [E7](functional-requirements.md#epic-e07), [E5](functional-requirements.md#epic-e05) |
-| 6 | Publish the page | Organizer | Template choice, branding, preview, visibility, stable public link | [E2](functional-requirements.md#epic-e02), [E5](functional-requirements.md#epic-e05) |
-| 7 | **Promote it** | Organizer | Share links, printable flyer, rich search results, discount codes, announcements | [E5](functional-requirements.md#epic-e05), [E6](functional-requirements.md#epic-e06), [E2](functional-requirements.md#epic-e02), [E12](functional-requirements.md#epic-e12) |
-| 8 | Line up partners | Organizer | Meetings with speakers, sponsors, venues, vendors; invites, video links, reminders | [E9](functional-requirements.md#epic-e09) |
-| 9 | Discover the event | **Attendee** | Browse, search & filter, save for later | [E1](functional-requirements.md#epic-e01) |
-| 10 | Decide to come | Attendee | Public page: identity, about, highlights, agenda, tiers, FAQ, add-to-calendar | [E2](functional-requirements.md#epic-e02) |
-| 11 | Register, pay, get the ticket | Attendee | Guest or signed-in checkout, tickets/seats, card & PromptPay, discount code, **confirmation + QR ticket** | [E1](functional-requirements.md#epic-e01), [E3](functional-requirements.md#epic-e03), [E6](functional-requirements.md#epic-e06), [E12](functional-requirements.md#epic-e12) |
-| 12 | Manage my tickets | Attendee | Attendee sign-in, upcoming & past tickets, receipts, profile, prefs, deletion | [E1](functional-requirements.md#epic-e01) |
-| 13 | Watch the sign-ups | Organizer | Queue, approvals, waitlist, invites, attendee directory, tagging, exports, dashboard, alert feed | [E8](functional-requirements.md#epic-e08), [E4](functional-requirements.md#epic-e04), [E5](functional-requirements.md#epic-e05), [E12](functional-requirements.md#epic-e12) |
+| 1 | Open the workspace | Organizer | Org profile, tax details, branding, payment account, checkout prefs, teammates & roles | [E2](functional-requirements.md#epic-e02) |
+| 2 | Sign in & stay secure | Organizer | Account creation, sign-in, password reset, 2FA, sessions, personal profile & prefs | [E1](functional-requirements.md#epic-e01), [E2](functional-requirements.md#epic-e02) |
+| 3 | Create the event | Organizer | Wizard, drafts, basics, date/time/location, seating model, categories, calendar | [E3](functional-requirements.md#epic-e03) |
+| 4 | Decide what's sold | Organizer | Ticket types, pricing, capacity, registration rules, inventory, availability | [E3](functional-requirements.md#epic-e03), [E5](functional-requirements.md#epic-e05) |
+| 5 | Build the programme | Organizer | Sessions, schedule feasibility, speaker directory & line-up | [E10](functional-requirements.md#epic-e10), [E3](functional-requirements.md#epic-e03) |
+| 6 | Publish the page | Organizer | Template choice, branding, preview, visibility, stable public link | [E4](functional-requirements.md#epic-e04), [E3](functional-requirements.md#epic-e03) |
+| 7 | **Promote it** | Organizer | Share links, printable flyer, rich search results, discount codes, announcements | [E3](functional-requirements.md#epic-e03), [E5](functional-requirements.md#epic-e05), [E4](functional-requirements.md#epic-e04), [E7](functional-requirements.md#epic-e07) |
+| 8 | Line up partners | Organizer | Meetings with speakers, sponsors, venues, vendors; invites, video links, reminders | [E12](functional-requirements.md#epic-e12) |
+| 9 | Discover the event | **Attendee** | Browse, search & filter, save for later | [E6](functional-requirements.md#epic-e06) |
+| 10 | Decide to come | Attendee | Public page: identity, about, highlights, agenda, tiers, FAQ, add-to-calendar | [E4](functional-requirements.md#epic-e04) |
+| 11 | Register, pay, get the ticket | Attendee | Guest or signed-in checkout, tickets/seats, card & PromptPay, discount code, **confirmation + QR ticket** | [E6](functional-requirements.md#epic-e06), [E1](functional-requirements.md#epic-e01), [E5](functional-requirements.md#epic-e05), [E7](functional-requirements.md#epic-e07) |
+| 12 | Manage my tickets | Attendee | Attendee sign-in, upcoming & past tickets, receipts, profile, prefs, deletion | [E6](functional-requirements.md#epic-e06) |
+| 13 | Watch the sign-ups | Organizer | Queue, approvals, waitlist, invites, attendee directory, tagging, exports, dashboard, alert feed | [E8](functional-requirements.md#epic-e08), [E11](functional-requirements.md#epic-e11), [E3](functional-requirements.md#epic-e03), [E7](functional-requirements.md#epic-e07) |
 | 14 | Run the door | Both | Manual check-in list, live QR station, manual fallback, live turnout | [E8](functional-requirements.md#epic-e08) |
-| 15 | Settle the money | Organizer | Payments, refunds, balances & payouts, invoices, VAT ledger & returns, cancellation | [E10](functional-requirements.md#epic-e10), [E5](functional-requirements.md#epic-e05) |
-| 16 | **Learn & relaunch** | Both | Reports & exports, attendee feedback & surveys, speaker ratings, duplicate the event | [E11](functional-requirements.md#epic-e11), [E12](functional-requirements.md#epic-e12), [E1](functional-requirements.md#epic-e01), [E7](functional-requirements.md#epic-e07), [E5](functional-requirements.md#epic-e05) |
+| 15 | Settle the money | Organizer | Payments, refunds, balances & payouts, invoices, VAT ledger & returns, cancellation | [E9](functional-requirements.md#epic-e09), [E3](functional-requirements.md#epic-e03) |
+| 16 | **Learn & relaunch** | Both | Reports & exports, attendee feedback & surveys, speaker ratings, duplicate the event | [E13](functional-requirements.md#epic-e13), [E7](functional-requirements.md#epic-e07), [E6](functional-requirements.md#epic-e06), [E10](functional-requirements.md#epic-e10), [E3](functional-requirements.md#epic-e03) |
 
 ---
 
@@ -91,14 +91,14 @@ about, recorded in [project-plan.md §4.1](../02-project-plan/project-plan.md):
 
 - **†** `US-REG-04` is priority **Should** but ships in **R1** — `US-DISC-01` (Must) shows a
   "Waitlist" badge on sold-out events, so organizer-side waitlist management has to exist at launch.
-- **‡** six **Must** stories ship in **R2** — E9 Meetings is organizer-internal logistics, off the
+- **‡** six **Must** stories ship in **R2** — E12 Meetings is organizer-internal logistics, off the
   core money path, so it is deferred by decision rather than by accident.
 
 | Activity | **R1 · MVP** → gate M3 | **R2 · Growth** → gate M4 | **R3 · v1.0** → gate M5 |
 |---|---|---|---|
 | **Act 1 — Set up shop** | | | |
 | 1 · Open the workspace | `SET-07` `SET-08` `SET-09` `SET-10` `SET-11` `SET-12` | — | `SET-13` |
-| 2 · Sign in & stay secure | `ACC-01` `ACC-02` `ACC-04` `ACC-08` `ACC-10` `ACC-11` `ACC-12` `SET-01` `SET-02` | `ACC-05` `ACC-06` `ACC-07` `ACC-09` `SET-03` `SET-04` `SET-05` `SET-06` | — |
+| 2 · Sign in & stay secure | `ACC-01` `ACC-02` `ACC-04` `ACC-05` `ACC-08` `ACC-10` `ACC-11` `ACC-12` `SET-01` `SET-02` | `ACC-06` `ACC-07` `ACC-09` `SET-03` `SET-04` `SET-05` `SET-06` | — |
 | 3 · Create the event | `EVT-01` `EVT-02` `EVT-03` `EVT-04` `EVT-05` `EVT-11` | `EVT-12` | — |
 | 4 · Decide what's sold | `EVT-06` `EVT-10` `TKT-01` `TKT-02` `TKT-03` | `TKT-04` `TKT-05` | — |
 | **Act 2 — Open the doors** | | | |
@@ -136,9 +136,9 @@ decision, which is the point of drawing this.
 
 | Activity | Why it's empty | Consequence at launch | Verdict |
 |---|---|---|---|
-| **7 · Promote it** | All six promotion stories (`TKT-07`…`12`) plus `EVT-15`, `TKT-06`, `PAGE-08` are Should/Could. E6 is only 3 Must of 12 — the ticket-*type* half is Must, the promotion half is not | An organizer can publish an event but has **no discount codes, no share/flyer tooling, no announcements**. Promotion happens off-platform (their own social/email) | **Accept.** Sellable without it; nothing is unrecoverable |
-| **8 · Line up partners** | E9's six Must stories are deferred to R2 by decision (‡) | Speaker/sponsor/venue coordination happens in the organizer's own calendar and inbox until M4 | **Accept.** Organizer-internal; no attendee impact |
-| **16 · Learn & relaunch** | **All 12 E11 stories are non-Must (0 of 12)** — plus `DISC-13`, `MSG-08`/`09`, `PROG-13`, `EVT-13` | The MVP launches an event the organizer **cannot measure and cannot collect feedback on**, and cannot duplicate to relaunch. The `US-DASH-*` KPI tiles in R1 are the only numbers they get | **Accept with a caveat** — see below |
+| **7 · Promote it** | All six promotion stories (`TKT-07`…`12`) plus `EVT-15`, `TKT-06`, `PAGE-08` are Should/Could. E5 is only 3 Must of 12 — the ticket-*type* half is Must, the promotion half is not | An organizer can publish an event but has **no discount codes, no share/flyer tooling, no announcements**. Promotion happens off-platform (their own social/email) | **Accept.** Sellable without it; nothing is unrecoverable |
+| **8 · Line up partners** | E12's six Must stories are deferred to R2 by decision (‡) | Speaker/sponsor/venue coordination happens in the organizer's own calendar and inbox until M4 | **Accept.** Organizer-internal; no attendee impact |
+| **16 · Learn & relaunch** | **All 12 E13 stories are non-Must (0 of 12)** — plus `DISC-13`, `MSG-08`/`09`, `PROG-13`, `EVT-13` | The MVP launches an event the organizer **cannot measure and cannot collect feedback on**, and cannot duplicate to relaunch. The `US-DASH-*` KPI tiles in R1 are the only numbers they get | **Accept with a caveat** — see below |
 
 **The caveat on activity 16.** `US-DISC-01` (Must) states that event cards show *"an average rating
 when the event has been reviewed."* Ratings come from attendee feedback — `US-DISC-13` — which is
@@ -152,9 +152,9 @@ cheaper and does not move the MVP boundary.
 
 ### Narrow bands worth watching
 
-- **Activity 11 rests on E12's single Must.** `US-MSG-01` is 1 of 10 stories in its epic, and it is
+- **Activity 11 rests on E7's single Must.** `US-MSG-01` is 1 of 10 stories in its epic, and it is
   the one that delivers the attendee's ticket on successful payment. It is now pulled into Phase 1
-  (WBS 3.5, sprint 5) rather than shipping with the rest of E12 in R2. If it slips, the MVP has no
+  (WBS 3.5, sprint 5) rather than shipping with the rest of E7 in R2. If it slips, the MVP has no
   ticket delivery — treat it as a launch-blocking dependency of `US-DISC-06`.
 - **Activity 6 has three stories and no slack.** Publishing is the hinge between the two personas:
   nothing in Act 3 is reachable until `PAGE-09`, `PAGE-10` and `EVT-07` are all done.
@@ -167,12 +167,12 @@ Re-sorting the backlog by journey rather than by feature area surfaces two thing
 but worth knowing when reading the epic list:
 
 - **The first thing an organizer does is documented last.** Activity 1 is
-  [E13](functional-requirements.md#epic-e13) — you cannot create a sellable event before the org has
-  tax details and a connected payment account. The plan already handles this correctly (E13 is in
+  [E2](functional-requirements.md#epic-e02) — you cannot create a sellable event before the org has
+  tax details and a connected payment account. The plan already handles this correctly (E2 is in
   sprint 1), so this is a documentation-order observation only, not a sequencing defect.
-- **[E4](functional-requirements.md#epic-e04) (a dashboard *of* events) is numbered before
-  [E5](functional-requirements.md#epic-e05) (which creates them).** Again the plan builds them in the
-  right order (E5 sprint 2, E4 sprint 7); only the epic numbering reads backwards.
+- **[E11](functional-requirements.md#epic-e11) (a dashboard *of* events) is numbered before
+  [E3](functional-requirements.md#epic-e03) (which creates them).** Again the plan builds them in the
+  right order (E3 sprint 2, E11 sprint 7); only the epic numbering reads backwards.
 
 Epic ids are stable references and must not be renumbered to fix either of these.
 
