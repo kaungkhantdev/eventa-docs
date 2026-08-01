@@ -116,7 +116,7 @@ One PostgreSQL `ENUM` type per row. Values are listed in wire form (as stored).
 | `notification_kind` | `registration`, `payment`, `sales`, `feedback`, `payout`, `alert`, `task` | `notifications.kind` | `notifications.ts` |
 | `survey_status` | `live`, `closed`, `draft` | `surveys.status` | `feedback.ts` (`FeedbackStatus`) |
 | `question_type` | `Rating`, `Text`, `Multiple choice` | `survey_questions.type` | `feedback.ts` |
-| `member_role` | `Admin`, `Organizer`, `Staff`, `Attendee` | `roles.name`, `memberships.role` | `roles.ts` (`RoleName`) |
+| `member_role` | `Admin`, `Organizer`, `Staff`, `Attendee` | *(retired from `roles.name`/`memberships.role` — both are text since US-SET-13)* | `roles.ts` (`RoleName`) |
 | `member_status` | `Active`, `Invited`, `Suspended` | `memberships.status`, `users.status` | `users.ts` (`UserStatus`) |
 | `user_persona` | `admin`, `attendee` | `users.persona` | SRS §1.23 (personas never share a login) |
 | `permission_key` | `evCreate`, `evPublish`, `evSpeakers`, `regView`, `regCheckin`, `regExport`, `finView`, `finRefund`, `finDiscount`, `setUsers`, `setSettings`, `setIntegrations` | `permissions.key`, `role_permissions.permission_key` | `roles.ts` (`PermKey`, 12 values) |
@@ -217,10 +217,10 @@ Named preset of the 12 permissions, per organization.
 |---|---|---|---|---|---|
 | `id` | bigint identity | no | PK | | |
 | `organization_id` | bigint | no | FK→organizations.id, UK | | |
-| `name` | `member_role` | no | UK | | Admin/Organizer/Staff/Attendee. |
+| `name` | text | no | UK | | Free text so a workspace can add custom roles, e.g. "Volunteer" (US-SET-13). The four seeded presets keep the historical names. |
 | `description` | text | no | | | `ROLE_DESC[name]`. |
 | `bullets` | jsonb | yes | | | `ROLE_BULLETS` summary bullets. |
-| `is_system` | boolean | no | | `true` | Seeded presets; custom roles a future extension. |
+| `is_system` | boolean | no | | `true` | `true` for the four seeded presets; `false` for a custom role (US-SET-13). |
 | `created_at` | timestamptz | no | | `now()` | |
 | `updated_at` | timestamptz | no | | `now()` | |
 | `version` | integer | no | | `1` | |
@@ -266,7 +266,7 @@ Associates a user with an organization and the role they hold there. Carries the
 | `organization_id` | bigint | no | FK→organizations.id, UK, IX | | |
 | `user_id` | uuid | no | FK→users.id, UK, IX | | |
 | `role_id` | bigint | no | FK→roles.id, IX | | Preset of 12 permissions. |
-| `role` | `member_role` | no | | | Denormalized role name (`WorkspaceUser.role`). |
+| `role` | text | no | | | Denormalized role name; text, so it can hold a custom role (`WorkspaceUser.role`). |
 | `status` | `member_status` | no | | `'Invited'` | Active/Invited/Suspended. |
 | `invited_at` | timestamptz | yes | | | |
 | `joined_at` | timestamptz | yes | | | |
