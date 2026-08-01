@@ -92,7 +92,10 @@ One PostgreSQL `ENUM` type per row. Values are listed in wire form (as stored).
 | `registration_status` | *(alias — realized as `order_status`)* | — | `registrations.ts` (naming note) |
 | `issued_ticket_status` | `issued`, `checked_in`, `void`, `refunded`, `transferred` | `tickets.status` | derived from `RegStatus`/`ScanState` |
 | `payment_status` | `paid`, `pending`, `refunded`, `failed` | `payments.status`, `orders.payment_status` | `payments.ts` |
-| `payment_method` | `Card`, `PromptPay`, `Bank transfer` | `payments.method`, `invoices.paid_via` | `payments.ts` |
+| `payment_method` | `Card`, `PromptPay`, `Bank transfer`, `Apple Pay`, `Google Pay` | `payments.method`, `invoices.paid_via` | `payments.ts` |
+| `payment_provider` | `stripe` | `payment_settings.provider` | `payment-settings.ts` |
+| `payment_mode` | `test`, `live` | `payment_settings.mode` | `payment-settings.ts` |
+| `payment_connection_status` | `disconnected`, `connected` | `payment_settings.status` | `payment-settings.ts` |
 | `refund_status` | `pending`, `succeeded`, `failed` | `refunds.status` | derived from `TransactionStatus` (`reportsTransactions.ts`) |
 | `payout_status` | `paid`, `processing`, `scheduled`, `failed` | `payouts.status` | `payouts.ts` (reports labels: Paid / In transit / Pending) |
 | `invoice_status` | `paid`, `issued`, `overdue`, `void` | `invoices.status` | `invoices.ts` (paid/void terminal; issued/overdue derived) |
@@ -157,6 +160,8 @@ Tenant root / workspace. Not itself tenant-scoped; parent of everything else.
 | `name` | text | no | | | Workspace/company name. |
 | `slug` | text | no | UK | | Globally unique. `^[a-z0-9-]+$`. |
 | `logo_url` | text | yes | | | ≤1MB asset (UI-authoritative). |
+| `address` | text | yes | | | Legal address printed on invoices/receipts (US-SET-07). |
+| `website` | text | yes | | | Public site, http(s) URL (US-SET-07). |
 | `currency` | char(3) | no | | `'THB'` | Fixed THB. |
 | `country` | char(2) | no | | `'TH'` | |
 | `timezone` | text | no | | `'Asia/Bangkok'` | IANA tz. |
@@ -188,6 +193,9 @@ A login identity. Admin-console and portal personas are distinct rows even at th
 | `status` | `member_status` | no | | `'Invited'` | Active/Invited/Suspended. |
 | `password_hash` | text | yes | | | Argon2id; never returned/logged. |
 | `avatar_url` | text | yes | | | ≤5MB. |
+| `phone` | text | yes | | | Contact number; gates the SMS notification toggles (US-SET-01/06). |
+| `timezone` | text | yes | | | IANA tz; per-user override of the org timezone (US-SET-01). |
+| `pending_email` | citext | yes | | | Requested new email awaiting confirmation; `email` keeps working until the link is opened (US-SET-01). |
 | `two_factor_enabled` | boolean | no | | `false` | |
 | `locale` | `locale` | yes | | | User override of org locale. |
 | `attendee_id` | bigint | yes | FK→attendees.id | | 1:1 link for portal persona. |
@@ -374,6 +382,54 @@ Per-user email/SMS toggle per notification category (`NotifCategory`); gates whe
 - **FOREIGN KEYS** `organization_id`→`organizations(id)` **ON DELETE CASCADE**; `user_id`→`users(id)` **ON DELETE CASCADE**
 - **UNIQUE** (`user_id`, `category`)
 - **INDEX** `ix_notif_prefs_user` (`user_id`)
+
+#### `payment_settings`
+A workspace's payment connection and checkout preferences (US-SET-08/09/10) — one row per organization.
+
+**PCI SAQ-A:** no card data and **no provider secret key** is stored. The connection is by reference only
+— the provider's account id plus its publishable key, both non-secret. Charges are made with the platform
+secret from config acting on behalf of `account_id`, so there is nothing sensitive to show back or mask.
+
+| Column | Type | Null | Key | Default | Notes |
+|---|---|---|---|---|---|
+| `id` | bigint identity | no | PK | | |
+| `organization_id` | bigint | no | FK→organizations.id, UK | | One row per org. |
+| `provider` | `payment_provider` | no | | `'stripe'` | |
+| `mode` | `payment_mode` | no | | `'test'` | Test takes no real money. |
+| `status` | `payment_connection_status` | no | | `'disconnected'` | |
+| `account_id` | text | yes | | | Provider connected-account ref (e.g. `acct_…`). |
+| `publishable_key` | text | yes | | | Non-secret; safe in the browser. |
+| `connected_at` | timestamptz | yes | | | |
+| `disconnected_at` | timestamptz | yes | | | |
+| `default_currency` | char(3) | no | | `'THB'` | May differ from org currency (warn, don't block). |
+| `statement_descriptor` | varchar(22) | yes | | | ≤22 chars, shown on card statements. |
+| `save_cards` | boolean | no | | `false` | |
+| `email_receipts` | boolean | no | | `true` | |
+| `created_at` | timestamptz | no | | `now()` | |
+| `updated_at` | timestamptz | no | | `now()` | |
+| `version` | integer | no | | `1` | |
+
+- **PRIMARY KEY** (`id`)
+- **FOREIGN KEY** `organization_id`→`organizations(id)` **ON DELETE CASCADE**
+- **UNIQUE** `uq_payment_settings_org` (`organization_id`)
+- **RLS** tenant isolation on `organization_id`
+
+#### `payment_method_settings`
+Per-method on/off for checkout (US-SET-09). An absent row means the method is disabled.
+
+| Column | Type | Null | Key | Default | Notes |
+|---|---|---|---|---|---|
+| `id` | bigint identity | no | PK | | |
+| `organization_id` | bigint | no | FK→organizations.id, UK | | |
+| `method` | `payment_method` | no | UK | | Card/PromptPay/Bank transfer/Apple Pay/Google Pay. |
+| `enabled` | boolean | no | | `false` | |
+| `created_at` | timestamptz | no | | `now()` | |
+| `updated_at` | timestamptz | no | | `now()` | |
+
+- **PRIMARY KEY** (`id`)
+- **FOREIGN KEY** `organization_id`→`organizations(id)` **ON DELETE CASCADE**
+- **UNIQUE** `uq_payment_method_settings_org_method` (`organization_id`, `method`)
+- **RLS** tenant isolation on `organization_id`
 
 ### Events & Program
 
