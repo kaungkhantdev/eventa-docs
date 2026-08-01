@@ -127,6 +127,7 @@ One PostgreSQL `ENUM` type per row. Values are listed in wire form (as stored).
 | `seat_status` | `available`, `held`, `reserved`, `sold`, `blocked` | `seats.status` | production (reserved-seating model) |
 | `category_color` | `pink`, `blue`, `amber`, `brand`, `violet`, `indigo`, `teal`, `red` | `categories.color` | `categories.ts` |
 | `locale` | `en`, `th` | `organizations.locale`, `users.locale` | `format.ts` / SRS §5.5 |
+| `social_provider` | `google`, `apple`, `linkedin` | `social_identities.provider` | `identity.ts` |
 | `two_factor_method` | `totp` | `two_factors.method` | `security.ts` (authenticator app) |
 | `api_key_status` | `active`, `revoked` | `api_keys.status` | production (`setIntegrations` / apikey audit) |
 | `hold_status` | `active`, `converted`, `expired`, `released` | `seat_holds.status` | production (checkout seat-hold lifecycle) |
@@ -302,6 +303,28 @@ stored. Append-mostly (revoke sets a timestamp).
 - **PRIMARY KEY** (`id`)
 - **FOREIGN KEYS** `organization_id`→`organizations(id)` **ON DELETE CASCADE**; `user_id`→`users(id)` **ON DELETE CASCADE**
 - **INDEXES** `ix_auth_sessions_user` (`user_id`), `ix_auth_sessions_org` (`organization_id`), partial `ix_auth_sessions_active` (`user_id`) WHERE `revoked_at IS NULL`
+
+#### `social_identities`
+A provider account linked to a user (US-ACC-06). One row per (provider, subject); a user may link several
+providers. Nothing secret is stored — only the provider's opaque subject and the email it asserted at link
+time. A social-only account has `users.password_hash = NULL`.
+
+| Column | Type | Null | Key | Default | Notes |
+|---|---|---|---|---|---|
+| `id` | bigint identity | no | PK | | |
+| `organization_id` | bigint | no | FK→organizations.id, IX | | Tenant. |
+| `user_id` | uuid | no | FK→users.id, UK, IX | | |
+| `provider` | `social_provider` | no | UK | | google/apple/linkedin. |
+| `subject` | text | no | UK | | The provider's stable `sub` — never the email, which can change. |
+| `email` | citext | yes | | | Asserted at link time, for display only. |
+| `linked_at` | timestamptz | no | | `now()` | |
+| `last_used_at` | timestamptz | yes | | | |
+
+- **PRIMARY KEY** (`id`)
+- **FOREIGN KEYS** `organization_id`→`organizations(id)` **ON DELETE CASCADE**; `user_id`→`users(id)` **ON DELETE CASCADE**
+- **UNIQUE** `uq_social_identities_provider_subject` (`provider`, `subject`); `uq_social_identities_user_provider` (`user_id`, `provider`)
+- **INDEX** `ix_social_identities_user` (`user_id`)
+- **RLS** tenant isolation on `organization_id`
 
 #### `two_factors`
 Per-user TOTP two-factor enrollment (0..1 per user).
