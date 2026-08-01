@@ -520,6 +520,8 @@ Central aggregate: an event owned by an organization.
 | `accent_color` | text | yes | | | Landing accent. |
 | `organizer_name` | text | no | | | Display organizer. |
 | `contact_email` | citext | yes | | | Required to publish. |
+| `agenda_title` | text | yes | | | Custom heading for the agenda section; defaults otherwise (US-PAGE-04). |
+| `speakers_title` | text | yes | | | Custom heading for the speakers section (US-PAGE-04). |
 | `landing_template_id` | `template_id` | yes | FK→landing_templates.id | | |
 | `published_at` | timestamptz | yes | | | Set on first public state. |
 | `cancelled_at` | timestamptz | yes | | | Triggers refund sweep. |
@@ -534,6 +536,39 @@ Central aggregate: an event owned by an organization.
 - **UNIQUE** (`organization_id`, `slug`)
 - **INDEXES** `ix_events_org_status` (`organization_id`, `status`), `ix_events_start_at` (`start_at`), `ix_events_type` (`type`), `ix_events_category` (`category_id`)
 - `tone`/`icon`/`tasks_open` are presentation/derived hints; `tasks_open` is a computed rollup.
+
+#### `event_highlights`
+A bullet the organizer arranges on the public page (US-PAGE-04). Ordered by `position`; an event with none
+simply renders no Highlights section.
+
+| Column | Type | Null | Key | Default | Notes |
+|---|---|---|---|---|---|
+| `id` | bigint identity | no | PK | | |
+| `organization_id` | bigint | no | FK→organizations.id | | Tenant. |
+| `event_id` | uuid | no | FK→events.id, IX | | |
+| `text` | text | no | | | |
+| `icon` | text | yes | | | Optional icon key the template renders. |
+| `position` | integer | no | | `0` | Organizer's order. |
+| `created_at` / `updated_at` | timestamptz | no | | `now()` | |
+
+- **FOREIGN KEYS** both **ON DELETE CASCADE** · **INDEX** `ix_event_highlights_event` (`event_id`,`position`)
+- **RLS** tenant isolation on `organization_id`
+
+#### `event_faqs`
+A question/answer pair shown on the public page (US-PAGE-06). Same ordering rule as highlights.
+
+| Column | Type | Null | Key | Default | Notes |
+|---|---|---|---|---|---|
+| `id` | bigint identity | no | PK | | |
+| `organization_id` | bigint | no | FK→organizations.id | | Tenant. |
+| `event_id` | uuid | no | FK→events.id, IX | | |
+| `question` | text | no | | | |
+| `answer` | text | no | | | |
+| `position` | integer | no | | `0` | |
+| `created_at` / `updated_at` | timestamptz | no | | `now()` | |
+
+- **FOREIGN KEYS** both **ON DELETE CASCADE** · **INDEX** `ix_event_faqs_event` (`event_id`,`position`)
+- **RLS** tenant isolation on `organization_id`
 
 #### `speakers`
 A speaker featured at an event.
@@ -625,6 +660,9 @@ A sellable ticket tier for an event.
 | `sales_end_at` | timestamptz | yes | | | After → paused. |
 | `min_per_order` | integer | no | | `1` | |
 | `max_per_order` | integer | no | | `8` | Hard ceiling 8 seats/booking. |
+| `includes` | jsonb | yes | | | "What's included" bullets on the public page (US-PAGE-05). |
+| `is_recommended` | boolean | no | | `false` | The tier the page highlights (US-PAGE-05). |
+| `badge` | text | yes | | | Its badge text, e.g. "Most popular". |
 | `icon_class` | text | yes | | | Presentation tint. |
 | `created_at` | timestamptz | no | | `now()` | |
 | `updated_at` | timestamptz | no | | `now()` | |
