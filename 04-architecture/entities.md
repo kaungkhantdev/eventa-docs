@@ -689,18 +689,20 @@ A redeemable discount for an event (or org-wide).
 | `status` | `discount_status` | no | | `'scheduled'` | active/scheduled/expired/disabled. |
 | `used` | integer | no | | `0` | Derived count; ≤`redemption_limit`. |
 | `redemption_limit` | integer | no | | `0` | 0 = unlimited (`Discount.limit`). |
+| `per_person_limit` | integer | no | | `0` | 0 = unlimited per buyer (US-TKT-07). |
+| `min_order_satang` | bigint | no | | `0` | Order must reach this before the code applies (US-TKT-07). |
 | `valid_from` | timestamptz | yes | | | scheduled→active. |
 | `valid_until` | timestamptz | yes | | | After → expired. |
-| `revenue_attributed_satang` | bigint | yes | | | Reporting rollup (derived). |
+| `revenue_attributed_satang` | bigint | no | | `0` | Reporting rollup (derived). |
 | `created_at` | timestamptz | no | | `now()` | |
 | `updated_at` | timestamptz | no | | `now()` | |
-| `deleted_at` | timestamptz | yes | | | |
+| `deleted_at` | timestamptz | yes | | | Retired code — past orders keep their discount (US-TKT-09). |
 | `version` | integer | no | | `1` | |
 
 - **PRIMARY KEY** (`id`)
 - **FOREIGN KEYS** `organization_id`→`organizations(id)` **ON DELETE CASCADE**; `event_id`→`events(id)` **ON DELETE CASCADE**
 - **UNIQUE** (`organization_id`, `event_id`, `code`) — code unique per event (case-insensitive via uppercase storage)
-- **CHECK** `used >= 0`, `redemption_limit >= 0`
+- **CHECK** `used >= 0`, `redemption_limit >= 0`, `per_person_limit >= 0`, `min_order_satang >= 0`; and the value matches its type — `percent` between 1 and 100, `fixed` at least 1 satang
 - **INDEXES** `ix_discount_codes_event` (`event_id`), `ix_discount_codes_org` (`organization_id`)
 
 #### `discount_redemptions` — JUNCTION (discount_codes ⇄ orders)
@@ -712,13 +714,15 @@ Records each application of a code to an order; enforces idempotent, once-per-or
 | `organization_id` | bigint | no | FK→organizations.id, IX | | |
 | `discount_code_id` | uuid | no | FK→discount_codes.id, UK, IX | | |
 | `order_id` | uuid | no | FK→orders.id, UK, IX | | |
+| `buyer_email` | citext | no | IX | | Who redeemed it — enforces the per-person limit without joining orders (US-TKT-11). |
 | `amount_satang` | bigint | no | | | Discount applied to this order. |
 | `redeemed_at` | timestamptz | no | | `now()` | |
 
 - **PRIMARY KEY** (`id`)
 - **FOREIGN KEYS** `organization_id`→`organizations(id)` **ON DELETE CASCADE**; `discount_code_id`→`discount_codes(id)` **ON DELETE RESTRICT**; `order_id`→`orders(id)` **ON DELETE CASCADE**
 - **UNIQUE** (`discount_code_id`, `order_id`) — re-submitting the same code on the same order is a no-op
-- **INDEXES** `ix_discount_redemptions_code` (`discount_code_id`), `ix_discount_redemptions_order` (`order_id`)
+- **CHECK** `amount_satang >= 0`
+- **INDEXES** `ix_discount_redemptions_code` (`discount_code_id`), `ix_discount_redemptions_order` (`order_id`), `ix_discount_redemptions_buyer` (`discount_code_id`, `buyer_email`)
 
 ### Registration & Orders & Seating
 
