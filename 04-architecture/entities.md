@@ -113,7 +113,7 @@ One PostgreSQL `ENUM` type per row. Values are listed in wire form (as stored).
 | `announcement_status` | `sent`, `scheduled` | `announcements.status` | `announcements.ts` |
 | `announcement_audience` | `All registrants`, `Checked-in attendees`, `Waitlist` | `announcements.audience` | `announcements.ts` (`ANNOUNCEMENT_AUDIENCES`) |
 | `delivery_status` | `delivered`, `opened`, `sent`, `failed` | `message_deliveries.status` | `deliveryLog.ts` |
-| `notification_kind` | `registration`, `payment`, `sales`, `feedback`, `payout`, `alert`, `task` | `notifications.kind` | `notifications.ts` |
+| `notification_kind` | `registration`, `payment`, `sales`, `feedback`, `payout`, `alert`, `task`, `reminder`, `marketing` | `notifications.kind` | `notifications.ts` |
 | `survey_status` | `live`, `closed`, `draft` | `surveys.status` | `feedback.ts` (`FeedbackStatus`) |
 | `question_type` | `Rating`, `Text`, `Multiple choice` | `survey_questions.type` | `feedback.ts` |
 | `member_role` | `Admin`, `Organizer`, `Staff`, `Attendee` | *(retired from `roles.name`/`memberships.role` — both are text since US-SET-13)* | `roles.ts` (`RoleName`) |
@@ -196,6 +196,10 @@ A login identity. Admin-console and portal personas are distinct rows even at th
 | `avatar_url` | text | yes | | | ≤5MB. |
 | `phone` | text | yes | | | Contact number; gates the SMS notification toggles (US-SET-01/06). |
 | `timezone` | text | yes | | | IANA tz; per-user override of the org timezone (US-SET-01). |
+| `city` | text | yes | | | Attendee profile (US-DISC-11). |
+| `date_of_birth` | date | yes | | | Attendee profile (US-DISC-11). |
+| `bio` | text | yes | | | Attendee profile (US-DISC-11). |
+| `display_currency` | char(3) | yes | | | Display-only preference (US-DISC-12); charges settle in THB. |
 | `pending_email` | citext | yes | | | Requested new email awaiting confirmation; `email` keeps working until the link is opened (US-SET-01). |
 | `two_factor_enabled` | boolean | no | | `false` | |
 | `locale` | `locale` | yes | | | User override of org locale. |
