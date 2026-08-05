@@ -109,7 +109,7 @@ One PostgreSQL `ENUM` type per row. Values are listed in wire form (as stored).
 | `meeting_mode` | `Video`, `In person`, `Phone` | `meetings.mode` | `meetings.ts` |
 | `meeting_bucket` | `today`, `upcoming`, `past` | `meetings.bucket` (derived) | `meetings.ts` |
 | `template_id` | `aurora`, `noir`, `minimal`, `atlas` | `landing_templates.id`, `events.landing_template_id` | `landingTemplates.ts` |
-| `channel` | `email`, `sms` | `message_templates.channels`, `announcements.channels`, `message_deliveries.channel` | `messagingTemplates.ts`, `announcements.ts`, `deliveryLog.ts` |
+| `message_channel` | `email`, `sms` | `message_templates.channels`, `announcements.channels`, `message_deliveries.channel` | `messagingTemplates.ts`, `announcements.ts`, `deliveryLog.ts` |
 | `announcement_status` | `sent`, `scheduled` | `announcements.status` | `announcements.ts` |
 | `announcement_audience` | `All registrants`, `Checked-in attendees`, `Waitlist` | `announcements.audience` | `announcements.ts` (`ANNOUNCEMENT_AUDIENCES`) |
 | `delivery_status` | `delivered`, `opened`, `sent`, `failed` | `message_deliveries.status` | `deliveryLog.ts` |
@@ -513,6 +513,7 @@ Central aggregate: an event owned by an organization.
 | `start_at` | timestamptz | no | IX | | Event start. |
 | `end_at` | timestamptz | yes | | | Required to publish; `> start_at`. |
 | `timezone` | text | no | | `'Asia/Bangkok'` | |
+| `locale` | `locale` | yes | | | Language this event's automated messages default to (US-MSG-01); null → `organizations.locale`. |
 | `venue_name` | text | yes | | | Required unless `is_online`. |
 | `venue_address` | text | yes | | | |
 | `city` | text | yes | | | Filter facet. |
@@ -1089,26 +1090,35 @@ Automated email/SMS template (seeded slugs like `registration-confirmation`).
 |---|---|---|---|---|---|
 | `id` | bigint identity | no | PK | | |
 | `organization_id` | bigint | no | FK→organizations.id, UK, IX | | |
-| `slug` | text | no | UK | | e.g. `payment-receipt`. |
+| `slug` | text | no | UK | | e.g. `registration-confirmation`, `payment-receipt`. |
 | `title` | text | no | | | |
-| `description` | text | no | | | Editor trigger line. |
-| `icon` | text | yes | | | Hugeicons slug. |
-| `icon_class` | text | yes | | | Avatar colour classes. |
-| `channels` | `channel[]` | no | | | Subset of {email, sms}. |
-| `active` | boolean | no | | `true` | Automation enabled. |
+| `description` | text | yes | | | Editor trigger line. |
+| `channels` | `message_channel[]` | no | | `'{email}'` | Subset of {email, sms}. |
+| `active` | boolean | no | | `true` | Automation enabled — the kill switch US-MSG-01 checks. |
 | `tags` | text[] | no | | `'{}'` | Allowed merge tags (`COMMON_TAGS`). |
-| `email_subject` | text | yes | | | Required when channels ∋ email. |
-| `email_body` | text | yes | | | Required when channels ∋ email. |
-| `sms_body` | varchar(160) | yes | | | Required when channels ∋ sms; ≤160/segment. |
+| `email_subject_en` | text | yes | | | Required when channels ∋ email. |
+| `email_subject_th` | text | yes | | | |
+| `email_body_en` | text | yes | | | |
+| `email_body_th` | text | yes | | | |
+| `sms_body_en` | text | yes | | | ≤160 chars/segment; Thai encodes shorter. |
+| `sms_body_th` | text | yes | | | |
 | `created_at` | timestamptz | no | | `now()` | |
 | `updated_at` | timestamptz | no | | `now()` | |
-| `deleted_at` | timestamptz | yes | | | |
-| `version` | integer | no | | `1` | |
 
 - **PRIMARY KEY** (`id`)
 - **FOREIGN KEY** `organization_id`→`organizations(id)` **ON DELETE CASCADE**
 - **UNIQUE** (`organization_id`, `slug`)
 - **INDEX** `ix_message_templates_org` (`organization_id`)
+- **RLS** `tenant_isolation` on `organization_id` (migration `0029`)
+
+**Built (migration `0028`), with three deliberate departures from the original spec:**
+- **The wording columns are split `_en`/`_th`.** US-MSG-02 requires that "each message exists in English and Thai", which single `email_subject`/`email_body`/`sms_body` columns cannot express.
+- **`icon` / `icon_class` are omitted.** They are presentation choices for the settings screen, not data the sender needs; the front-end can map them from `slug`.
+- **No `deleted_at` / `version`.** A template is configuration keyed by (`organization_id`, `slug`), not an audited domain record — it is edited in place, and deleting one would just restore the built-in default.
+
+**Scope is per WORKSPACE, per message kind — there is deliberately no `event_id`.** US-MSG-01's "given the organizer has turned a given message off" therefore means workspace-wide; per-event control of an automated message exists in neither the story nor this model.
+
+**An ABSENT row means active.** Rows are not seeded on workspace creation, so a workspace that has never opened its message settings still sends its confirmations; the sender treats "no row" as on.
 
 #### `announcements`
 A one-off broadcast to an event audience.
