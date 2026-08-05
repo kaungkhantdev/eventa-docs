@@ -13,6 +13,11 @@
 > many-to-many with an associative (junction) table. All monetary values are
 > stored as **integer minor units (satang)**, never floating point.
 >
+> **Schema status.** The 53 tables in this catalog are the **target physical
+> model**, not a claim that every table has already shipped in API migrations.
+> Treat the API's committed `pgTable` definitions as the implementation inventory
+> and count them independently when reporting delivery progress.
+>
 > **Faithfulness.** Field names, enum values and monetary rules are taken
 > verbatim from the SRS data model and the TypeScript source of truth under
 > `src/features/*/data/*.ts`, `src/lib/eventCatalog.ts` and `src/lib/format.ts`.
@@ -33,20 +38,25 @@
   Human-facing references (`orders.reference` = `REG-YYYY-NNNNNN`,
   `invoices.number`, `payments.txn`, `payouts.reference`) are separate **UNIQUE**
   natural keys, never the PK.
-- **Multi-tenancy.** Every tenant-owned table carries
-  `organization_id bigint NOT NULL REFERENCES organizations(id)`. Every read/write
-  is filtered by the caller's organization (row-level tenant isolation). The only
-  tables without it are `organizations` itself and globally-seeded lookups
-  (`landing_templates`, `permissions`), which are shared across tenants.
-- **Audit columns.** Every table carries `created_at timestamptz NOT NULL DEFAULT
-  now()` (immutable) and `updated_at timestamptz NOT NULL DEFAULT now()` (touched
-  on every mutation, via trigger). Aggregate roots and user-editable entities also
+- **Multi-tenancy.** 46 of the 53 physical tables carry
+  `organization_id bigint REFERENCES organizations(id)` (NOT NULL except the
+  inbound `webhook_events` log while its tenant is unresolved). Every tenant
+  read/write is filtered by the caller's organization (row-level isolation).
+  The seven tables without that column are `organizations`, the global lookups
+  `landing_templates` and `permissions`, the transitively-scoped children
+  `role_permissions`, `recovery_codes`, and `session_speakers`, and the
+  cross-tenant, user-scoped `saved_events` bookmark table.
+- **Audit columns.** Mutable domain tables normally carry `created_at timestamptz
+  NOT NULL DEFAULT now()` (immutable) and `updated_at timestamptz NOT NULL DEFAULT
+  now()` (touched on every mutation, via trigger). Aggregate roots and user-editable entities also
   carry `deleted_at timestamptz NULL` for **soft delete**; append-only ledgers
   (`payments`, `refunds`, `audit_events`, `check_ins`, `message_deliveries`) are
   **never** soft-deleted and omit the column. `created_by bigint NULL REFERENCES
   users(id)` records the actor where meaningful (null for guest-originated rows).
   `version integer NOT NULL DEFAULT 1` is the optimistic-concurrency token
-  (stale writes are rejected `409 Conflict`).
+  (stale writes are rejected `409 Conflict`). Append-only, lookup, junction, and
+  immutable link tables may omit `updated_at` and/or `version`; each exception is
+  documented with its table.
 - **Money.** All monetary amounts are `bigint` **satang** (1 THB = 100 satang),
   `>= 0` via CHECK, paired with `currency char(3) NOT NULL DEFAULT 'THB'`.
   `bigint` is used (not `integer`) so large payouts/aggregates cannot overflow.
@@ -731,6 +741,26 @@ Records each application of a code to an order; enforces idempotent, once-per-or
 
 ### Registration & Orders & Seating
 
+#### `saved_events`
+A portal user's cross-organizer event bookmarks (US-DISC-03). This table is
+deliberately scoped by `user_id`, not `organization_id`: the Discover catalog is
+cross-tenant, so one saved list can contain events from several organizers.
+
+| Column | Type | Null | Key | Default | Notes |
+|---|---|---|---|---|---|
+| `id` | bigint identity | no | PK | | |
+| `user_id` | uuid | no | FK→users.id, UK, IX | | Bookmark owner. |
+| `event_id` | uuid | no | FK→events.id, UK, IX | | Saved event. |
+| `saved_at` | timestamptz | no | IX | `now()` | User-visible saved order. |
+| `created_at` | timestamptz | no | | `now()` | Immutable creation time. |
+
+- **PRIMARY KEY** (`id`)
+- **FOREIGN KEYS** `user_id`→`users(id)` **ON DELETE CASCADE**; `event_id`→`events(id)` **ON DELETE CASCADE**
+- **UNIQUE** `uq_saved_events_user_event` (`user_id`, `event_id`) — makes repeated saves and guest-save adoption idempotent
+- **INDEXES** `ix_saved_events_user` (`user_id`, `saved_at`), `ix_saved_events_event` (`event_id`)
+- **Isolation** application-enforced by `user_id`; deliberately no tenant RLS because this is a cross-tenant personal list
+- Immutable link table: no `organization_id`, `updated_at`, `deleted_at`, or `version`.
+
 #### `attendees`
 A person in the org's attendee CRM. May be a guest (no user) or linked 1:1 to a portal `users` row.
 
@@ -1397,6 +1427,8 @@ Type is read parent→child. "Via" names the FK column or junction table.
 | organizations | memberships | 1:N | memberships.organization_id | |
 | organizations | roles | 1:N | roles.organization_id | |
 | organizations | api_keys | 1:N | api_keys.organization_id | |
+| organizations | payment_settings | 1:1 | payment_settings.organization_id | Optional singleton per workspace. |
+| organizations | payment_method_settings | 1:N | payment_method_settings.organization_id | Per checkout method. |
 | organizations | categories | 1:N | categories.organization_id | |
 | organizations | events | 1:N | events.organization_id | |
 | organizations | payouts | 1:N | payouts.organization_id | |
@@ -1410,6 +1442,7 @@ Type is read parent→child. "Via" names the FK column or junction table.
 | roles ⇄ permissions | role_permissions | M:N | junction role_permissions | Preset matrix `ROLE_PERMS`. |
 | users ⇄ organizations | memberships | M:N | junction memberships | User↔org with role. |
 | users | auth_sessions | 1:N | auth_sessions.user_id | Devices/sessions. |
+| users | social_identities | 1:N | social_identities.user_id | Linked OAuth/OIDC providers. |
 | users | two_factors | 1:1 | two_factors.user_id (UK) | 0..1 enrollment. |
 | two_factors | recovery_codes | 1:N | recovery_codes.two_factor_id | One-time codes. |
 | users | notifications | 1:N | notifications.user_id | Inbox. |
@@ -1425,6 +1458,8 @@ Type is read parent→child. "Via" names the FK column or junction table.
 | events | orders | 1:N | orders.event_id | RESTRICT. |
 | events | speakers | 1:N | speakers.event_id | CASCADE. |
 | events | sessions | 1:N | sessions.event_id | Agenda; CASCADE. |
+| events | event_highlights | 1:N | event_highlights.event_id | Public-page bullets; CASCADE. |
+| events | event_faqs | 1:N | event_faqs.event_id | Public-page Q&A; CASCADE. |
 | events | surveys | 1:N | surveys.event_id | CASCADE. |
 | events | announcements | 1:N | announcements.event_id | CASCADE. |
 | events | meetings | 1:N | meetings.event_id | Optional; SET NULL. |
@@ -1434,6 +1469,8 @@ Type is read parent→child. "Via" names the FK column or junction table.
 | events | invoices | 1:N | invoices.event_id | |
 | events | payouts | 1:N | payouts.event_id | Optional attribution. |
 | events | check_ins | 1:N | check_ins.event_id | |
+| users | saved_events | 1:N | saved_events.user_id | Cross-tenant personal bookmarks; CASCADE. |
+| events | saved_events | 1:N | saved_events.event_id | Bookmark targets; CASCADE. |
 | sessions ⇄ speakers | session_speakers | M:N | junction session_speakers | A speaker owns many sessions. |
 | ticket_types | order_items | 1:N | order_items.ticket_type_id | RESTRICT. |
 | ticket_types | tickets | 1:N | tickets.ticket_type_id | RESTRICT. |

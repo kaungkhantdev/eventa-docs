@@ -62,7 +62,7 @@ Change one link and the others should follow. Some specifics that require readin
   six E12 Must stories→R2) — change one, change the other.
 - **Architecture is layered:** `software-architecture.md` is the baseline SAD (NestJS modular monolith +
   RabbitMQ consumers + **transactional outbox**, synchronous checkout; C4 views + **ADRs**). `entities.md`
-  is the schema **source of truth** (47 tables); `erd.md` is **derived from it** — keep them consistent
+  is the schema **source of truth** (53 tables); `erd.md` is **derived from it** — keep them consistent
   (e.g. the `outbox_events` / `seat_holds` / `webhook_events` tables exist specifically because SAD
   patterns require them). If you touch one, update the other and their shared counts.
 - **Tests trace to stories:** `06-testing/test-cases.md` has **333 `TC-*` cases** covering **all 161
@@ -90,7 +90,7 @@ Change one link and the others should follow. Some specifics that require readin
 
 ## Conventions that matter when editing
 
-- **Counts are repeated** in doc headers and the root `README.md` (161 stories · 333 test cases · 47 tables
+- **Counts are repeated** in doc headers and the root `README.md` (161 stories · 333 test cases · 53 tables
   · 13 epics/ADRs · MoSCoW splits). When a count changes, update every place — `README.md` is the index to
   keep current.
 - **Crow's-foot notation in ERDs:** nullable FKs use `|o--o{`, non-null FKs use `||--o{` — stay consistent
