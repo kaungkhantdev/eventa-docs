@@ -7,13 +7,13 @@
 | **Format** | Product backlog — epics → user stories, with MoSCoW priority & acceptance criteria |
 | **Version** | 1.0 |
 | **Date** | 2026-07-23 |
-| **Scope** | 13 epics · 161 user stories |
+| **Scope** | 13 epics · 162 user stories |
 
 > **How to read this.** This is the functional backlog from the **Product Owner's** point of view — what the product must do and *why it matters to the business*, expressed as user stories (`As a <role>, I want <goal>, so that <benefit>`) with business-observable acceptance criteria. Each story carries a **MoSCoW** priority. The technical detail (data model & ERD) lives in [Stage 4 — Architecture](../04-architecture/); quality bars live in [non-functional-requirements.md](non-functional-requirements.md).
 
 ## Prioritisation & MVP
 
-The backlog holds **161 user stories**: **89 Must**, **57 Should**, **15 Could**. The **Must** stories define the MVP — the core money path *(discover → register → pay → get a QR ticket → check in)* plus creating and publishing an event, sign-in, and getting paid. Should/Could stories deepen finance, insights, engagement, meetings and workspace administration in later releases.
+The backlog holds **162 user stories**: **90 Must**, **57 Should**, **15 Could**. The **Must** stories define the MVP — the core money path *(discover → register → pay → get a QR ticket → check in)* plus creating and publishing an event, sign-in, and getting paid. Should/Could stories deepen finance, insights, engagement, meetings and workspace administration in later releases.
 
 ## Epics
 
@@ -24,7 +24,7 @@ The backlog holds **161 user stories**: **89 Must**, **57 Should**, **15 Could**
 | 3 | [Create & Manage Events](#epic-e03) | 15 | 11 | 4 | 0 |
 | 4 | [Public Event Pages](#epic-e04) | 10 | 6 | 3 | 1 |
 | 5 | [Sell Tickets & Run Promotions](#epic-e05) | 12 | 3 | 7 | 2 |
-| 6 | [Discover & Register for Events (Attendee)](#epic-e06) | 14 | 10 | 3 | 1 |
+| 6 | [Discover & Register for Events (Attendee)](#epic-e06) | 15 | 11 | 3 | 1 |
 | 7 | [Communicate with Attendees](#epic-e07) | 10 | 1 | 6 | 3 |
 | 8 | [Manage Registrations & Admit Attendees](#epic-e08) | 14 | 8 | 6 | 0 |
 | 9 | [Get Paid & Manage Finances](#epic-e09) | 14 | 11 | 3 | 0 |
@@ -32,7 +32,7 @@ The backlog holds **161 user stories**: **89 Must**, **57 Should**, **15 Could**
 | 11 | [Organizer Home & Dashboard](#epic-e11) | 13 | 7 | 4 | 2 |
 | 12 | [Coordinate Meetings](#epic-e12) | 9 | 6 | 2 | 1 |
 | 13 | [Measure Performance (Reports)](#epic-e13) | 12 | 0 | 9 | 3 |
-| | **Total** | **161** | **89** | **57** | **15** |
+| | **Total** | **162** | **90** | **57** | **15** |
 
 ### Why the epics are in this order
 
@@ -53,7 +53,7 @@ E1 Accounts ──┬─→ E3 Create Events ──→ E4 Public Pages ──→
   a blank slate, and every later epic scopes to the workspace owner it creates.
 - **E2** is second because an event cannot be sold before the organization has tax details and a
   connected payment account (`US-SET-07`, `US-SET-08`).
-- **E6 Discover & Register is sixth, not first.** Eleven of its fourteen stories stand on data other
+- **E6 Discover & Register is sixth, not first.** Eleven of its fifteen stories stand on data other
   epics create: `US-DISC-01` browses *published* events (E3 + E4), `US-DISC-04` needs a priced ticket
   type (E5), and `US-DISC-06` issues a VAT receipt (E9). Built first, it is a browse screen with no
   rows and a Register button with nowhere to land.
@@ -892,6 +892,8 @@ _Notes: Card details are entered by the attendee into the secure payment provide
 
 **Acceptance criteria**
 - Given a valid selection and (for paid events) an approved payment, when I confirm, then my registration is placed once, I get one QR ticket per seat/ticket, and I see a "You're registered!" recap with links to view my tickets.
+- Given the recap, when it is shown, then I am also offered — but never required — to set a password and keep the ticket in an account (US-DISC-15).
+- Given I never create an account, when I follow the link in my confirmation email, then I can still open and download my ticket: the link works without signing in.
 - Given my registration is confirmed, when it completes, then I receive a confirmation email containing my QR ticket(s), an order summary, a VAT receipt for paid orders, and a calendar invite; online events also include a join link.
 - Given I provided a mobile number and SMS is applicable, when I register, then I also get a confirmation text.
 - Given I double-tap confirm or retry, when the requests arrive, then only one registration is created and I'm charged only once.
@@ -915,6 +917,8 @@ _Notes: Card details are entered by the attendee into the secure payment provide
 - Given wrong credentials, when I submit, then I see a single "email or password is incorrect" message without revealing which was wrong.
 - Given repeated failed attempts, when the limit is passed, then further attempts are temporarily blocked and I'm pointed to reset my password.
 - Given I forgot my password, when I choose "Forgot password?", then I'm taken to a reset flow.
+- Given I have no account, when I am on the attendee sign-in page, then I can create one from there (US-DISC-15) — the sign-in page is the only other place an attendee account can be created.
+- Given I sign in, when my account is resolved, then it is found in the single platform-wide realm and no workspace is named: naming one is refused rather than ignored, so that my tickets from different organizers all live under one account.
 
 ### US-DISC-09 — See my upcoming and past tickets  ·  **Must**
 **As a** registered Attendee, **I want** my registrations split into upcoming and past, **so that** I can grab my ticket for what's next and revisit what I've attended.
@@ -980,6 +984,26 @@ _Notes: Feedback is anonymous to other attendees; organizers see aggregate ratin
 - Given I can't re-verify my identity, when I try, then deletion is aborted and my account is unchanged.
 
 _Notes: Deletion is irreversible. Financial/tax records are retained in anonymized form for the legal retention period, disassociated from the personal profile._
+
+### US-DISC-15 — Create my account from my confirmation  ·  **Must**
+**As an** Attendee who has just registered, **I want** to turn my booking into an account in one click, **so that** I can see this ticket and every future one in one place — without having been made to sign up before I could buy.
+
+**Acceptance criteria**
+- Given I have just confirmed a registration, when the confirmation screen appears, then it offers me a "Create account" link alongside my ticket, and a way to dismiss it that says the ticket is already in my email.
+- Given I am offered the account, when I decline or ignore it, then my registration, ticket and receipt are entirely unaffected and the offer never blocks the ticket.
+- Given I follow the link, when the sign-up page opens, then the email is already filled in from the booking and **cannot be edited**, so the account can only ever be created for the address the ticket was sent to.
+- Given the sign-up page opened from my booking, when I complete it, then I am asked only for a password — my name comes from the booking — and I am signed in immediately and land on My Events.
+- Given I registered with an email that already has an account, when I follow the link, then I am invited to sign in instead of being offered a duplicate.
+- Given my new account, when I open My Events, then registrations I made with the same email **before** creating the account are already listed.
+- Given I reach the sign-up page directly rather than from a booking, when it opens, then the email field is empty and editable, and the account is verified by email before it can be used.
+
+_Notes: This is deliberately the ONLY prompt to create an attendee account in the registration flow, and it comes AFTER the ticket is issued — see US-DISC-04's note that registering requires no account. The offer is an upsell, never a step, and it is a link rather than a form so that checkout itself never collects a credential._
+
+_The locked email is what makes this safe without a separate email-verification round trip: the address is proven by the ticket having been sent to it, and because the field cannot be edited, a claimed booking can never be turned into an account for a different address. The sign-up page therefore has two modes — opened from a booking (email locked, no verification needed) and opened directly (email entered, verification required)._
+
+_The link must identify the booking by a value that cannot be guessed — the order's id, not its human-readable reference. The page reveals the buyer's email address, so anyone able to guess the identifier could harvest the address of a real registration; an 8-character reference printed on a ticket is not sufficient for that._
+
+_Every attendee account belongs to the one platform-wide organization, never to the organizer whose event was booked — see US-DISC-08. This is what allows tickets from different organizers to appear in one place._
 
 
 ---

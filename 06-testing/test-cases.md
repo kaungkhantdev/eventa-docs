@@ -5,7 +5,7 @@
 | **Author** | QA Engineer |
 | **Version** | 1.0 · 2026-07-23 |
 | **Companion** | [test-plan.md](test-plan.md) |
-| **Scope** | 333 test cases across 13 epics, tracing to the 161 user stories in the [product backlog](../01-requirements-and-features/functional-requirements.md) |
+| **Scope** | 340 test cases across 13 epics, tracing to the 162 user stories in the [product backlog](../01-requirements-and-features/functional-requirements.md) |
 
 > Each test case is derived from a user story's Given/When/Then acceptance criteria, and lists its traceability (`US-*`), priority, type, preconditions, test data, steps, and expected result. Priority defaults from MoSCoW (Must→High, Should→Medium, Could→Low). See [test-plan.md](test-plan.md) for strategy, environment, defect process, and closure.
 
@@ -18,7 +18,7 @@
 | 3 | [Create & Manage Events](#tc-e03) | 15 | 35 | 20 | 13 | 2 |
 | 4 | [Public Event Pages](#tc-e04) | 10 | 21 | 11 | 9 | 1 |
 | 5 | [Sell Tickets & Run Promotions](#tc-e05) | 12 | 24 | 9 | 12 | 3 |
-| 6 | [Discover & Register for Events](#tc-e06) | 14 | 28 | 20 | 6 | 2 |
+| 6 | [Discover & Register for Events](#tc-e06) | 15 | 35 | 25 | 8 | 2 |
 | 7 | [Communicate with Attendees](#tc-e07) | 10 | 20 | 3 | 13 | 4 |
 | 8 | [Manage Registrations & Admit Attendees](#tc-e08) | 14 | 30 | 17 | 13 | 0 |
 | 9 | [Get Paid & Manage Finances](#tc-e09) | 14 | 27 | 20 | 7 | 0 |
@@ -26,7 +26,7 @@
 | 11 | [Organizer Home & Dashboard](#tc-e11) | 13 | 25 | 14 | 9 | 2 |
 | 12 | [Coordinate Meetings](#tc-e12) | 9 | 21 | 8 | 11 | 2 |
 | 13 | [Measure Performance (Reports)](#tc-e13) | 12 | 25 | 10 | 13 | 2 |
-| | **Total** | **161** | **333** | **181** | **131** | **21** |
+| | **Total** | **162** | **340** | **186** | **133** | **21** |
 
 ---
 
@@ -1987,6 +1987,70 @@ Locale defaults: currency ฿ (THB), VAT 7%, PromptPay, Asia/Bangkok, languages 
   1. Start account deletion and reach the identity re-verification step.
   2. Fail re-verification (wrong password / failed 2FA).
 - **Expected result:** Deletion is aborted and the account is unchanged (still signed in, data intact, no confirmation email sent).
+
+## US-DISC-15 — Create my account from my confirmation
+
+### TC-DISC-29 — Follow the confirmation link and create the account with a locked email
+- **Traces:** US-DISC-15  ·  **Priority:** High  ·  **Type:** Functional
+- **Preconditions:** A guest (no account) has just confirmed a registration and is on the "You're registered!" screen. Their name, email and phone were captured during checkout.
+- **Test data:** Buyer "Anong Pattana" / anong.p@example.com; one confirmed order with one QR ticket.
+- **Steps:**
+  1. Confirm the ticket and QR are shown on the recap, and that the account offer is a link — the recap itself asks for no credential.
+  2. Follow the "Create account" link.
+  3. Inspect the email field on the sign-up page.
+  4. Set a password and submit.
+- **Expected result:** The sign-up page opens with anong.p@example.com already filled in and the field disabled — it cannot be edited or cleared. Only a password is asked for. On submit the attendee is signed in immediately and lands on My Events, with no email-verification step, because the address was proven by the ticket being sent to it.
+
+### TC-DISC-29b — The locked email cannot be substituted before submitting
+- **Traces:** US-DISC-15  ·  **Priority:** High  ·  **Type:** Negative
+- **Preconditions:** The sign-up page has been opened from a completed booking.
+- **Steps:**
+  1. Re-enable or overwrite the disabled email field in the browser, or post the form with a different email than the booking's.
+  2. Submit.
+- **Expected result:** The account is created for the booking's own email regardless, or the request is refused — the submitted email is never trusted. A claimed booking can never be turned into an account for a different address.
+
+### TC-DISC-30 — Declining the account leaves the registration untouched
+- **Traces:** US-DISC-15  ·  **Priority:** High  ·  **Type:** Functional
+- **Preconditions:** A guest has just confirmed a registration.
+- **Steps:**
+  1. Skip or ignore the account offer.
+  2. Check the ticket, QR and confirmation email.
+  3. Follow the ticket link in the confirmation email while signed out.
+- **Expected result:** The registration, ticket and receipt are entirely unaffected. The emailed ticket link opens without signing in. The offer never blocks the ticket.
+
+### TC-DISC-31 — Past registrations appear once the account exists
+- **Traces:** US-DISC-15  ·  **Priority:** High  ·  **Type:** Functional
+- **Preconditions:** The same email has TWO earlier confirmed registrations, made as a guest with no account.
+- **Steps:**
+  1. Create the account from a third registration's confirmation screen.
+  2. Open My Events.
+- **Expected result:** All three registrations are listed, including the two made before the account existed — registrations are matched to the account by the email the order was placed with.
+
+### TC-DISC-32 — An email that already has an account is offered sign-in, not a duplicate
+- **Traces:** US-DISC-15  ·  **Priority:** Medium  ·  **Type:** Negative
+- **Preconditions:** An attendee account already exists for the email used at checkout.
+- **Steps:**
+  1. Complete a registration with that email as a signed-out guest.
+  2. Follow the "Create account" link from the confirmation.
+- **Expected result:** The page invites signing in instead of offering a second account. No duplicate account is created.
+
+### TC-DISC-32b — The sign-up link cannot be guessed to harvest a buyer's email
+- **Traces:** US-DISC-15  ·  **Priority:** High  ·  **Type:** Negative
+- **Preconditions:** A real confirmed order exists, with reference ORD-GAZJG4J0 printed on its ticket.
+- **Steps:**
+  1. Open the sign-up page using the order's human-readable REFERENCE as the identifier.
+  2. Open it using a plausible neighbouring reference.
+  3. Open it using a random value.
+- **Expected result:** None of these reveal an email address. The page accepts only the order's unguessable id; anything else opens the page in its ordinary mode with an empty, editable email field. The buyer's address is never disclosed to someone who merely guessed an identifier.
+
+### TC-DISC-33 — The account can be created later from the attendee sign-in page
+- **Traces:** US-DISC-15  ·  **Priority:** Medium  ·  **Type:** Functional
+- **Preconditions:** A person skipped the offer at confirmation, or never registered for anything.
+- **Steps:**
+  1. Open the attendee sign-in page and choose "Create one".
+  2. Complete the form and verify the email.
+  3. Open My Events.
+- **Expected result:** The email field is empty and editable, because no booking was in hand. The account is created in the single platform-wide realm with no workspace named, and because nothing proved the address, it is verified by email before it can be used. Any registrations previously made with that email are then listed.
 
 
 ---

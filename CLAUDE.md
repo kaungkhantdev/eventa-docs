@@ -46,7 +46,7 @@ user story (US-*)  →  architecture (software-architecture.md + entities.md/erd
 Change one link and the others should follow. Some specifics that require reading several files to grasp:
 
 - **Requirements are a product backlog, not a flat list.** `01-.../functional-requirements.md` holds
-  **13 epics (`E1`–`E13`) → 161 user stories** in Product-Owner voice (`As a … I want … so that …`) with
+  **13 epics (`E1`–`E13`) → 162 user stories** in Product-Owner voice (`As a … I want … so that …`) with
   MoSCoW priorities; `non-functional-requirements.md` holds the quality requirements (`NFR-*`).
   **The epics are ordered by build dependency, not by feature area** — `E1` Accounts is first because
   it is the only epic that needs nothing, and `E6` Discover & Register comes sixth because it needs a
@@ -65,7 +65,7 @@ Change one link and the others should follow. Some specifics that require readin
   is the schema **source of truth** (53 tables); `erd.md` is **derived from it** — keep them consistent
   (e.g. the `outbox_events` / `seat_holds` / `webhook_events` tables exist specifically because SAD
   patterns require them). If you touch one, update the other and their shared counts.
-- **Tests trace to stories:** `06-testing/test-cases.md` has **333 `TC-*` cases** covering **all 161
+- **Tests trace to stories:** `06-testing/test-cases.md` has **340 `TC-*` cases** covering **all 162
   stories**; `test-plan.md` is the strategy/process. Each test case names the `US-*` it verifies.
 - **DevOps is deliberately split across stages 07 and 08**, not under `04-architecture`: `07-deployment`
   holds `devops-architecture.md` (overview) + `devops-ci-cd.md` + `devops-infrastructure.md`;
@@ -90,7 +90,7 @@ Change one link and the others should follow. Some specifics that require readin
 
 ## Conventions that matter when editing
 
-- **Counts are repeated** in doc headers and the root `README.md` (161 stories · 333 test cases · 53 tables
+- **Counts are repeated** in doc headers and the root `README.md` (162 stories · 340 test cases · 53 tables
   · 13 epics/ADRs · MoSCoW splits). When a count changes, update every place — `README.md` is the index to
   keep current.
 - **Crow's-foot notation in ERDs:** nullable FKs use `|o--o{`, non-null FKs use `||--o{` — stay consistent

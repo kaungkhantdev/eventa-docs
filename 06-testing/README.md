@@ -8,9 +8,9 @@ Verifies the software meets its requirements — owned by QA, following the 7-st
   accessibility, localization, regression, UAT), schedule aligned to the project-plan milestones,
   entry/exit criteria, **test environment setup**, the **defect-management process** (severity,
   priority, lifecycle diagram, report template), and the **test-closure / summary-report** template.
-- **[test-cases.md](test-cases.md)** — **333 test cases** across 13 epics, each derived from a
+- **[test-cases.md](test-cases.md)** — **340 test cases** across 13 epics, each derived from a
   story's Given/When/Then acceptance criteria and traced to its `US-*` id (priority breakdown:
-  179 High / 133 Medium / 21 Low). Includes a coverage table proving **all 161 user stories** have
+  186 High / 133 Medium / 21 Low). Includes a coverage table proving **all 162 user stories** have
   test cases.
 
 ## Traceability

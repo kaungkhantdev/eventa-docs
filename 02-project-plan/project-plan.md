@@ -6,7 +6,7 @@
 | **Author** | Project Manager |
 | **Version** | 1.1 |
 | **Date** | 2026-07-23 |
-| **Planning basis** | [Product backlog](../01-requirements-and-features/functional-requirements.md) — 161 user stories (89 Must / 57 Should / 15 Could) + [46 quality requirements](../01-requirements-and-features/non-functional-requirements.md) |
+| **Planning basis** | [Product backlog](../01-requirements-and-features/functional-requirements.md) — 162 user stories (90 Must / 57 Should / 15 Could) + [46 quality requirements](../01-requirements-and-features/non-functional-requirements.md) |
 | **Delivery approach** | Agile / Scrum · 2-week sprints |
 | **Target** | MVP public launch **Dec 2026** · v1.0 GA **Mar 2027** |
 
@@ -34,7 +34,7 @@ replacing the current front-end prototype. Objectives are SMART:
 | ID | Objective | Measure (M) | Target (T) |
 |----|-----------|-------------|-----------|
 | **O1** | Launch the MVP taking **real registrations & payments** | MVP live; ≥1 real paid registration & QR check-in in production | **2026-12-08** |
-| **O2** | Deliver **v1.0** (all Must + Should + selected Could) within budget | 146+ of 161 stories accepted; ≤ approved budget (§6) | **2027-03-16** |
+| **O2** | Deliver **v1.0** (all Must + Should + selected Could) within budget | 147+ of 162 stories accepted; ≤ approved budget (§6) | **2027-03-16** |
 | **O3** | Meet **launch-critical quality bars** | Must-priority NFRs verified (checkout confirm < 2s p95; page load < 2.5s p95; PDPA-compliant) | at **M3** (2026-12-08) |
 | **O4** | Ship at an agreed **quality level** | Zero open Sev-1/Sev-2 defects at each release; ≥ 90% of Must stories accepted first-pass | each release |
 
@@ -42,7 +42,7 @@ replacing the current front-end prototype. Objectives are SMART:
 
 ## 2. Scope statement
 
-**In scope** — the 13 epics / 161 user stories in the backlog; a backend + datastore; real
+**In scope** — the 13 epics / 162 user stories in the backlog; a backend + datastore; real
 authentication; Stripe + PromptPay payments; email/SMS; and the integrations in the spec.
 
 **Out of scope (this release train)** — native mobile apps; multi-currency beyond THB; a public

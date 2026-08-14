@@ -109,7 +109,7 @@ about, recorded in [project-plan.md §4.1](../02-project-plan/project-plan.md):
 | **Act 3 — Sell & fill** | | | |
 | 9 · Discover the event | `DISC-01` `DISC-02` | `DISC-03` | — |
 | 10 · Decide to come | `PAGE-01` `PAGE-02` `PAGE-03` `PAGE-05` | `PAGE-04` `PAGE-07` | `PAGE-06` |
-| 11 · Register, pay, get the ticket | `ACC-03` `DISC-04` `DISC-05` `DISC-06` `DISC-07` `MSG-01` | `TKT-11` `MSG-02` | — |
+| 11 · Register, pay, get the ticket | `ACC-03` `DISC-04` `DISC-05` `DISC-06` `DISC-07` `DISC-15` `MSG-01` | `TKT-11` `MSG-02` | — |
 | 12 · Manage my tickets | `DISC-08` `DISC-09` `DISC-10` `DISC-11` | `DISC-12` | `DISC-14` |
 | **Act 4 — Run & learn** | | | |
 | 13 · Watch the sign-ups | `REG-01` `REG-02` `REG-03` `REG-05` `REG-06` `REG-04`† `DASH-01` `DASH-02` `DASH-06` `DASH-08` `DASH-09` `DASH-12` `DASH-13` | `REG-07` `REG-08` `REG-09` `REG-10` `DASH-03` `DASH-04` `DASH-10` `DASH-11` `EVT-14` `MSG-03` | `DASH-05` `DASH-07` |
@@ -158,6 +158,13 @@ cheaper and does not move the MVP boundary.
   ticket delivery — treat it as a launch-blocking dependency of `US-DISC-06`.
 - **Activity 6 has three stories and no slack.** Publishing is the hinge between the two personas:
   nothing in Act 3 is reachable until `PAGE-09`, `PAGE-10` and `EVT-07` are all done.
+- **Activity 12 rests entirely on one story in activity 11.** `US-DISC-15` is the only way an
+  attendee account comes into existence, and all four R1 stories in "Manage my tickets"
+  (`DISC-08`…`11`) are unreachable without one. It sits one column to the left of everything that
+  needs it, which is easy to miss: an attendee area shipped without `DISC-15` has no way for a real
+  person to get in. Social sign-in is not a substitute — it creates the account in the organizer's
+  workspace rather than the platform realm, which is the wrong realm for "all my tickets in one
+  place" (see `US-DISC-08`).
 
 ---
 

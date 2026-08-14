@@ -5,7 +5,7 @@
 | **Product** | Eventa — Event Registration & Management Platform |
 | **Author** | QA Engineer |
 | **Version** | 1.0 · 2026-07-23 |
-| **Test basis** | [Product backlog](../01-requirements-and-features/functional-requirements.md) (161 user stories) · [Quality requirements](../01-requirements-and-features/non-functional-requirements.md) (46 NFRs) · [Architecture](../04-architecture/software-architecture.md) |
+| **Test basis** | [Product backlog](../01-requirements-and-features/functional-requirements.md) (162 user stories) · [Quality requirements](../01-requirements-and-features/non-functional-requirements.md) (46 NFRs) · [Architecture](../04-architecture/software-architecture.md) |
 
 **Testing-cycle coverage** — this plan and its companion [test-cases.md](test-cases.md) cover the 7-step cycle:
 
