@@ -98,7 +98,7 @@ One PostgreSQL `ENUM` type per row. Values are listed in wire form (as stored).
 | `admission_type` | `general_admission`, `reserved_seat` | `ticket_types.admission_type` | derived from `seating_mode` |
 | `discount_type` | `percent`, `fixed` | `discount_codes.type` | `ticketing/types.ts` |
 | `discount_status` | `active`, `scheduled`, `expired`, `disabled` | `discount_codes.status` | `ticketing/types.ts`, `discounts.ts`, `reportsDiscounts.ts` |
-| `order_status` | `confirmed`, `pending`, `waitlisted`, `cancelled` | `orders.status` | SRS `RegistrationStatus` (`registrations.ts`) |
+| `order_status` | `confirmed`, `pending`, `waitlisted`, `cancelled`, `rejected`, `expired` | `orders.status` | SRS `RegistrationStatus` (`registrations.ts`). `rejected` = an organizer turned it down (US-REG-02); `expired` = nobody paid before the seat hold lapsed (US-DISC-05). Both are deliberately distinct from `cancelled`, which is a withdrawal or a refund — a decision somebody made, not the absence of one. |
 | `registration_status` | *(alias — realized as `order_status`)* | — | `registrations.ts` (naming note) |
 | `issued_ticket_status` | `issued`, `checked_in`, `void`, `refunded`, `transferred` | `tickets.status` | derived from `RegStatus`/`ScanState` |
 | `payment_status` | `paid`, `pending`, `refunded`, `failed` | `payments.status`, `orders.payment_status` | `payments.ts` |
@@ -800,7 +800,7 @@ The booking header — the "registration" as a commerce order. Parent of `order_
 | `buyer_name` | text | no | | | |
 | `buyer_email` | citext | no | | | Confirmation sent here. |
 | `buyer_phone` | text | yes | | | E.164; SMS reminders. |
-| `status` | `order_status` | no | IX | `'pending'` | confirmed/pending/waitlisted/cancelled. |
+| `status` | `order_status` | no | IX | `'pending'` | confirmed/pending/waitlisted/cancelled/rejected/expired. **`expired` is written by eventa-worker, not the API** — see the writer note below. |
 | `payment_status` | `payment_status` | no | | `'pending'` | Payment sub-state rollup. |
 | `seats` | smallint | no | | | 1–8 per booking. |
 | `subtotal_satang` | bigint | no | | | Pre-discount, pre-VAT. |
@@ -823,6 +823,15 @@ The booking header — the "registration" as a commerce order. Parent of `order_
 - **CHECK** `seats BETWEEN 1 AND 8`, all money `>= 0`
 - **INDEXES** `ix_orders_event` (`event_id`), `ix_orders_attendee` (`attendee_id`), `ix_orders_status` (`organization_id`, `status`), `ix_orders_discount` (`discount_code_id`)
 - `checked_in` is derived from child `tickets`.
+- **WRITERS — eventa-api owns this table, with one agreed exception.** The
+  order-expiry sweep in **eventa-worker** (`modules/order-expiry`, ADR-14) sets
+  `status = 'expired'` on `pending`/`pending` orders whose seat holds lapsed, and
+  retires those holds in the same transaction. It is the only clock-driven write
+  to an API aggregate in the platform, and the only place outside eventa-api that
+  writes `orders`. **Consequence:** the worker's `orders` and `seat_holds` schema
+  files are *write* mirrors, not read views — an enum value added here must be
+  added there in the same change, because a write fails on a value a read would
+  simply never have produced.
 
 #### `order_items`
 Line item: a quantity of one ticket type within an order.
@@ -1393,6 +1402,12 @@ Short-lived checkout reservation that expires and releases inventory if the buye
 - **FOREIGN KEYS** `organization_id`→`organizations(id)` **ON DELETE CASCADE**; `event_id`→`events(id)` **ON DELETE CASCADE**; `order_id`→`orders(id)` **ON DELETE SET NULL**; `ticket_type_id`→`ticket_types(id)` **ON DELETE CASCADE**; `seat_id`→`seats(id)` **ON DELETE CASCADE**
 - **UNIQUE** partial `uq_seat_hold_active` (`seat_id`) WHERE `status = 'active'` — a seat has at most one active hold
 - **INDEXES** partial `ix_seat_holds_expiry` (`expires_at`) WHERE `status = 'active'` (expiry sweeper), `ix_seat_holds_order` (`order_id`)
+- **A lapsed hold stops reserving the moment `expires_at` passes** — availability
+  filters on it — so inventory is never held by a row this table has not yet
+  retired. Retiring it is housekeeping, not correctness: it keeps the table from
+  growing without bound and keeps "count of live holds" honest.
+- **WRITERS** eventa-api (create, convert, release) and **eventa-worker**'s
+  order-expiry sweep (`status = 'expired'`, alongside its order — ADR-14).
 
 #### `webhook_events`
 Inbound provider webhook log used for signature-verified, idempotent (exactly-once) processing. High-volume, append-mostly Platform infrastructure.

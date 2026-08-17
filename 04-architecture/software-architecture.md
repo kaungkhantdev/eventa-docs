@@ -140,7 +140,7 @@ flowchart TB
 | **API service** | **NestJS**, REST/JSON | All business rules; **synchronous money/inventory**; writes outbox |
 | **Outbox relay** | NestJS worker | Reads `outbox`, publishes to RabbitMQ (at-least-once) |
 | **RabbitMQ** | RabbitMQ | Topic exchange, per-consumer queues, dead-letter exchange |
-| **Consumer service** | **NestJS** microservice | Idempotent async handlers: email/SMS, calendar, read-models, indexing |
+| **Consumer service** | **NestJS** microservice | Idempotent async handlers: email/SMS, calendar, read-models, indexing; **plus clock-driven maintenance jobs** (`@nestjs/schedule`) for state no event can announce — see ADR-14 |
 | PostgreSQL | Postgres 15+, primary + replica | System of record (see [ERD](erd.md)) + `outbox` |
 | Redis | Redis | Sessions, cache, rate-limit, idempotency keys |
 | Object storage + CDN | S3-compatible + CDN | Images / static assets |
@@ -370,6 +370,7 @@ flowchart LR
 | **ADR-11** | Host SG/TH region | Latency + PDPA residency. |
 | **ADR-12** | Money as integer satang; ledger reconciled from Stripe | Avoids float errors; auditable. |
 | **ADR-13** | Idempotent consumers + DLQ + retry/backoff | Safe under at-least-once delivery. |
+| **ADR-14** | **Scheduled domain jobs run in the consumer service** (`@nestjs/schedule`), not the API — and may write an API aggregate where the transition is purely time-driven | Some state changes have no event to trigger them: an unpaid order whose seat hold lapsed (US-DISC-05), an event whose start date passed. A timer in the API would run in *every* replica; a separate fourth deployable would be one more process to forget to start. The consumer tier already runs as a single scheduled service. Jobs must be **idempotent and cursor-free** so overlapping or replicated runs are harmless. *Cost, accepted:* the worker's `orders`/`seat_holds` schema files become **write** mirrors that must track eventa-api's enums — so the exception is enumerated per-table in [`entities.md`](entities.md) rather than left open-ended. *Alt: an internal endpoint the worker calls on a schedule — keeps the rule inside the owning module but needs a service-auth mechanism; revisit if a third job appears.* |
 
 ## 12. Quality requirements (NFR → mechanism)
 

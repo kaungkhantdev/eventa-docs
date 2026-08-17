@@ -30,7 +30,7 @@ tests**, each service owning its own event type.
 |---|---|---|
 | **`eventa-web`** | web | React SPA + SSR (today's `../../eventa-web`) + generated API client |
 | **`eventa-api`** | api (check-in pool image; ships the outbox relay) | NestJS modular monolith; **owns DB schema & migrations**; emits `openapi.json` |
-| **`eventa-worker`** | worker | NestJS RabbitMQ consumers — async side effects |
+| **`eventa-worker`** | worker | NestJS RabbitMQ consumers — async side effects; plus scheduled domain jobs (ADR-14) |
 | **`eventa-infra`** | — | Terraform + Helm + Argo CD (Stage 7) |
 
 **`eventa-api`** — domain (bounded-context) modules, each a vertical slice:
@@ -205,6 +205,14 @@ From a backlog story to shipped, every time:
 - **Publish** only through the outbox (§5); the relay delivers to RabbitMQ with publisher confirms.
 - **Consume** with idempotent handlers; ack on success, nack→retry→DLQ on failure.
 - **Event contracts** are owned per service (no shared package): the producer defines the payload; each consumer validates it (tolerant reader) and pins expectations with **Pact** tests; payloads carry a `version` for breaking-change overlap.
+- **Scheduled jobs** (ADR-14) live in `eventa-worker` under their own module, driven by `@nestjs/schedule`'s
+  `@Cron` — never a `setInterval` in the API, which would run in every replica. Reach for one only when the
+  transition is something **no event can announce** (a deadline passing), not as a substitute for consuming
+  one. Each must be **idempotent and cursor-free** — select by the data, so a replicated or overlapping run
+  simply finds nothing — and must swallow its own errors, because an unhandled rejection in a scheduled
+  callback kills the process. Keep the rule in a plain service the cron calls: unit-testable, and an
+  operator can run it by hand. Writing an eventa-api aggregate from one is the ADR-14 exception and must be
+  enumerated per-table in [`entities.md`](../04-architecture/entities.md) before you add it.
 
 ## 9. Testing during development
 - **Unit-test the rules** (VAT, fees, capacity, discounts) TDD-style; **integration-test** flows against
