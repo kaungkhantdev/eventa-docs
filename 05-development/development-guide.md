@@ -29,8 +29,9 @@ tests**, each service owning its own event type.
 | Repository | Deployable | Notes |
 |---|---|---|
 | **`eventa-web`** | web | React SPA + SSR (today's `../../eventa-web`) + generated API client |
-| **`eventa-api`** | api (check-in pool image; ships the outbox relay) | NestJS modular monolith; **owns DB schema & migrations**; emits `openapi.json` |
+| **`eventa-api`** | api | NestJS modular monolith; **owns DB schema & migrations**; emits `openapi.json`; writes the outbox but never publishes |
 | **`eventa-worker`** | worker | NestJS RabbitMQ consumers — async side effects; plus scheduled domain jobs (ADR-14) |
+| **`eventa-relay`** | relay | Outbox → RabbitMQ publisher. Own repo, single replica (no row lock yet) |
 | **`eventa-infra`** | — | Terraform + Helm + Argo CD (Stage 7) |
 
 **`eventa-api`** — domain (bounded-context) modules, each a vertical slice:
@@ -38,7 +39,6 @@ tests**, each service owning its own event type.
 eventa-api/
 ├── src/
 │   ├── main.ts                     # HTTP entrypoint (also the check-in pool image)
-│   ├── relay.ts                    # outbox publisher
 │   ├── db/                         # Drizzle: schema/ · migrations/ (SQL) · meta/
 │   ├── modules/                     # FLAT siblings — never nest one inside another
 │   │   ├── auth/  users/  auth-signup/  auth-password/  access/
@@ -103,15 +103,18 @@ folder structure.
 - **api ↔ worker** → each owns its event type (`events/*.event.ts` in api, `*.schema.ts` in worker);
   the worker validates every message (tolerant reader) and **Pact** tests in both `test/contract/`
   folders fail CI on drift. Payloads carry a `version` field for breaking-change overlap.
-- **Schema ownership:** `eventa-api` owns migrations; `eventa-worker` touches only agreed read-model tables.
+- **Schema ownership:** `eventa-api` owns migrations. `eventa-worker` touches only agreed read-model tables plus the ADR-14 exception; `eventa-relay` reads `outbox_events` and sets `published_at`, nothing else. Both keep typed mirrors that must track this repo's enums.
 
 ## 3. Local development setup
 **Prerequisites:** Node LTS, pnpm, Docker. Clone each service repo you're working on.
 1. **Shared infra** — in `eventa-infra` (or a dev compose), `docker compose up -d` → PostgreSQL, Redis, RabbitMQ.
 2. In each repo: `pnpm install`; copy `.env.example` → `.env` (sandbox keys; never commit secrets — §12).
-3. **`eventa-api`**: `pnpm migrate && pnpm seed` (api owns the schema), then `pnpm dev` (HTTP) and `pnpm relay`.
-4. **`eventa-worker`**: `pnpm dev`.
-5. **`eventa-web`**: `pnpm dev` (port 5180).
+3. **`eventa-api`**: `pnpm migrate && pnpm seed` (api owns the schema), then `pnpm dev`.
+4. **`eventa-relay`**: `pnpm dev`. **Required** — without it nothing leaves `outbox_events`, so no
+   email is ever sent. The failure is silent: orders commit, rows accumulate unpublished, and the
+   product looks healthy.
+5. **`eventa-worker`**: `pnpm dev`.
+6. **`eventa-web`**: `pnpm dev` (port 5180).
 
 > The **front-end prototype runs today** against mock data; point it at the local API as endpoints
 > land. Web regenerates its API client from `eventa-api`'s `openapi.json` in CI.

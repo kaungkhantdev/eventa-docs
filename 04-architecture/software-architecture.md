@@ -138,7 +138,7 @@ flowchart TB
 | Public event pages | React SSR/prerender + CDN | SEO-friendly, fast landing pages |
 | Attendee portal / Admin console | React SPA (existing `eventa-web`) | Interactive attendee & organizer surfaces |
 | **API service** | **NestJS**, REST/JSON | All business rules; **synchronous money/inventory**; writes outbox |
-| **Outbox relay** | NestJS worker | Reads `outbox`, publishes to RabbitMQ (at-least-once) |
+| **Outbox relay** (`eventa-relay`) | NestJS app context, own repo | Reads `outbox_events`, publishes to RabbitMQ (at-least-once). **Single replica** — the reader takes no row lock, so a second instance would double-publish; horizontal scaling needs `FOR UPDATE SKIP LOCKED` first. |
 | **RabbitMQ** | RabbitMQ | Topic exchange, per-consumer queues, dead-letter exchange |
 | **Consumer service** | **NestJS** microservice | Idempotent async handlers: email/SMS, calendar, read-models, indexing; **plus clock-driven maintenance jobs** (`@nestjs/schedule`) for state no event can announce — see ADR-14 |
 | PostgreSQL | Postgres 15+, primary + replica | System of record (see [ERD](erd.md)) + `outbox` |
