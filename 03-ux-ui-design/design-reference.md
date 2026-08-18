@@ -29,10 +29,12 @@ Grouped by product area, with route and the backlog epic each screen serves (tra
 | Screen | Route | Epic |
 |---|---|---|
 | Discover events | `/portal/discover` | E6 |
-| Register & checkout (tickets, seats, card/PromptPay) | `/portal/register` | E6 |
+| Checkout — tickets, seats, card/PromptPay | `/portal/checkout` | E6 |
 | My account (tickets · payments · profile · settings) | `/portal/my-events` | E6 |
 | Post-event survey | `/portal/survey` | E6 |
 | Attendee sign-in | `/portal/login` | E1 |
+| Attendee sign-up | `/portal/register` | E1 |
+| Confirm an emailed account link (both personas) | `/verify-email` | E1 |
 | Public event page — Aurora / Noir / Minimal / Atlas | `/landing/{aurora,noir,minimal,atlas}` | E4 |
 
 ### Organizer authentication
@@ -62,7 +64,7 @@ Grouped by product area, with route and the backlog epic each screen serves (tra
 ```mermaid
 flowchart LR
     A["Discover<br/>/portal/discover"] --> B["Event page<br/>/landing/*"]
-    B --> C["Register<br/>/portal/register"]
+    B --> C["Checkout<br/>/portal/checkout"]
     C --> D{"Paid event?"}
     D -- yes --> E["Pay<br/>card / PromptPay"]
     D -- no --> F["Confirmation<br/>+ QR ticket"]
