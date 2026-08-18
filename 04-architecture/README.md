@@ -3,6 +3,10 @@
 The technical blueprint: the software architecture plus the data model that satisfy the requirements.
 
 ## Documents
+- **[how-services-connect.md](how-services-connect.md)** — **start here.** A plain-language
+  walkthrough of how `eventa-api`, `eventa-relay` and `eventa-worker` fit together: one diagram, one
+  registration followed hop by hop, what breaks when each service stops, and who is allowed to write
+  which tables. The five-minute version of the SAD.
 - **[software-architecture.md](software-architecture.md)** — the **baseline Software Architecture
   Document (SAD)**: goals & constraints, principles, C4 context & container views, the NestJS
   **module (bounded-context)** design, the **event-driven** topology (RabbitMQ + a NestJS consumer
