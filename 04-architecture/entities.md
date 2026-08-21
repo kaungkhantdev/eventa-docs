@@ -427,6 +427,19 @@ A workspace's payment connection and checkout preferences (US-SET-08/09/10) — 
 — the provider's account id plus its publishable key, both non-secret. Charges are made with the platform
 secret from config acting on behalf of `account_id`, so there is nothing sensitive to show back or mask.
 
+`account_id` is a **reference, not a credential**: on its own it authorises nothing. `Payments` reads this
+row through `MerchantAccountPort` and `Payouts` through `PayoutAccountPort`; neither reaches into the
+table, and the two ports stay distinct because "can this workspace take money" and "can this workspace be
+paid" are different answers at the provider (`charges_enabled` against `payouts_enabled`).
+
+A workspace that is not set up to take money **cannot take paid registrations** — checkout refuses rather
+than collecting somewhere the organizer cannot reach, which would issue a valid ticket against money they
+can never claim. Free events are unaffected.
+
+> **In flight.** Per-workspace API keys (`payment_credentials`, below) are replacing the shared-platform-key
+> model this section was written for. `account_id` and the ports survive the change; the sentence about
+> whose key signs the request does not. This note goes when the migration is finished.
+
 | Column | Type | Null | Key | Default | Notes |
 |---|---|---|---|---|---|
 | `id` | bigint identity | no | PK | | |
@@ -968,6 +981,12 @@ Append-only log of every door scan (successful or not). One row per scan attempt
 
 #### `payments`
 A captured (or attempted) charge against an order. Append-only ledger.
+
+`gateway_account_id` records **which** provider account took the money, because a refund has to reverse
+on that same one and `payment_settings` can change underneath it — a workspace can disconnect, or
+reconnect to a different account, between the charge and the reversal. NULL means the platform account,
+which is where every payment taken before the column existed genuinely landed, so those rows are correct
+as they stand and must not be backfilled.
 
 | Column | Type | Null | Key | Default | Notes |
 |---|---|---|---|---|---|
