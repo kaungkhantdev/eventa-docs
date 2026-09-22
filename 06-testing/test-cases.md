@@ -35,7 +35,7 @@
 # Accounts & Sign-in — Test Cases
 
 Epic E1 — Accounts & Sign-in. Test basis: user stories US-ACC-01…US-ACC-12 and their acceptance criteria.
-Locale notes: bilingual EN/TH surfaces; Asia/Bangkok time for "last active" and lockout timers; neutral, non-revealing messages are a recurring security rule across this epic.
+Locale notes: bilingual EN/TH surfaces; Asia/Bangkok time for "last active" and lockout timers; neutral, non-revealing messages are a recurring security rule across this epic — except the forgot-password form, which deliberately says when no account matches (US-ACC-04) and is bounded by its own attempt lock instead.
 
 ---
 
@@ -133,27 +133,31 @@ Locale notes: bilingual EN/TH surfaces; Asia/Bangkok time for "last active" and 
 
 ## US-ACC-04 — Reset a forgotten password
 
-### TC-ACC-09 — Full reset: neutral message, single-use link, global sign-out, previous password rejected
+### TC-ACC-09 — Full reset: link on its way, single-use link, global sign-out, previous password rejected
 - **Traces:** US-ACC-04  ·  **Priority:** High  ·  **Type:** Functional
-- **Preconditions:** A registered account signed in on two devices/browsers (A and B). Inbox access.
+- **Preconditions:** An active organizer account with a password, signed in on two devices/browsers (A and B). Inbox access.
 - **Test data:** Email `reset-me@eventa-test.co.th`; current password `OldPass#2025`; new password `NewStrong#2026`.
 - **Steps:**
-  1. On the forgot-password screen, submit the registered email; note the on-screen message.
+  1. On the organizer forgot-password screen, submit the registered email; note the on-screen message.
   2. Open the reset link from the inbox and set the new password `NewStrong#2026`; confirm.
   3. From device A (previously signed in), refresh a protected page.
   4. Sign in with the new password on a fresh session.
   5. Attempt to sign in with the old password `OldPass#2025`.
-- **Expected result:** Step 1 shows the neutral "if an account matches, a link is on its way" message. The link works once; after confirming, every device is signed out (device A must sign in again) and only the new password works. The old password no longer signs in.
+- **Expected result:** Step 1 confirms a reset link is on its way to that address, and the reset email arrives. The link works once; after confirming, every device is signed out (device A must sign in again) and only the new password works. The old password no longer signs in.
 
-### TC-ACC-10 — Neutral message for unknown email; expired/used link rejected; previous password barred
+### TC-ACC-10 — Forgot-password says why no link was sent and locks repeated misses; expired/used link rejected; previous password barred
 - **Traces:** US-ACC-04  ·  **Priority:** High  ·  **Type:** Negative
-- **Preconditions:** A used or expired reset link available; the account's current (soon-to-be "previous") password known.
-- **Test data:** Unknown email `noone@eventa-test.co.th`; an already-used reset link; on the reset form, re-enter the current password `NewStrong#2026` as the "new" one.
+- **Preconditions:** An organizer account with no attendee account; an organizer account created only through Google (no password); an organizer account whose email is not confirmed; a teammate invitation sent (US-SET-11) and not yet accepted; a suspended organizer account; a used or expired reset link; the account's current (soon-to-be "previous") password known; inbox access for every address. The attempt lock at its configured limit (default: 5 misses, 15-minute cool-off).
+- **Test data:** Unknown email `noone@eventa-test.co.th` — no organizer account, and not asked about in the last 15 minutes (misses carry over between runs); organizer-only `organizer-active@eventa-test.co.th`; Google-only `social-new@eventa-test.co.th` (created in TC-ACC-13); unconfirmed `pending@eventa-test.co.th`; invited `invited@eventa-test.co.th`; suspended `suspended@eventa-test.co.th`; an already-used reset link; on the reset form, re-enter the current password `NewStrong#2026` as the "new" one.
 - **Steps:**
-  1. Submit the unknown email on the forgot-password screen; compare the message to TC-ACC-09.
-  2. Open an expired or already-used reset link.
-  3. On a valid reset form, try to set the new password to the account's current password.
-- **Expected result:** The unknown email yields the same neutral message (no reveal). The expired/used link is refused with a clear "no longer valid" notice plus an option to request a new one. Reusing the previous/current password is rejected.
+  1. On the organizer forgot-password screen (the organizer sign-in's "Forgot password?"), submit the unknown email; check the inbox.
+  2. On the attendee forgot-password screen (the portal sign-in's "Forgot password?"), submit the organizer-only email; check the inbox.
+  3. On the organizer forgot-password screen, submit in turn the Google-only, unconfirmed, invited and suspended emails; check each inbox.
+  4. Submit the suspended email again, more times than the attempt limit.
+  5. Within 15 minutes of step 1, submit the unknown email again until it is refused, then once more.
+  6. Open an expired or already-used reset link.
+  7. On a valid reset form, try to set the new password to the account's current password.
+- **Expected result:** No reset email is sent in steps 1–5. Step 1 says no organizer account uses that address, and to check the spelling, try the attendee account, or create one; step 2 gives the same answer naming the attendee account and pointing to the organizer one. In step 3 each account is told why there is no link: the Google-only account has no password to reset and should use "Continue with Google"; the unconfirmed account should open its confirmation link, and signing in sends a fresh one (this form sends none); the invited teammate should open the invitation email and choose a password there; the suspended account should ask a workspace admin to reactivate it. In step 4 every attempt gets the same suspended answer and is never refused as too many attempts — only an address with no account counts as a miss. In step 5 the misses up to the limit (the 5th, counting step 1) still get the no-account answer; the next is refused with "Too many password-reset attempts. Try again in 15 minutes." and no longer says whether an account exists, and the extra attempt is refused the same way. The expired/used link is refused with a clear "no longer valid" notice plus an option to request a new one. Reusing the previous/current password is rejected.
 
 ---
 
