@@ -87,6 +87,11 @@ three defining columns per table — the domain views below carry fuller attribu
 lists. This diagram is intentionally large; it is the authoritative wiring
 diagram.
 
+![Master ERD](erd/full.png)
+
+<details>
+<summary>Mermaid source</summary>
+
 ```mermaid
 erDiagram
     ORGANIZATIONS {
@@ -584,6 +589,8 @@ erDiagram
     SEATS |o--o{ SEAT_HOLDS : "held as"
 ```
 
+</details>
+
 ---
 
 ## Domain views
@@ -597,6 +604,11 @@ and noted in prose; the referenced entity lives in the view named in the note.
 Tenancy, login identities and personas, the role→permission preset matrix, the
 `memberships` associative entity binding users↔orgs↔roles, sign-in sessions,
 linked social identities, and TOTP two-factor with one-time recovery codes.
+
+![Identity & Access](erd/auth.png)
+
+<details>
+<summary>Mermaid source</summary>
 
 ```mermaid
 erDiagram
@@ -718,6 +730,8 @@ erDiagram
     TWO_FACTORS ||--o{ RECOVERY_CODES : "backs up"
 ```
 
+</details>
+
 - `memberships` resolves the **users ⇄ organizations** M:N (a user may belong to
   many orgs), carrying the assigned `role_id` and `status`.
 - `role_permissions` resolves the **roles ⇄ permissions** M:N — the 12 fixed
@@ -733,6 +747,11 @@ erDiagram
 
 Integration API credentials, per-user notification-channel preferences, and
 workspace payment-connection and checkout-method configuration.
+
+![Organization & Settings](erd/settings.png)
+
+<details>
+<summary>Mermaid source</summary>
 
 ```mermaid
 erDiagram
@@ -795,6 +814,8 @@ erDiagram
     USERS ||--o{ NOTIFICATION_PREFERENCES : "sets (user_id)"
 ```
 
+</details>
+
 - `api_keys.created_by → users` is `ON DELETE RESTRICT` (the issuer requires
   `setIntegrations` and cannot be deleted out from under a live key).
 - `notification_preferences` is unique per `(user_id, category)` and gates whether
@@ -809,6 +830,11 @@ erDiagram
 The central `events` aggregate with its optional category and landing-template
 styling, public-page highlights and FAQs, plus speakers, agenda sessions, and
 the session⇄speaker junction.
+
+![Events & Program](erd/events.png)
+
+<details>
+<summary>Mermaid source</summary>
 
 ```mermaid
 erDiagram
@@ -911,6 +937,8 @@ erDiagram
     SPEAKERS ||--o{ SESSION_SPEAKERS : "presents"
 ```
 
+</details>
+
 - `session_speakers` resolves the **sessions ⇄ speakers** M:N (a speaker owns many
   sessions; `Break` sessions have no rows). Both FKs cascade.
 - `event_highlights` and `event_faqs` are ordered, tenant-scoped children of the
@@ -923,6 +951,11 @@ erDiagram
 
 Sellable ticket tiers, redeemable discount codes (event or org-wide), and the
 `discount_redemptions` junction that enforces once-per-order idempotency.
+
+![Ticketing & Discounts](erd/ticketing.png)
+
+<details>
+<summary>Mermaid source</summary>
 
 ```mermaid
 erDiagram
@@ -982,6 +1015,8 @@ erDiagram
     ORDERS ||--o{ DISCOUNT_REDEMPTIONS : "redeems"
 ```
 
+</details>
+
 - `discount_codes.event_id` is nullable — a null means an **org-wide** code; the
   uniqueness is `(organization_id, event_id, code)`.
 - `discount_redemptions` resolves the **discount_codes ⇄ orders** M:N; its
@@ -996,6 +1031,11 @@ The commerce core: cross-organizer `saved_events`, the attendee CRM, the `orders
 booking header, its `order_items` lines, the issued `tickets` (one per admitted
 seat, carrying the QR token), and the reserved-seating model (`seat_maps` →
 `seats` → `seat_assignments`).
+
+![Registration, Orders & Seating](erd/orders.png)
+
+<details>
+<summary>Mermaid source</summary>
 
 ```mermaid
 erDiagram
@@ -1122,6 +1162,8 @@ erDiagram
     TICKETS ||--o| SEAT_ASSIGNMENTS : "bound to"
 ```
 
+</details>
+
 - **Order→ticket commerce.** An `order` is the booking header; each `order_items`
   line is a quantity of one `ticket_type`; each `tickets` row is one issued
   admission materialized from a line (`order_item_id`), denormalizing `event_id`
@@ -1141,6 +1183,11 @@ erDiagram
 
 The append-only door-scan log. Every scan attempt — success or failure — is one
 `check_ins` row carrying its `ScanState`.
+
+![Attendance & Check-in](erd/checkin.png)
+
+<details>
+<summary>Mermaid source</summary>
 
 ```mermaid
 erDiagram
@@ -1177,6 +1224,8 @@ erDiagram
     EVENTS |o--o{ CHECK_INS : "wrong-event of (other_event_id)"
 ```
 
+</details>
+
 - `check_ins.ticket_id` is nullable and `SET NULL` — an `invalid` scan matches no
   ticket and records only the raw `scanned_qr`.
 - `other_event_id` captures a `wrong`-event scan (the event the ticket actually
@@ -1189,6 +1238,11 @@ erDiagram
 
 The append-only payment/refund ledgers, tax invoices, organizer payouts with the
 `payout_items` settlement junction, and monthly VAT/WHT `tax_periods`.
+
+![Payments & Finance](erd/payments.png)
+
+<details>
+<summary>Mermaid source</summary>
 
 ```mermaid
 erDiagram
@@ -1298,6 +1352,8 @@ erDiagram
     PAYMENTS ||--o{ PAYOUT_ITEMS : "settled in"
 ```
 
+</details>
+
 - **Money as satang.** Every `*_satang` column is `bigint` integer minor units
   (1 THB = 100 satang), `>= 0`, paired with `currency char(3) DEFAULT 'THB'`.
 - `payments` and `refunds` are append-only ledgers keyed by an `idempotency_key`
@@ -1313,6 +1369,11 @@ erDiagram
 Automated templates, one-off event announcements, the per-recipient
 `message_deliveries` ledger (materialized by either a template or an announcement),
 and the in-app `notifications` inbox.
+
+![Engagement & Messaging](erd/messaging.png)
+
+<details>
+<summary>Mermaid source</summary>
 
 ```mermaid
 erDiagram
@@ -1400,6 +1461,8 @@ erDiagram
     USERS ||--o{ NOTIFICATIONS : "receives (user_id)"
 ```
 
+</details>
+
 - `message_deliveries` has a `CHECK` that **exactly one** of `announcement_id` /
   `message_template_id` is set — every delivery traces to one source. All four of
   its optional source FKs (`recipient_attendee_id`, `order_id`, `announcement_id`,
@@ -1414,6 +1477,11 @@ erDiagram
 
 Per-event surveys, their ordered questions, submitted responses (optionally
 anonymous), and the normalized per-question answers.
+
+![Feedback & Surveys](erd/surveys.png)
+
+<details>
+<summary>Mermaid source</summary>
 
 ```mermaid
 erDiagram
@@ -1469,6 +1537,8 @@ erDiagram
     SURVEY_QUESTIONS ||--o{ SURVEY_ANSWERS : "answered by"
 ```
 
+</details>
+
 - `survey_answers` normalizes the prototype's flattened rating/text into one row
   per `(response_id, question_id)` (unique), with a `CHECK rating BETWEEN 1 AND 5`.
 - `survey_answers.question_id → survey_questions` is `RESTRICT` (an answered
@@ -1478,6 +1548,11 @@ erDiagram
 ### Meetings
 
 Operational coordination meetings, optionally tied to an event.
+
+![Meetings](erd/meetings.png)
+
+<details>
+<summary>Mermaid source</summary>
 
 ```mermaid
 erDiagram
@@ -1512,12 +1587,19 @@ erDiagram
     USERS |o--o{ MEETINGS : "organizes (created_by)"
 ```
 
+</details>
+
 - `meetings.event_id` is nullable (`SET NULL`) — event-agnostic meetings are
   allowed. `created_by → users` is `SET NULL`. `events`, `users` defined elsewhere.
 
 ### System & Audit
 
 The append-only, immutable security/finance audit trail.
+
+![System & Audit](erd/audit.png)
+
+<details>
+<summary>Mermaid source</summary>
 
 ```mermaid
 erDiagram
@@ -1544,6 +1626,8 @@ erDiagram
     USERS |o--o{ AUDIT_EVENTS : "acts in (actor_user_id)"
 ```
 
+</details>
+
 - `audit_events` is never soft- or hard-deleted. Its `organization_id` FK is
   uniquely `ON DELETE RESTRICT` (the trail must survive), and `actor_user_id` is
   `SET NULL` (anonymous or failed sign-ins have no actor).
@@ -1555,6 +1639,11 @@ publishes domain events to RabbitMQ, the short-lived `seat_holds` that reserve
 inventory during checkout, and the inbound `webhook_events` log for
 signature-verified, idempotent provider callbacks. `outbox_events` and
 `webhook_events` are high-volume, append-mostly infrastructure logs.
+
+![Platform & Infrastructure](erd/platform.png)
+
+<details>
+<summary>Mermaid source</summary>
 
 ```mermaid
 erDiagram
@@ -1622,6 +1711,8 @@ erDiagram
     TICKET_TYPES |o--o{ SEAT_HOLDS : "held for"
     SEATS |o--o{ SEAT_HOLDS : "held as"
 ```
+
+</details>
 
 - `outbox_events` is written in the same transaction as its aggregate change; a
   relay polls the partial `ix_outbox_unpublished` index and publishes to RabbitMQ,
