@@ -49,7 +49,7 @@ technology, runtime behaviour, deployment, and cross-cutting concerns.
 4. **No event is ever lost** — domain change and its event are written in one DB transaction via the **transactional outbox**.
 5. **Idempotency everywhere money, inventory, or a message is processed** — safe under retries and at-least-once delivery.
 6. **One tenant can never see another's data** — enforced at the data layer, not just the UI.
-7. **Modular now, splittable later** — NestJS modules = bounded contexts; extract services only on a real driver.
+7. **Modular now, splittable later** — NestJS modules align to bounded contexts (one module per responsibility, several per context — §6.2); extract services only on a real driver.
 
 ## 4. Context & scope
 
@@ -138,9 +138,9 @@ flowchart TB
 | Public event pages | React SSR/prerender + CDN | SEO-friendly, fast landing pages |
 | Attendee portal / Admin console | React SPA (existing `eventa-web`) | Interactive attendee & organizer surfaces |
 | **API service** | **NestJS**, REST/JSON | All business rules; **synchronous money/inventory**; writes outbox |
-| **Outbox relay** | NestJS worker | Reads `outbox`, publishes to RabbitMQ (at-least-once) |
+| **Outbox relay** (`eventa-relay`) | NestJS app context, own repo | Reads `outbox_events`, publishes to RabbitMQ (at-least-once). **Single replica** — the reader takes no row lock, so a second instance would double-publish; horizontal scaling needs `FOR UPDATE SKIP LOCKED` first. |
 | **RabbitMQ** | RabbitMQ | Topic exchange, per-consumer queues, dead-letter exchange |
-| **Consumer service** | **NestJS** microservice | Idempotent async handlers: email/SMS, calendar, read-models, indexing |
+| **Consumer service** | **NestJS** microservice | Idempotent async handlers: email/SMS, calendar, read-models, indexing; **plus clock-driven maintenance jobs** (`@nestjs/schedule`) for state no event can announce — see ADR-14 |
 | PostgreSQL | Postgres 15+, primary + replica | System of record (see [ERD](erd.md)) + `outbox` |
 | Redis | Redis | Sessions, cache, rate-limit, idempotency keys |
 | Object storage + CDN | S3-compatible + CDN | Images / static assets |
@@ -150,6 +150,13 @@ Identity & Access · Organization · Events & Program · Ticketing · **Registra
 (owns the synchronous checkout) · Attendance · Payments & Finance · Engagement · Meetings ·
 **Platform** (outbox, idempotency, audit, jobs). Modules own their tables and talk through
 interfaces — no cross-module table access.
+
+A context is the *architectural* unit; in code it may be delivered by **several flat, prefix-grouped
+NestJS modules**, one per responsibility — Identity & Access ships as `auth` + `auth-signup` +
+`auth-password` + `users` + `access`, Events & Program as `events` + `event-categories` + `event-program`
++ `event-seating` + `event-sharing` + `event-monitoring` + `event-duplication`. The boundary rule is
+unchanged and applies between *modules*, not just contexts: depend on another module's exported service,
+never on its tables or repository. See the development guide §2 and Appendix A.2 for the folder layout.
 
 ### 6.3 RabbitMQ topology
 - **Exchange:** `eventa.events` (topic). Routing keys like `order.confirmed`, `payment.succeeded`,
@@ -163,13 +170,13 @@ interfaces — no cross-module table access.
 Interfaces are the defined interaction points between components — each a contract that hides the
 component's internals.
 
-**Client ↔ API — REST/JSON over HTTPS.** Versioned (`/api/v1`), authenticated by the session cookie,
-tenant-scoped. Resource groups map to modules (representative, not exhaustive — a full endpoint
+**Client ↔ API — REST/JSON over HTTPS.** Versioned (`/api/v1`), authenticated by a Bearer JWT access
+token, tenant-scoped. Resource groups map to modules (representative, not exhaustive — a full endpoint
 catalogue is a follow-up artifact):
 
 | Resource group | Module | Example endpoints |
 |---|---|---|
-| Auth & session | Identity & Access | `POST /auth/login`, `/auth/2fa/verify`, `DELETE /session` |
+| Auth & session | Identity & Access | `POST /auth/login`, `/auth/refresh`, `/auth/2fa/verify`, `DELETE /session` |
 | Events & program | Events & Program | `GET/POST /events`, `POST /events/:id/publish`, `POST /events/:id/sessions` |
 | Ticketing | Ticketing | `GET/POST /events/:id/ticket-types`, `POST /discounts` |
 | Discovery (public) | Events | `GET /discover`, `GET /events/:slug` |
@@ -307,9 +314,11 @@ flowchart LR
 - **Concurrency & inventory integrity** — capacity/seat changes only inside DB transactions with row
   locks / conditional updates; **short-lived seat holds** during checkout; idempotency keys on order
   create & confirm; unique constraints on QR tokens and discount redemptions.
-- **AuthN/AuthZ** — server-side sessions (httpOnly, Secure, SameSite cookies; Redis-backed);
-  **two separate identity realms** (attendee vs workspace member); TOTP 2FA; OAuth social sign-in;
-  **RBAC** (12 permissions × 4 roles) enforced server-side on every mutating endpoint.
+- **AuthN/AuthZ** — **JWT**: short-lived access tokens (`Authorization: Bearer`, verified statelessly)
+  plus long-lived **refresh tokens** persisted in `auth_sessions` so logout / compromise is revocable
+  (a short access-TTL bounds the revocation window); **two separate identity realms** (attendee vs
+  workspace member); TOTP 2FA; OAuth social sign-in; **RBAC** (12 permissions × 4 roles) enforced
+  server-side on every mutating endpoint.
 - **Payments & PCI** — Stripe hosted fields + PromptPay; platform is **SAQ-A** (never stores PANs/bank
   numbers); Connect for payouts; webhooks reconcile the ledger.
 - **Privacy / PDPA** — SG/TH region; consent capture; documented retention & deletion (supports
@@ -353,14 +362,15 @@ flowchart LR
 | **ADR-3** | **Transactional outbox** for publishing | Eliminates dual-write loss. |
 | **ADR-4** | **Checkout/inventory is synchronous & transactional**; async only for eventually-consistent side effects | Prevents oversell/double-charge. *Alt: fully event-sourced checkout — too risky for MVP.* |
 | **ADR-5** | Shared PostgreSQL, multi-tenant `organization_id` + RLS | Strong isolation, low ops. *Alt: DB-per-tenant — overhead.* |
-| **ADR-6** | Redis for cache/sessions/rate-limit/idempotency (separate from RabbitMQ) | Right tool per job. |
+| **ADR-6** | Redis for cache/rate-limit/idempotency (separate from RabbitMQ) | Right tool per job. Sessions are stateless JWTs; refresh state lives in `auth_sessions`. |
 | **ADR-7** | Stripe + PromptPay; SAQ-A; webhooks as truth | Minimal PCI scope. |
-| **ADR-8** | Server-side sessions + dual realms + TOTP 2FA; server-side RBAC | Safer than JS-held tokens; persona separation. |
+| **ADR-8** | **JWT access + refresh** (Bearer) + dual realms + TOTP 2FA; server-side RBAC | Stateless access checks; refresh tokens persisted in `auth_sessions` keep revocation (logout/compromise); persona separation. *Revised from server-side sessions.* |
 | **ADR-9** | SSR/prerender public pages; SPA for portal/admin | SEO & speed where needed. |
 | **ADR-10** | Postgres FTS (bilingual) for MVP search | Avoids extra infra now. |
 | **ADR-11** | Host SG/TH region | Latency + PDPA residency. |
 | **ADR-12** | Money as integer satang; ledger reconciled from Stripe | Avoids float errors; auditable. |
 | **ADR-13** | Idempotent consumers + DLQ + retry/backoff | Safe under at-least-once delivery. |
+| **ADR-14** | **Scheduled domain jobs run in the consumer service** (`@nestjs/schedule`), not the API — and may write an API aggregate where the transition is purely time-driven | Some state changes have no event to trigger them: an unpaid order whose seat hold lapsed (US-DISC-05), an event whose start date passed. A timer in the API would run in *every* replica; a separate fourth deployable would be one more process to forget to start. The consumer tier already runs as a single scheduled service. Jobs must be **idempotent and cursor-free** so overlapping or replicated runs are harmless. *Cost, accepted:* the worker's `orders`/`seat_holds` schema files become **write** mirrors that must track eventa-api's enums — so the exception is enumerated per-table in [`entities.md`](entities.md) rather than left open-ended. *Alt: an internal endpoint the worker calls on a schedule — keeps the rule inside the owning module but needs a service-auth mechanism; revisit if a third job appears.* |
 
 ## 12. Quality requirements (NFR → mechanism)
 

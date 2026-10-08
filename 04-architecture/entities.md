@@ -13,6 +13,11 @@
 > many-to-many with an associative (junction) table. All monetary values are
 > stored as **integer minor units (satang)**, never floating point.
 >
+> **Schema status.** The 53 tables in this catalog are the **target physical
+> model**, not a claim that every table has already shipped in API migrations.
+> Treat the API's committed `pgTable` definitions as the implementation inventory
+> and count them independently when reporting delivery progress.
+>
 > **Faithfulness.** Field names, enum values and monetary rules are taken
 > verbatim from the SRS data model and the TypeScript source of truth under
 > `src/features/*/data/*.ts`, `src/lib/eventCatalog.ts` and `src/lib/format.ts`.
@@ -33,20 +38,25 @@
   Human-facing references (`orders.reference` = `REG-YYYY-NNNNNN`,
   `invoices.number`, `payments.txn`, `payouts.reference`) are separate **UNIQUE**
   natural keys, never the PK.
-- **Multi-tenancy.** Every tenant-owned table carries
-  `organization_id bigint NOT NULL REFERENCES organizations(id)`. Every read/write
-  is filtered by the caller's organization (row-level tenant isolation). The only
-  tables without it are `organizations` itself and globally-seeded lookups
-  (`landing_templates`, `permissions`), which are shared across tenants.
-- **Audit columns.** Every table carries `created_at timestamptz NOT NULL DEFAULT
-  now()` (immutable) and `updated_at timestamptz NOT NULL DEFAULT now()` (touched
-  on every mutation, via trigger). Aggregate roots and user-editable entities also
+- **Multi-tenancy.** 46 of the 53 physical tables carry
+  `organization_id bigint REFERENCES organizations(id)` (NOT NULL except the
+  inbound `webhook_events` log while its tenant is unresolved). Every tenant
+  read/write is filtered by the caller's organization (row-level isolation).
+  The seven tables without that column are `organizations`, the global lookups
+  `landing_templates` and `permissions`, the transitively-scoped children
+  `role_permissions`, `recovery_codes`, and `session_speakers`, and the
+  cross-tenant, user-scoped `saved_events` bookmark table.
+- **Audit columns.** Mutable domain tables normally carry `created_at timestamptz
+  NOT NULL DEFAULT now()` (immutable) and `updated_at timestamptz NOT NULL DEFAULT
+  now()` (touched on every mutation, via trigger). Aggregate roots and user-editable entities also
   carry `deleted_at timestamptz NULL` for **soft delete**; append-only ledgers
   (`payments`, `refunds`, `audit_events`, `check_ins`, `message_deliveries`) are
   **never** soft-deleted and omit the column. `created_by bigint NULL REFERENCES
   users(id)` records the actor where meaningful (null for guest-originated rows).
   `version integer NOT NULL DEFAULT 1` is the optimistic-concurrency token
-  (stale writes are rejected `409 Conflict`).
+  (stale writes are rejected `409 Conflict`). Append-only, lookup, junction, and
+  immutable link tables may omit `updated_at` and/or `version`; each exception is
+  documented with its table.
 - **Money.** All monetary amounts are `bigint` **satang** (1 THB = 100 satang),
   `>= 0` via CHECK, paired with `currency char(3) NOT NULL DEFAULT 'THB'`.
   `bigint` is used (not `integer`) so large payouts/aggregates cannot overflow.
@@ -88,11 +98,14 @@ One PostgreSQL `ENUM` type per row. Values are listed in wire form (as stored).
 | `admission_type` | `general_admission`, `reserved_seat` | `ticket_types.admission_type` | derived from `seating_mode` |
 | `discount_type` | `percent`, `fixed` | `discount_codes.type` | `ticketing/types.ts` |
 | `discount_status` | `active`, `scheduled`, `expired`, `disabled` | `discount_codes.status` | `ticketing/types.ts`, `discounts.ts`, `reportsDiscounts.ts` |
-| `order_status` | `confirmed`, `pending`, `waitlisted`, `cancelled` | `orders.status` | SRS `RegistrationStatus` (`registrations.ts`) |
+| `order_status` | `confirmed`, `pending`, `waitlisted`, `cancelled`, `rejected`, `expired` | `orders.status` | SRS `RegistrationStatus` (`registrations.ts`). `rejected` = an organizer turned it down (US-REG-02); `expired` = nobody paid before the seat hold lapsed (US-DISC-05). Both are deliberately distinct from `cancelled`, which is a withdrawal or a refund — a decision somebody made, not the absence of one. |
 | `registration_status` | *(alias — realized as `order_status`)* | — | `registrations.ts` (naming note) |
 | `issued_ticket_status` | `issued`, `checked_in`, `void`, `refunded`, `transferred` | `tickets.status` | derived from `RegStatus`/`ScanState` |
 | `payment_status` | `paid`, `pending`, `refunded`, `failed` | `payments.status`, `orders.payment_status` | `payments.ts` |
-| `payment_method` | `Card`, `PromptPay`, `Bank transfer` | `payments.method`, `invoices.paid_via` | `payments.ts` |
+| `payment_method` | `Card`, `PromptPay`, `Bank transfer`, `Apple Pay`, `Google Pay` | `payments.method`, `invoices.paid_via` | `payments.ts` |
+| `payment_provider` | `stripe` | `payment_settings.provider` | `payment-settings.ts` |
+| `payment_mode` | `test`, `live` | `payment_settings.mode` | `payment-settings.ts` |
+| `payment_connection_status` | `disconnected`, `connected` | `payment_settings.status` | `payment-settings.ts` |
 | `refund_status` | `pending`, `succeeded`, `failed` | `refunds.status` | derived from `TransactionStatus` (`reportsTransactions.ts`) |
 | `payout_status` | `paid`, `processing`, `scheduled`, `failed` | `payouts.status` | `payouts.ts` (reports labels: Paid / In transit / Pending) |
 | `invoice_status` | `paid`, `issued`, `overdue`, `void` | `invoices.status` | `invoices.ts` (paid/void terminal; issued/overdue derived) |
@@ -106,14 +119,14 @@ One PostgreSQL `ENUM` type per row. Values are listed in wire form (as stored).
 | `meeting_mode` | `Video`, `In person`, `Phone` | `meetings.mode` | `meetings.ts` |
 | `meeting_bucket` | `today`, `upcoming`, `past` | `meetings.bucket` (derived) | `meetings.ts` |
 | `template_id` | `aurora`, `noir`, `minimal`, `atlas` | `landing_templates.id`, `events.landing_template_id` | `landingTemplates.ts` |
-| `channel` | `email`, `sms` | `message_templates.channels`, `announcements.channels`, `message_deliveries.channel` | `messagingTemplates.ts`, `announcements.ts`, `deliveryLog.ts` |
+| `message_channel` | `email`, `sms` | `message_templates.channels`, `announcements.channels`, `message_deliveries.channel` | `messagingTemplates.ts`, `announcements.ts`, `deliveryLog.ts` |
 | `announcement_status` | `sent`, `scheduled` | `announcements.status` | `announcements.ts` |
 | `announcement_audience` | `All registrants`, `Checked-in attendees`, `Waitlist` | `announcements.audience` | `announcements.ts` (`ANNOUNCEMENT_AUDIENCES`) |
 | `delivery_status` | `delivered`, `opened`, `sent`, `failed` | `message_deliveries.status` | `deliveryLog.ts` |
-| `notification_kind` | `registration`, `payment`, `sales`, `feedback`, `payout`, `alert`, `task` | `notifications.kind` | `notifications.ts` |
+| `notification_kind` | `registration`, `payment`, `sales`, `feedback`, `payout`, `alert`, `task`, `reminder`, `marketing` | `notifications.kind` | `notifications.ts` |
 | `survey_status` | `live`, `closed`, `draft` | `surveys.status` | `feedback.ts` (`FeedbackStatus`) |
 | `question_type` | `Rating`, `Text`, `Multiple choice` | `survey_questions.type` | `feedback.ts` |
-| `member_role` | `Admin`, `Organizer`, `Staff`, `Attendee` | `roles.name`, `memberships.role` | `roles.ts` (`RoleName`) |
+| `member_role` | `Admin`, `Organizer`, `Staff`, `Attendee` | *(retired from `roles.name`/`memberships.role` — both are text since US-SET-13)* | `roles.ts` (`RoleName`) |
 | `member_status` | `Active`, `Invited`, `Suspended` | `memberships.status`, `users.status` | `users.ts` (`UserStatus`) |
 | `user_persona` | `admin`, `attendee` | `users.persona` | SRS §1.23 (personas never share a login) |
 | `permission_key` | `evCreate`, `evPublish`, `evSpeakers`, `regView`, `regCheckin`, `regExport`, `finView`, `finRefund`, `finDiscount`, `setUsers`, `setSettings`, `setIntegrations` | `permissions.key`, `role_permissions.permission_key` | `roles.ts` (`PermKey`, 12 values) |
@@ -124,6 +137,7 @@ One PostgreSQL `ENUM` type per row. Values are listed in wire form (as stored).
 | `seat_status` | `available`, `held`, `reserved`, `sold`, `blocked` | `seats.status` | production (reserved-seating model) |
 | `category_color` | `pink`, `blue`, `amber`, `brand`, `violet`, `indigo`, `teal`, `red` | `categories.color` | `categories.ts` |
 | `locale` | `en`, `th` | `organizations.locale`, `users.locale` | `format.ts` / SRS §5.5 |
+| `social_provider` | `google`, `apple`, `linkedin` | `social_identities.provider` | `identity.ts` |
 | `two_factor_method` | `totp` | `two_factors.method` | `security.ts` (authenticator app) |
 | `api_key_status` | `active`, `revoked` | `api_keys.status` | production (`setIntegrations` / apikey audit) |
 | `hold_status` | `active`, `converted`, `expired`, `released` | `seat_holds.status` | production (checkout seat-hold lifecycle) |
@@ -157,6 +171,8 @@ Tenant root / workspace. Not itself tenant-scoped; parent of everything else.
 | `name` | text | no | | | Workspace/company name. |
 | `slug` | text | no | UK | | Globally unique. `^[a-z0-9-]+$`. |
 | `logo_url` | text | yes | | | ≤1MB asset (UI-authoritative). |
+| `address` | text | yes | | | Legal address printed on invoices/receipts (US-SET-07). |
+| `website` | text | yes | | | Public site, http(s) URL (US-SET-07). |
 | `currency` | char(3) | no | | `'THB'` | Fixed THB. |
 | `country` | char(2) | no | | `'TH'` | |
 | `timezone` | text | no | | `'Asia/Bangkok'` | IANA tz. |
@@ -188,6 +204,13 @@ A login identity. Admin-console and portal personas are distinct rows even at th
 | `status` | `member_status` | no | | `'Invited'` | Active/Invited/Suspended. |
 | `password_hash` | text | yes | | | Argon2id; never returned/logged. |
 | `avatar_url` | text | yes | | | ≤5MB. |
+| `phone` | text | yes | | | Contact number; gates the SMS notification toggles (US-SET-01/06). |
+| `timezone` | text | yes | | | IANA tz; per-user override of the org timezone (US-SET-01). |
+| `city` | text | yes | | | Attendee profile (US-DISC-11). |
+| `date_of_birth` | date | yes | | | Attendee profile (US-DISC-11). |
+| `bio` | text | yes | | | Attendee profile (US-DISC-11). |
+| `display_currency` | char(3) | yes | | | Display-only preference (US-DISC-12); charges settle in THB. |
+| `pending_email` | citext | yes | | | Requested new email awaiting confirmation; `email` keeps working until the link is opened (US-SET-01). |
 | `two_factor_enabled` | boolean | no | | `false` | |
 | `locale` | `locale` | yes | | | User override of org locale. |
 | `attendee_id` | bigint | yes | FK→attendees.id | | 1:1 link for portal persona. |
@@ -209,10 +232,10 @@ Named preset of the 12 permissions, per organization.
 |---|---|---|---|---|---|
 | `id` | bigint identity | no | PK | | |
 | `organization_id` | bigint | no | FK→organizations.id, UK | | |
-| `name` | `member_role` | no | UK | | Admin/Organizer/Staff/Attendee. |
+| `name` | text | no | UK | | Free text so a workspace can add custom roles, e.g. "Volunteer" (US-SET-13). The four seeded presets keep the historical names. |
 | `description` | text | no | | | `ROLE_DESC[name]`. |
 | `bullets` | jsonb | yes | | | `ROLE_BULLETS` summary bullets. |
-| `is_system` | boolean | no | | `true` | Seeded presets; custom roles a future extension. |
+| `is_system` | boolean | no | | `true` | `true` for the four seeded presets; `false` for a custom role (US-SET-13). |
 | `created_at` | timestamptz | no | | `now()` | |
 | `updated_at` | timestamptz | no | | `now()` | |
 | `version` | integer | no | | `1` | |
@@ -258,7 +281,7 @@ Associates a user with an organization and the role they hold there. Carries the
 | `organization_id` | bigint | no | FK→organizations.id, UK, IX | | |
 | `user_id` | uuid | no | FK→users.id, UK, IX | | |
 | `role_id` | bigint | no | FK→roles.id, IX | | Preset of 12 permissions. |
-| `role` | `member_role` | no | | | Denormalized role name (`WorkspaceUser.role`). |
+| `role` | text | no | | | Denormalized role name; text, so it can hold a custom role (`WorkspaceUser.role`). |
 | `status` | `member_status` | no | | `'Invited'` | Active/Invited/Suspended. |
 | `invited_at` | timestamptz | yes | | | |
 | `joined_at` | timestamptz | yes | | | |
@@ -273,11 +296,14 @@ Associates a user with an organization and the role they hold there. Carries the
 - **INDEXES** `ix_memberships_org` (`organization_id`), `ix_memberships_user` (`user_id`), `ix_memberships_role` (`role_id`)
 
 #### `auth_sessions`
-Active sign-in sessions / devices. Append-mostly (revoke sets timestamp).
+Refresh sessions / devices for JWT auth (ADR-8). One row per sign-in; the JWT **refresh** token carries
+this row's `id` as its `sid` claim, and refresh is only honoured while the row is live (not revoked, not
+expired) — this is what makes logout/compromise revocable. Access tokens are stateless JWTs and are not
+stored. Append-mostly (revoke sets a timestamp).
 
 | Column | Type | Null | Key | Default | Notes |
 |---|---|---|---|---|---|
-| `id` | uuid | no | PK | `gen_random_uuid()` | Opaque session token id. |
+| `id` | uuid | no | PK | `gen_random_uuid()` | Refresh-session id (the JWT `sid` claim). |
 | `organization_id` | bigint | no | FK→organizations.id, IX | | |
 | `user_id` | uuid | no | FK→users.id, IX | | Owner. |
 | `device` | text | no | | | Device/browser label (`Session.device`). |
@@ -291,6 +317,28 @@ Active sign-in sessions / devices. Append-mostly (revoke sets timestamp).
 - **PRIMARY KEY** (`id`)
 - **FOREIGN KEYS** `organization_id`→`organizations(id)` **ON DELETE CASCADE**; `user_id`→`users(id)` **ON DELETE CASCADE**
 - **INDEXES** `ix_auth_sessions_user` (`user_id`), `ix_auth_sessions_org` (`organization_id`), partial `ix_auth_sessions_active` (`user_id`) WHERE `revoked_at IS NULL`
+
+#### `social_identities`
+A provider account linked to a user (US-ACC-06). One row per (provider, subject); a user may link several
+providers. Nothing secret is stored — only the provider's opaque subject and the email it asserted at link
+time. A social-only account has `users.password_hash = NULL`.
+
+| Column | Type | Null | Key | Default | Notes |
+|---|---|---|---|---|---|
+| `id` | bigint identity | no | PK | | |
+| `organization_id` | bigint | no | FK→organizations.id, IX | | Tenant. |
+| `user_id` | uuid | no | FK→users.id, UK, IX | | |
+| `provider` | `social_provider` | no | UK | | google/apple/linkedin. |
+| `subject` | text | no | UK | | The provider's stable `sub` — never the email, which can change. |
+| `email` | citext | yes | | | Asserted at link time, for display only. |
+| `linked_at` | timestamptz | no | | `now()` | |
+| `last_used_at` | timestamptz | yes | | | |
+
+- **PRIMARY KEY** (`id`)
+- **FOREIGN KEYS** `organization_id`→`organizations(id)` **ON DELETE CASCADE**; `user_id`→`users(id)` **ON DELETE CASCADE**
+- **UNIQUE** `uq_social_identities_provider_subject` (`provider`, `subject`); `uq_social_identities_user_provider` (`user_id`, `provider`)
+- **INDEX** `ix_social_identities_user` (`user_id`)
+- **RLS** tenant isolation on `organization_id`
 
 #### `two_factors`
 Per-user TOTP two-factor enrollment (0..1 per user).
@@ -372,6 +420,67 @@ Per-user email/SMS toggle per notification category (`NotifCategory`); gates whe
 - **UNIQUE** (`user_id`, `category`)
 - **INDEX** `ix_notif_prefs_user` (`user_id`)
 
+#### `payment_settings`
+A workspace's payment connection and checkout preferences (US-SET-08/09/10) — one row per organization.
+
+**PCI SAQ-A:** no card data and **no provider secret key** is stored. The connection is by reference only
+— the provider's account id plus its publishable key, both non-secret. Charges are made with the platform
+secret from config acting on behalf of `account_id`, so there is nothing sensitive to show back or mask.
+
+`account_id` is a **reference, not a credential**: on its own it authorises nothing. `Payments` reads this
+row through `MerchantAccountPort` and `Payouts` through `PayoutAccountPort`; neither reaches into the
+table, and the two ports stay distinct because "can this workspace take money" and "can this workspace be
+paid" are different answers at the provider (`charges_enabled` against `payouts_enabled`).
+
+A workspace that is not set up to take money **cannot take paid registrations** — checkout refuses rather
+than collecting somewhere the organizer cannot reach, which would issue a valid ticket against money they
+can never claim. Free events are unaffected.
+
+> **In flight.** Per-workspace API keys (`payment_credentials`, below) are replacing the shared-platform-key
+> model this section was written for. `account_id` and the ports survive the change; the sentence about
+> whose key signs the request does not. This note goes when the migration is finished.
+
+| Column | Type | Null | Key | Default | Notes |
+|---|---|---|---|---|---|
+| `id` | bigint identity | no | PK | | |
+| `organization_id` | bigint | no | FK→organizations.id, UK | | One row per org. |
+| `provider` | `payment_provider` | no | | `'stripe'` | |
+| `mode` | `payment_mode` | no | | `'test'` | Test takes no real money. |
+| `status` | `payment_connection_status` | no | | `'disconnected'` | |
+| `account_id` | text | yes | | | Provider connected-account ref (e.g. `acct_…`). |
+| `publishable_key` | text | yes | | | Non-secret; safe in the browser. |
+| `connected_at` | timestamptz | yes | | | |
+| `disconnected_at` | timestamptz | yes | | | |
+| `default_currency` | char(3) | no | | `'THB'` | May differ from org currency (warn, don't block). |
+| `statement_descriptor` | varchar(22) | yes | | | ≤22 chars, shown on card statements. |
+| `save_cards` | boolean | no | | `false` | |
+| `email_receipts` | boolean | no | | `true` | |
+| `created_at` | timestamptz | no | | `now()` | |
+| `updated_at` | timestamptz | no | | `now()` | |
+| `version` | integer | no | | `1` | |
+
+- **PRIMARY KEY** (`id`)
+- **FOREIGN KEY** `organization_id`→`organizations(id)` **ON DELETE CASCADE**
+- **UNIQUE** `uq_payment_settings_org` (`organization_id`)
+- **RLS** tenant isolation on `organization_id`
+
+#### `payment_method_settings`
+Per-method on/off for checkout (US-SET-09). An absent row means the method is disabled.
+
+| Column | Type | Null | Key | Default | Notes |
+|---|---|---|---|---|---|
+| `id` | bigint identity | no | PK | | |
+| `organization_id` | bigint | no | FK→organizations.id, UK | | |
+| `method` | `payment_method` | no | UK | | Card/PromptPay/Bank transfer/Apple Pay/Google Pay. |
+| `enabled` | boolean | no | | `false` | |
+| `created_at` | timestamptz | no | | `now()` | |
+| `updated_at` | timestamptz | no | | `now()` | |
+
+- **PRIMARY KEY** (`id`)
+- **FOREIGN KEY** `organization_id`→`organizations(id)` **ON DELETE CASCADE**
+- **UNIQUE** `uq_payment_method_settings_org_method` (`organization_id`, `method`)
+- **RLS** tenant isolation on `organization_id`
+
 ### Events & Program
 
 #### `categories`
@@ -427,6 +536,7 @@ Central aggregate: an event owned by an organization.
 | `start_at` | timestamptz | no | IX | | Event start. |
 | `end_at` | timestamptz | yes | | | Required to publish; `> start_at`. |
 | `timezone` | text | no | | `'Asia/Bangkok'` | |
+| `locale` | `locale` | yes | | | Language this event's automated messages default to (US-MSG-01); null → `organizations.locale`. |
 | `venue_name` | text | yes | | | Required unless `is_online`. |
 | `venue_address` | text | yes | | | |
 | `city` | text | yes | | | Filter facet. |
@@ -438,6 +548,8 @@ Central aggregate: an event owned by an organization.
 | `accent_color` | text | yes | | | Landing accent. |
 | `organizer_name` | text | no | | | Display organizer. |
 | `contact_email` | citext | yes | | | Required to publish. |
+| `agenda_title` | text | yes | | | Custom heading for the agenda section; defaults otherwise (US-PAGE-04). |
+| `speakers_title` | text | yes | | | Custom heading for the speakers section (US-PAGE-04). |
 | `landing_template_id` | `template_id` | yes | FK→landing_templates.id | | |
 | `published_at` | timestamptz | yes | | | Set on first public state. |
 | `cancelled_at` | timestamptz | yes | | | Triggers refund sweep. |
@@ -452,6 +564,39 @@ Central aggregate: an event owned by an organization.
 - **UNIQUE** (`organization_id`, `slug`)
 - **INDEXES** `ix_events_org_status` (`organization_id`, `status`), `ix_events_start_at` (`start_at`), `ix_events_type` (`type`), `ix_events_category` (`category_id`)
 - `tone`/`icon`/`tasks_open` are presentation/derived hints; `tasks_open` is a computed rollup.
+
+#### `event_highlights`
+A bullet the organizer arranges on the public page (US-PAGE-04). Ordered by `position`; an event with none
+simply renders no Highlights section.
+
+| Column | Type | Null | Key | Default | Notes |
+|---|---|---|---|---|---|
+| `id` | bigint identity | no | PK | | |
+| `organization_id` | bigint | no | FK→organizations.id | | Tenant. |
+| `event_id` | uuid | no | FK→events.id, IX | | |
+| `text` | text | no | | | |
+| `icon` | text | yes | | | Optional icon key the template renders. |
+| `position` | integer | no | | `0` | Organizer's order. |
+| `created_at` / `updated_at` | timestamptz | no | | `now()` | |
+
+- **FOREIGN KEYS** both **ON DELETE CASCADE** · **INDEX** `ix_event_highlights_event` (`event_id`,`position`)
+- **RLS** tenant isolation on `organization_id`
+
+#### `event_faqs`
+A question/answer pair shown on the public page (US-PAGE-06). Same ordering rule as highlights.
+
+| Column | Type | Null | Key | Default | Notes |
+|---|---|---|---|---|---|
+| `id` | bigint identity | no | PK | | |
+| `organization_id` | bigint | no | FK→organizations.id | | Tenant. |
+| `event_id` | uuid | no | FK→events.id, IX | | |
+| `question` | text | no | | | |
+| `answer` | text | no | | | |
+| `position` | integer | no | | `0` | |
+| `created_at` / `updated_at` | timestamptz | no | | `now()` | |
+
+- **FOREIGN KEYS** both **ON DELETE CASCADE** · **INDEX** `ix_event_faqs_event` (`event_id`,`position`)
+- **RLS** tenant isolation on `organization_id`
 
 #### `speakers`
 A speaker featured at an event.
@@ -543,6 +688,9 @@ A sellable ticket tier for an event.
 | `sales_end_at` | timestamptz | yes | | | After → paused. |
 | `min_per_order` | integer | no | | `1` | |
 | `max_per_order` | integer | no | | `8` | Hard ceiling 8 seats/booking. |
+| `includes` | jsonb | yes | | | "What's included" bullets on the public page (US-PAGE-05). |
+| `is_recommended` | boolean | no | | `false` | The tier the page highlights (US-PAGE-05). |
+| `badge` | text | yes | | | Its badge text, e.g. "Most popular". |
 | `icon_class` | text | yes | | | Presentation tint. |
 | `created_at` | timestamptz | no | | `now()` | |
 | `updated_at` | timestamptz | no | | `now()` | |
@@ -569,18 +717,20 @@ A redeemable discount for an event (or org-wide).
 | `status` | `discount_status` | no | | `'scheduled'` | active/scheduled/expired/disabled. |
 | `used` | integer | no | | `0` | Derived count; ≤`redemption_limit`. |
 | `redemption_limit` | integer | no | | `0` | 0 = unlimited (`Discount.limit`). |
+| `per_person_limit` | integer | no | | `0` | 0 = unlimited per buyer (US-TKT-07). |
+| `min_order_satang` | bigint | no | | `0` | Order must reach this before the code applies (US-TKT-07). |
 | `valid_from` | timestamptz | yes | | | scheduled→active. |
 | `valid_until` | timestamptz | yes | | | After → expired. |
-| `revenue_attributed_satang` | bigint | yes | | | Reporting rollup (derived). |
+| `revenue_attributed_satang` | bigint | no | | `0` | Reporting rollup (derived). |
 | `created_at` | timestamptz | no | | `now()` | |
 | `updated_at` | timestamptz | no | | `now()` | |
-| `deleted_at` | timestamptz | yes | | | |
+| `deleted_at` | timestamptz | yes | | | Retired code — past orders keep their discount (US-TKT-09). |
 | `version` | integer | no | | `1` | |
 
 - **PRIMARY KEY** (`id`)
 - **FOREIGN KEYS** `organization_id`→`organizations(id)` **ON DELETE CASCADE**; `event_id`→`events(id)` **ON DELETE CASCADE**
 - **UNIQUE** (`organization_id`, `event_id`, `code`) — code unique per event (case-insensitive via uppercase storage)
-- **CHECK** `used >= 0`, `redemption_limit >= 0`
+- **CHECK** `used >= 0`, `redemption_limit >= 0`, `per_person_limit >= 0`, `min_order_satang >= 0`; and the value matches its type — `percent` between 1 and 100, `fixed` at least 1 satang
 - **INDEXES** `ix_discount_codes_event` (`event_id`), `ix_discount_codes_org` (`organization_id`)
 
 #### `discount_redemptions` — JUNCTION (discount_codes ⇄ orders)
@@ -592,15 +742,37 @@ Records each application of a code to an order; enforces idempotent, once-per-or
 | `organization_id` | bigint | no | FK→organizations.id, IX | | |
 | `discount_code_id` | uuid | no | FK→discount_codes.id, UK, IX | | |
 | `order_id` | uuid | no | FK→orders.id, UK, IX | | |
+| `buyer_email` | citext | no | IX | | Who redeemed it — enforces the per-person limit without joining orders (US-TKT-11). |
 | `amount_satang` | bigint | no | | | Discount applied to this order. |
 | `redeemed_at` | timestamptz | no | | `now()` | |
 
 - **PRIMARY KEY** (`id`)
 - **FOREIGN KEYS** `organization_id`→`organizations(id)` **ON DELETE CASCADE**; `discount_code_id`→`discount_codes(id)` **ON DELETE RESTRICT**; `order_id`→`orders(id)` **ON DELETE CASCADE**
 - **UNIQUE** (`discount_code_id`, `order_id`) — re-submitting the same code on the same order is a no-op
-- **INDEXES** `ix_discount_redemptions_code` (`discount_code_id`), `ix_discount_redemptions_order` (`order_id`)
+- **CHECK** `amount_satang >= 0`
+- **INDEXES** `ix_discount_redemptions_code` (`discount_code_id`), `ix_discount_redemptions_order` (`order_id`), `ix_discount_redemptions_buyer` (`discount_code_id`, `buyer_email`)
 
 ### Registration & Orders & Seating
+
+#### `saved_events`
+A portal user's cross-organizer event bookmarks (US-DISC-03). This table is
+deliberately scoped by `user_id`, not `organization_id`: the Discover catalog is
+cross-tenant, so one saved list can contain events from several organizers.
+
+| Column | Type | Null | Key | Default | Notes |
+|---|---|---|---|---|---|
+| `id` | bigint identity | no | PK | | |
+| `user_id` | uuid | no | FK→users.id, UK, IX | | Bookmark owner. |
+| `event_id` | uuid | no | FK→events.id, UK, IX | | Saved event. |
+| `saved_at` | timestamptz | no | IX | `now()` | User-visible saved order. |
+| `created_at` | timestamptz | no | | `now()` | Immutable creation time. |
+
+- **PRIMARY KEY** (`id`)
+- **FOREIGN KEYS** `user_id`→`users(id)` **ON DELETE CASCADE**; `event_id`→`events(id)` **ON DELETE CASCADE**
+- **UNIQUE** `uq_saved_events_user_event` (`user_id`, `event_id`) — makes repeated saves and guest-save adoption idempotent
+- **INDEXES** `ix_saved_events_user` (`user_id`, `saved_at`), `ix_saved_events_event` (`event_id`)
+- **Isolation** application-enforced by `user_id`; deliberately no tenant RLS because this is a cross-tenant personal list
+- Immutable link table: no `organization_id`, `updated_at`, `deleted_at`, or `version`.
 
 #### `attendees`
 A person in the org's attendee CRM. May be a guest (no user) or linked 1:1 to a portal `users` row.
@@ -641,7 +813,7 @@ The booking header — the "registration" as a commerce order. Parent of `order_
 | `buyer_name` | text | no | | | |
 | `buyer_email` | citext | no | | | Confirmation sent here. |
 | `buyer_phone` | text | yes | | | E.164; SMS reminders. |
-| `status` | `order_status` | no | IX | `'pending'` | confirmed/pending/waitlisted/cancelled. |
+| `status` | `order_status` | no | IX | `'pending'` | confirmed/pending/waitlisted/cancelled/rejected/expired. **`expired` is written by eventa-worker, not the API** — see the writer note below. |
 | `payment_status` | `payment_status` | no | | `'pending'` | Payment sub-state rollup. |
 | `seats` | smallint | no | | | 1–8 per booking. |
 | `subtotal_satang` | bigint | no | | | Pre-discount, pre-VAT. |
@@ -664,6 +836,15 @@ The booking header — the "registration" as a commerce order. Parent of `order_
 - **CHECK** `seats BETWEEN 1 AND 8`, all money `>= 0`
 - **INDEXES** `ix_orders_event` (`event_id`), `ix_orders_attendee` (`attendee_id`), `ix_orders_status` (`organization_id`, `status`), `ix_orders_discount` (`discount_code_id`)
 - `checked_in` is derived from child `tickets`.
+- **WRITERS — eventa-api owns this table, with one agreed exception.** The
+  order-expiry sweep in **eventa-worker** (`modules/order-expiry`, ADR-14) sets
+  `status = 'expired'` on `pending`/`pending` orders whose seat holds lapsed, and
+  retires those holds in the same transaction. It is the only clock-driven write
+  to an API aggregate in the platform, and the only place outside eventa-api that
+  writes `orders`. **Consequence:** the worker's `orders` and `seat_holds` schema
+  files are *write* mirrors, not read views — an enum value added here must be
+  added there in the same change, because a write fails on a value a read would
+  simply never have produced.
 
 #### `order_items`
 Line item: a quantity of one ticket type within an order.
@@ -800,6 +981,12 @@ Append-only log of every door scan (successful or not). One row per scan attempt
 
 #### `payments`
 A captured (or attempted) charge against an order. Append-only ledger.
+
+`gateway_account_id` records **which** provider account took the money, because a refund has to reverse
+on that same one and `payment_settings` can change underneath it — a workspace can disconnect, or
+reconnect to a different account, between the charge and the reversal. NULL means the platform account,
+which is where every payment taken before the column existed genuinely landed, so those rows are correct
+as they stand and must not be backfilled.
 
 | Column | Type | Null | Key | Default | Notes |
 |---|---|---|---|---|---|
@@ -961,26 +1148,35 @@ Automated email/SMS template (seeded slugs like `registration-confirmation`).
 |---|---|---|---|---|---|
 | `id` | bigint identity | no | PK | | |
 | `organization_id` | bigint | no | FK→organizations.id, UK, IX | | |
-| `slug` | text | no | UK | | e.g. `payment-receipt`. |
+| `slug` | text | no | UK | | e.g. `registration-confirmation`, `payment-receipt`. |
 | `title` | text | no | | | |
-| `description` | text | no | | | Editor trigger line. |
-| `icon` | text | yes | | | Hugeicons slug. |
-| `icon_class` | text | yes | | | Avatar colour classes. |
-| `channels` | `channel[]` | no | | | Subset of {email, sms}. |
-| `active` | boolean | no | | `true` | Automation enabled. |
+| `description` | text | yes | | | Editor trigger line. |
+| `channels` | `message_channel[]` | no | | `'{email}'` | Subset of {email, sms}. |
+| `active` | boolean | no | | `true` | Automation enabled — the kill switch US-MSG-01 checks. |
 | `tags` | text[] | no | | `'{}'` | Allowed merge tags (`COMMON_TAGS`). |
-| `email_subject` | text | yes | | | Required when channels ∋ email. |
-| `email_body` | text | yes | | | Required when channels ∋ email. |
-| `sms_body` | varchar(160) | yes | | | Required when channels ∋ sms; ≤160/segment. |
+| `email_subject_en` | text | yes | | | Required when channels ∋ email. |
+| `email_subject_th` | text | yes | | | |
+| `email_body_en` | text | yes | | | |
+| `email_body_th` | text | yes | | | |
+| `sms_body_en` | text | yes | | | ≤160 chars/segment; Thai encodes shorter. |
+| `sms_body_th` | text | yes | | | |
 | `created_at` | timestamptz | no | | `now()` | |
 | `updated_at` | timestamptz | no | | `now()` | |
-| `deleted_at` | timestamptz | yes | | | |
-| `version` | integer | no | | `1` | |
 
 - **PRIMARY KEY** (`id`)
 - **FOREIGN KEY** `organization_id`→`organizations(id)` **ON DELETE CASCADE**
 - **UNIQUE** (`organization_id`, `slug`)
 - **INDEX** `ix_message_templates_org` (`organization_id`)
+- **RLS** `tenant_isolation` on `organization_id` (migration `0029`)
+
+**Built (migration `0028`), with three deliberate departures from the original spec:**
+- **The wording columns are split `_en`/`_th`.** US-MSG-02 requires that "each message exists in English and Thai", which single `email_subject`/`email_body`/`sms_body` columns cannot express.
+- **`icon` / `icon_class` are omitted.** They are presentation choices for the settings screen, not data the sender needs; the front-end can map them from `slug`.
+- **No `deleted_at` / `version`.** A template is configuration keyed by (`organization_id`, `slug`), not an audited domain record — it is edited in place, and deleting one would just restore the built-in default.
+
+**Scope is per WORKSPACE, per message kind — there is deliberately no `event_id`.** US-MSG-01's "given the organizer has turned a given message off" therefore means workspace-wide; per-event control of an automated message exists in neither the story nor this model.
+
+**An ABSENT row means active.** Rows are not seeded on workspace creation, so a workspace that has never opened its message settings still sends its confirmations; the sender treats "no row" as on.
 
 #### `announcements`
 A one-off broadcast to an event audience.
@@ -1225,6 +1421,12 @@ Short-lived checkout reservation that expires and releases inventory if the buye
 - **FOREIGN KEYS** `organization_id`→`organizations(id)` **ON DELETE CASCADE**; `event_id`→`events(id)` **ON DELETE CASCADE**; `order_id`→`orders(id)` **ON DELETE SET NULL**; `ticket_type_id`→`ticket_types(id)` **ON DELETE CASCADE**; `seat_id`→`seats(id)` **ON DELETE CASCADE**
 - **UNIQUE** partial `uq_seat_hold_active` (`seat_id`) WHERE `status = 'active'` — a seat has at most one active hold
 - **INDEXES** partial `ix_seat_holds_expiry` (`expires_at`) WHERE `status = 'active'` (expiry sweeper), `ix_seat_holds_order` (`order_id`)
+- **A lapsed hold stops reserving the moment `expires_at` passes** — availability
+  filters on it — so inventory is never held by a row this table has not yet
+  retired. Retiring it is housekeeping, not correctness: it keeps the table from
+  growing without bound and keeps "count of live holds" honest.
+- **WRITERS** eventa-api (create, convert, release) and **eventa-worker**'s
+  order-expiry sweep (`status = 'expired'`, alongside its order — ADR-14).
 
 #### `webhook_events`
 Inbound provider webhook log used for signature-verified, idempotent (exactly-once) processing. High-volume, append-mostly Platform infrastructure.
@@ -1259,6 +1461,8 @@ Type is read parent→child. "Via" names the FK column or junction table.
 | organizations | memberships | 1:N | memberships.organization_id | |
 | organizations | roles | 1:N | roles.organization_id | |
 | organizations | api_keys | 1:N | api_keys.organization_id | |
+| organizations | payment_settings | 1:1 | payment_settings.organization_id | Optional singleton per workspace. |
+| organizations | payment_method_settings | 1:N | payment_method_settings.organization_id | Per checkout method. |
 | organizations | categories | 1:N | categories.organization_id | |
 | organizations | events | 1:N | events.organization_id | |
 | organizations | payouts | 1:N | payouts.organization_id | |
@@ -1272,6 +1476,7 @@ Type is read parent→child. "Via" names the FK column or junction table.
 | roles ⇄ permissions | role_permissions | M:N | junction role_permissions | Preset matrix `ROLE_PERMS`. |
 | users ⇄ organizations | memberships | M:N | junction memberships | User↔org with role. |
 | users | auth_sessions | 1:N | auth_sessions.user_id | Devices/sessions. |
+| users | social_identities | 1:N | social_identities.user_id | Linked OAuth/OIDC providers. |
 | users | two_factors | 1:1 | two_factors.user_id (UK) | 0..1 enrollment. |
 | two_factors | recovery_codes | 1:N | recovery_codes.two_factor_id | One-time codes. |
 | users | notifications | 1:N | notifications.user_id | Inbox. |
@@ -1287,6 +1492,8 @@ Type is read parent→child. "Via" names the FK column or junction table.
 | events | orders | 1:N | orders.event_id | RESTRICT. |
 | events | speakers | 1:N | speakers.event_id | CASCADE. |
 | events | sessions | 1:N | sessions.event_id | Agenda; CASCADE. |
+| events | event_highlights | 1:N | event_highlights.event_id | Public-page bullets; CASCADE. |
+| events | event_faqs | 1:N | event_faqs.event_id | Public-page Q&A; CASCADE. |
 | events | surveys | 1:N | surveys.event_id | CASCADE. |
 | events | announcements | 1:N | announcements.event_id | CASCADE. |
 | events | meetings | 1:N | meetings.event_id | Optional; SET NULL. |
@@ -1296,6 +1503,8 @@ Type is read parent→child. "Via" names the FK column or junction table.
 | events | invoices | 1:N | invoices.event_id | |
 | events | payouts | 1:N | payouts.event_id | Optional attribution. |
 | events | check_ins | 1:N | check_ins.event_id | |
+| users | saved_events | 1:N | saved_events.user_id | Cross-tenant personal bookmarks; CASCADE. |
+| events | saved_events | 1:N | saved_events.event_id | Bookmark targets; CASCADE. |
 | sessions ⇄ speakers | session_speakers | M:N | junction session_speakers | A speaker owns many sessions. |
 | ticket_types | order_items | 1:N | order_items.ticket_type_id | RESTRICT. |
 | ticket_types | tickets | 1:N | tickets.ticket_type_id | RESTRICT. |

@@ -20,8 +20,8 @@
 > `ENUM` types, integer-satang money, `timestamptz` in UTC, 3NF normalization,
 > row-level tenant isolation via `organization_id`.
 >
-> **Scale.** 47 tables · 83 catalogued relationships (69 domain foreign keys plus
-> the tenant `organization_id` edge shared by 42 tenant-owned tables).
+> **Target scale.** 53 tables · 90 catalogued relationships, including the shared
+> tenant `organization_id` edge carried by 46 tables.
 
 ---
 
@@ -62,28 +62,35 @@ verdict per edge.
 **Junction (associative) tables.** Every many-to-many is resolved by a junction
 table named `<parent>_<child>` (`role_permissions`, `session_speakers`,
 `discount_redemptions`, `seat_assignments`, `payout_items`) plus the `memberships`
-associative entity. In the diagrams a junction sits between its two parents with a
+associative entity and the domain-named `saved_events` bookmark link. In the diagrams a junction sits between its two parents with a
 solid, identifying `||--o{` edge to each; the conceptual M:N is annotated in the
 Relationship matrix as `}o--o{`.
 
-**Tenancy edge.** Almost every table carries `organization_id` (42 of 47 tables).
+**Tenancy edge.** Most tables carry `organization_id` (46 of 53 tables).
 To keep the domain views legible, that shared edge is drawn explicitly only in the
 Master ERD and the *Identity & Access* view; in the other domain views the tenant
 column is listed as an attribute (`bigint organization_id FK`) and its edge to
-`ORGANIZATIONS` is implied. The five tables **without** `organization_id` are
+`ORGANIZATIONS` is implied. The seven tables **without** `organization_id` are
 `organizations` (the root), the global lookups `permissions` and
-`landing_templates`, and the sub-children `recovery_codes` and `role_permissions`.
+`landing_templates`, the transitively-scoped children `recovery_codes`,
+`role_permissions`, and `session_speakers`, and the cross-tenant, user-scoped
+`saved_events` bookmark table.
 
 ---
 
 ## Master ERD
 
-The single canonical picture: **all 47 entities** and **all** their foreign-key
+The single canonical picture: **all 53 entities** and **all** their foreign-key
 relationships, including the tenant `organization_id` fan from `ORGANIZATIONS`.
 Attributes are trimmed to the primary key, the salient foreign keys, and one to
 three defining columns per table — the domain views below carry fuller attribute
 lists. This diagram is intentionally large; it is the authoritative wiring
 diagram.
+
+![Master ERD](erd/full.png)
+
+<details>
+<summary>Mermaid source</summary>
 
 ```mermaid
 erDiagram
@@ -129,6 +136,13 @@ erDiagram
         uuid user_id FK
         text device
     }
+    SOCIAL_IDENTITIES {
+        bigint id PK
+        bigint organization_id FK
+        uuid user_id FK
+        social_provider provider UK
+        text subject UK
+    }
     TWO_FACTORS {
         bigint id PK
         bigint organization_id FK
@@ -152,6 +166,19 @@ erDiagram
         uuid user_id FK
         notification_kind category
     }
+    PAYMENT_SETTINGS {
+        bigint id PK
+        bigint organization_id FK,UK
+        payment_provider provider
+        payment_mode mode
+        payment_connection_status status
+    }
+    PAYMENT_METHOD_SETTINGS {
+        bigint id PK
+        bigint organization_id FK
+        payment_method method UK
+        boolean enabled
+    }
     CATEGORIES {
         bigint id PK
         bigint organization_id FK
@@ -172,6 +199,21 @@ erDiagram
         text slug UK
         event_status status
         seating_mode seating_mode
+        locale locale
+    }
+    EVENT_HIGHLIGHTS {
+        bigint id PK
+        bigint organization_id FK
+        uuid event_id FK
+        text text
+        integer position
+    }
+    EVENT_FAQS {
+        bigint id PK
+        bigint organization_id FK
+        uuid event_id FK
+        text question
+        integer position
     }
     SPEAKERS {
         uuid id PK
@@ -210,6 +252,12 @@ erDiagram
         uuid discount_code_id FK
         uuid order_id FK
         bigint amount_satang
+    }
+    SAVED_EVENTS {
+        bigint id PK
+        uuid user_id FK
+        uuid event_id FK
+        timestamptz saved_at
     }
     ATTENDEES {
         bigint id PK
@@ -413,9 +461,14 @@ erDiagram
     ORGANIZATIONS ||--o{ API_KEYS : "owns"
     ORGANIZATIONS ||--o{ NOTIFICATION_PREFERENCES : "owns"
     ORGANIZATIONS ||--o{ AUTH_SESSIONS : "owns"
+    ORGANIZATIONS ||--o{ SOCIAL_IDENTITIES : "owns"
     ORGANIZATIONS ||--o{ TWO_FACTORS : "owns"
+    ORGANIZATIONS ||--o| PAYMENT_SETTINGS : "configures"
+    ORGANIZATIONS ||--o{ PAYMENT_METHOD_SETTINGS : "enables"
     ORGANIZATIONS ||--o{ CATEGORIES : "owns"
     ORGANIZATIONS ||--o{ EVENTS : "hosts"
+    ORGANIZATIONS ||--o{ EVENT_HIGHLIGHTS : "owns"
+    ORGANIZATIONS ||--o{ EVENT_FAQS : "owns"
     ORGANIZATIONS ||--o{ SPEAKERS : "owns"
     ORGANIZATIONS ||--o{ SESSIONS : "owns"
     ORGANIZATIONS ||--o{ TICKET_TYPES : "owns"
@@ -455,6 +508,7 @@ erDiagram
     ROLES ||--o{ ROLE_PERMISSIONS : "grants"
     PERMISSIONS ||--o{ ROLE_PERMISSIONS : "granted by"
     USERS ||--o{ AUTH_SESSIONS : "signs in"
+    USERS ||--o{ SOCIAL_IDENTITIES : "links"
     USERS ||--o| TWO_FACTORS : "enrolls"
     TWO_FACTORS ||--o{ RECOVERY_CODES : "backs up"
     USERS ||--o{ NOTIFICATIONS : "receives"
@@ -470,6 +524,8 @@ erDiagram
     EVENTS ||--o{ ORDERS : "booked as"
     EVENTS ||--o{ SPEAKERS : "features"
     EVENTS ||--o{ SESSIONS : "schedules"
+    EVENTS ||--o{ EVENT_HIGHLIGHTS : "highlights"
+    EVENTS ||--o{ EVENT_FAQS : "answers"
     EVENTS ||--o{ SURVEYS : "surveys"
     EVENTS ||--o{ ANNOUNCEMENTS : "broadcasts"
     EVENTS |o--o{ MEETINGS : "coordinates"
@@ -479,6 +535,8 @@ erDiagram
     EVENTS ||--o{ INVOICES : "billed for"
     EVENTS |o--o{ PAYOUTS : "attributes"
     EVENTS ||--o{ CHECK_INS : "scanned at"
+    USERS ||--o{ SAVED_EVENTS : "bookmarks"
+    EVENTS ||--o{ SAVED_EVENTS : "saved as"
 
     SESSIONS ||--o{ SESSION_SPEAKERS : "presented in"
     SPEAKERS ||--o{ SESSION_SPEAKERS : "presents"
@@ -531,6 +589,8 @@ erDiagram
     SEATS |o--o{ SEAT_HOLDS : "held as"
 ```
 
+</details>
+
 ---
 
 ## Domain views
@@ -542,8 +602,13 @@ and noted in prose; the referenced entity lives in the view named in the note.
 ### Identity & Access
 
 Tenancy, login identities and personas, the role→permission preset matrix, the
-`memberships` associative entity binding users↔orgs↔roles, sign-in sessions, and
-TOTP two-factor with one-time recovery codes.
+`memberships` associative entity binding users↔orgs↔roles, sign-in sessions,
+linked social identities, and TOTP two-factor with one-time recovery codes.
+
+![Identity & Access](erd/auth.png)
+
+<details>
+<summary>Mermaid source</summary>
 
 ```mermaid
 erDiagram
@@ -618,6 +683,16 @@ erDiagram
         timestamptz expires_at
         timestamptz revoked_at
     }
+    SOCIAL_IDENTITIES {
+        bigint id PK
+        bigint organization_id FK
+        uuid user_id FK
+        social_provider provider UK
+        text subject UK
+        citext email
+        timestamptz linked_at
+        timestamptz last_used_at
+    }
     TWO_FACTORS {
         bigint id PK
         bigint organization_id FK
@@ -642,6 +717,7 @@ erDiagram
     ORGANIZATIONS ||--o{ ROLES : "defines"
     ORGANIZATIONS ||--o{ MEMBERSHIPS : "scopes"
     ORGANIZATIONS ||--o{ AUTH_SESSIONS : "scopes"
+    ORGANIZATIONS ||--o{ SOCIAL_IDENTITIES : "scopes"
     ORGANIZATIONS ||--o{ TWO_FACTORS : "scopes"
     ATTENDEES |o--o| USERS : "portal login (attendee_id)"
     USERS ||--o{ MEMBERSHIPS : "member via"
@@ -649,21 +725,33 @@ erDiagram
     ROLES ||--o{ ROLE_PERMISSIONS : "grants"
     PERMISSIONS ||--o{ ROLE_PERMISSIONS : "granted by"
     USERS ||--o{ AUTH_SESSIONS : "signs in"
+    USERS ||--o{ SOCIAL_IDENTITIES : "links"
     USERS ||--o| TWO_FACTORS : "enrolls"
     TWO_FACTORS ||--o{ RECOVERY_CODES : "backs up"
 ```
+
+</details>
 
 - `memberships` resolves the **users ⇄ organizations** M:N (a user may belong to
   many orgs), carrying the assigned `role_id` and `status`.
 - `role_permissions` resolves the **roles ⇄ permissions** M:N — the 12 fixed
   `permissions` presets per role (`ROLE_PERMS`). Neither `role_permissions` nor
   `permissions` is tenant-scoped.
+- `social_identities` stores non-secret provider subjects for Google, Apple, or
+  LinkedIn. Both its tenant and user FKs cascade; `(provider, subject)` and
+  `(user_id, provider)` are unique.
 - `attendees` here is a stub; its full definition is in *Registration, Orders &
   Seating*. `users.attendee_id` is the optional 1:1 portal-persona link.
 
 ### Organization & Settings
 
-Integration API credentials and per-user notification-channel preferences.
+Integration API credentials, per-user notification-channel preferences, and
+workspace payment-connection and checkout-method configuration.
+
+![Organization & Settings](erd/settings.png)
+
+<details>
+<summary>Mermaid source</summary>
 
 ```mermaid
 erDiagram
@@ -697,23 +785,56 @@ erDiagram
         boolean email_enabled
         boolean sms_enabled
     }
+    PAYMENT_SETTINGS {
+        bigint id PK
+        bigint organization_id FK,UK
+        payment_provider provider
+        payment_mode mode
+        payment_connection_status status
+        text account_id
+        text publishable_key
+        char default_currency
+        varchar statement_descriptor
+        boolean save_cards
+        boolean email_receipts
+        integer version
+    }
+    PAYMENT_METHOD_SETTINGS {
+        bigint id PK
+        bigint organization_id FK
+        payment_method method UK
+        boolean enabled
+    }
 
     ORGANIZATIONS ||--o{ API_KEYS : "owns"
     ORGANIZATIONS ||--o{ NOTIFICATION_PREFERENCES : "owns"
+    ORGANIZATIONS ||--o| PAYMENT_SETTINGS : "configures"
+    ORGANIZATIONS ||--o{ PAYMENT_METHOD_SETTINGS : "enables"
     USERS ||--o{ API_KEYS : "issues (created_by)"
     USERS ||--o{ NOTIFICATION_PREFERENCES : "sets (user_id)"
 ```
+
+</details>
 
 - `api_keys.created_by → users` is `ON DELETE RESTRICT` (the issuer requires
   `setIntegrations` and cannot be deleted out from under a live key).
 - `notification_preferences` is unique per `(user_id, category)` and gates whether
   a `message_deliveries` row is generated for that category. `users` is defined in
   *Identity & Access*.
+- `payment_settings` is optional and unique per organization; it stores only
+  non-secret provider references. `payment_method_settings` is unique per
+  `(organization_id, method)`, with an absent row meaning disabled.
 
 ### Events & Program
 
 The central `events` aggregate with its optional category and landing-template
-styling, plus speakers, agenda sessions, and the session⇄speaker junction.
+styling, public-page highlights and FAQs, plus speakers, agenda sessions, and
+the session⇄speaker junction.
+
+![Events & Program](erd/events.png)
+
+<details>
+<summary>Mermaid source</summary>
 
 ```mermaid
 erDiagram
@@ -746,6 +867,7 @@ erDiagram
         visibility visibility
         timestamptz start_at
         timestamptz end_at
+        locale locale
         seating_mode seating_mode
         integer capacity
         boolean is_online
@@ -754,6 +876,22 @@ erDiagram
         timestamptz published_at
         timestamptz cancelled_at
         timestamptz deleted_at
+    }
+    EVENT_HIGHLIGHTS {
+        bigint id PK
+        bigint organization_id FK
+        uuid event_id FK
+        text text
+        text icon
+        integer position
+    }
+    EVENT_FAQS {
+        bigint id PK
+        bigint organization_id FK
+        uuid event_id FK
+        text question
+        text answer
+        integer position
     }
     SPEAKERS {
         uuid id PK
@@ -793,12 +931,18 @@ erDiagram
     LANDING_TEMPLATES |o--o{ EVENTS : "styles (landing_template_id)"
     EVENTS ||--o{ SPEAKERS : "features"
     EVENTS ||--o{ SESSIONS : "schedules"
+    EVENTS ||--o{ EVENT_HIGHLIGHTS : "highlights"
+    EVENTS ||--o{ EVENT_FAQS : "answers"
     SESSIONS ||--o{ SESSION_SPEAKERS : "presented in"
     SPEAKERS ||--o{ SESSION_SPEAKERS : "presents"
 ```
 
+</details>
+
 - `session_speakers` resolves the **sessions ⇄ speakers** M:N (a speaker owns many
   sessions; `Break` sessions have no rows). Both FKs cascade.
+- `event_highlights` and `event_faqs` are ordered, tenant-scoped children of the
+  event. Both their event and organization FKs cascade.
 - `events.category_id`, `events.landing_template_id`, and `events.created_by` are
   all `ON DELETE SET NULL` (optional/attribution). `landing_templates` is a global
   seed, not tenant-scoped. `events.created_by → users` (Identity & Access).
@@ -807,6 +951,11 @@ erDiagram
 
 Sellable ticket tiers, redeemable discount codes (event or org-wide), and the
 `discount_redemptions` junction that enforces once-per-order idempotency.
+
+![Ticketing & Discounts](erd/ticketing.png)
+
+<details>
+<summary>Mermaid source</summary>
 
 ```mermaid
 erDiagram
@@ -866,6 +1015,8 @@ erDiagram
     ORDERS ||--o{ DISCOUNT_REDEMPTIONS : "redeems"
 ```
 
+</details>
+
 - `discount_codes.event_id` is nullable — a null means an **org-wide** code; the
   uniqueness is `(organization_id, event_id, code)`.
 - `discount_redemptions` resolves the **discount_codes ⇄ orders** M:N; its
@@ -876,12 +1027,25 @@ erDiagram
 
 ### Registration, Orders & Seating
 
-The commerce core: the attendee CRM, the `orders` booking header, its
-`order_items` lines, the issued `tickets` (one per admitted seat, carrying the QR
-token), and the reserved-seating model (`seat_maps` → `seats` → `seat_assignments`).
+The commerce core: cross-organizer `saved_events`, the attendee CRM, the `orders`
+booking header, its `order_items` lines, the issued `tickets` (one per admitted
+seat, carrying the QR token), and the reserved-seating model (`seat_maps` →
+`seats` → `seat_assignments`).
+
+![Registration, Orders & Seating](erd/orders.png)
+
+<details>
+<summary>Mermaid source</summary>
 
 ```mermaid
 erDiagram
+    SAVED_EVENTS {
+        bigint id PK
+        uuid user_id FK
+        uuid event_id FK
+        timestamptz saved_at
+        timestamptz created_at
+    }
     ATTENDEES {
         bigint id PK
         bigint organization_id FK
@@ -976,7 +1140,13 @@ erDiagram
         uuid id PK
         seating_mode seating_mode
     }
+    USERS {
+        uuid id PK
+        citext email
+    }
 
+    USERS ||--o{ SAVED_EVENTS : "bookmarks"
+    EVENTS ||--o{ SAVED_EVENTS : "saved as"
     EVENTS ||--o{ ORDERS : "booked as"
     ATTENDEES |o--o{ ORDERS : "books (attendee_id)"
     ORDERS ||--o{ ORDER_ITEMS : "contains"
@@ -992,10 +1162,15 @@ erDiagram
     TICKETS ||--o| SEAT_ASSIGNMENTS : "bound to"
 ```
 
+</details>
+
 - **Order→ticket commerce.** An `order` is the booking header; each `order_items`
   line is a quantity of one `ticket_type`; each `tickets` row is one issued
   admission materialized from a line (`order_item_id`), denormalizing `event_id`
   and `ticket_type_id` for fast door scans.
+- **Saved events.** `saved_events` is unique by `(user_id, event_id)` and cascades
+  from both parents. It has no `organization_id`: access is scoped to the portal
+  user so one personal list can span organizers.
 - **Reserved seating.** `seat_maps` is 1:1 with an `event` (`UNIQUE (event_id)`),
   present only when `events.seating_mode = reserved`. `seats` belong to a map;
   `seat_assignments` resolves the **seats ⇄ tickets** M:N with a partial unique
@@ -1008,6 +1183,11 @@ erDiagram
 
 The append-only door-scan log. Every scan attempt — success or failure — is one
 `check_ins` row carrying its `ScanState`.
+
+![Attendance & Check-in](erd/checkin.png)
+
+<details>
+<summary>Mermaid source</summary>
 
 ```mermaid
 erDiagram
@@ -1044,6 +1224,8 @@ erDiagram
     EVENTS |o--o{ CHECK_INS : "wrong-event of (other_event_id)"
 ```
 
+</details>
+
 - `check_ins.ticket_id` is nullable and `SET NULL` — an `invalid` scan matches no
   ticket and records only the raw `scanned_qr`.
 - `other_event_id` captures a `wrong`-event scan (the event the ticket actually
@@ -1056,6 +1238,11 @@ erDiagram
 
 The append-only payment/refund ledgers, tax invoices, organizer payouts with the
 `payout_items` settlement junction, and monthly VAT/WHT `tax_periods`.
+
+![Payments & Finance](erd/payments.png)
+
+<details>
+<summary>Mermaid source</summary>
 
 ```mermaid
 erDiagram
@@ -1165,6 +1352,8 @@ erDiagram
     PAYMENTS ||--o{ PAYOUT_ITEMS : "settled in"
 ```
 
+</details>
+
 - **Money as satang.** Every `*_satang` column is `bigint` integer minor units
   (1 THB = 100 satang), `>= 0`, paired with `currency char(3) DEFAULT 'THB'`.
 - `payments` and `refunds` are append-only ledgers keyed by an `idempotency_key`
@@ -1181,6 +1370,11 @@ Automated templates, one-off event announcements, the per-recipient
 `message_deliveries` ledger (materialized by either a template or an announcement),
 and the in-app `notifications` inbox.
 
+![Engagement & Messaging](erd/messaging.png)
+
+<details>
+<summary>Mermaid source</summary>
+
 ```mermaid
 erDiagram
     MESSAGE_TEMPLATES {
@@ -1189,13 +1383,17 @@ erDiagram
         text slug UK
         text title
         text description
-        channel channels
+        message_channel channels
         boolean active
         text tags
-        text email_subject
-        text email_body
-        varchar sms_body
-        timestamptz deleted_at
+        text email_subject_en
+        text email_subject_th
+        text email_body_en
+        text email_body_th
+        text sms_body_en
+        text sms_body_th
+        timestamptz created_at
+        timestamptz updated_at
     }
     ANNOUNCEMENTS {
         uuid id PK
@@ -1263,18 +1461,27 @@ erDiagram
     USERS ||--o{ NOTIFICATIONS : "receives (user_id)"
 ```
 
+</details>
+
 - `message_deliveries` has a `CHECK` that **exactly one** of `announcement_id` /
   `message_template_id` is set — every delivery traces to one source. All four of
   its optional source FKs (`recipient_attendee_id`, `order_id`, `announcement_id`,
   `message_template_id`) are `SET NULL`, since the ledger outlives its sources.
-- `channels`/`channel` use the `channel` enum (`email`, `sms`); `channels` is an
-  array subset. `notifications.body` is JSONB rich segments. `events`, `users`,
-  `orders`, `attendees` are defined elsewhere.
+- `message_templates.channels` uses the `message_channel[]` enum array and stores
+  separate English/Thai subject and body fields. Announcement/delivery
+  `channels`/`channel` use the `channel` enum (`email`, `sms`).
+  `notifications.body` is JSONB rich segments. `events`, `users`, `orders`, and
+  `attendees` are defined elsewhere.
 
 ### Feedback & Surveys
 
 Per-event surveys, their ordered questions, submitted responses (optionally
 anonymous), and the normalized per-question answers.
+
+![Feedback & Surveys](erd/surveys.png)
+
+<details>
+<summary>Mermaid source</summary>
 
 ```mermaid
 erDiagram
@@ -1330,6 +1537,8 @@ erDiagram
     SURVEY_QUESTIONS ||--o{ SURVEY_ANSWERS : "answered by"
 ```
 
+</details>
+
 - `survey_answers` normalizes the prototype's flattened rating/text into one row
   per `(response_id, question_id)` (unique), with a `CHECK rating BETWEEN 1 AND 5`.
 - `survey_answers.question_id → survey_questions` is `RESTRICT` (an answered
@@ -1339,6 +1548,11 @@ erDiagram
 ### Meetings
 
 Operational coordination meetings, optionally tied to an event.
+
+![Meetings](erd/meetings.png)
+
+<details>
+<summary>Mermaid source</summary>
 
 ```mermaid
 erDiagram
@@ -1373,12 +1587,19 @@ erDiagram
     USERS |o--o{ MEETINGS : "organizes (created_by)"
 ```
 
+</details>
+
 - `meetings.event_id` is nullable (`SET NULL`) — event-agnostic meetings are
   allowed. `created_by → users` is `SET NULL`. `events`, `users` defined elsewhere.
 
 ### System & Audit
 
 The append-only, immutable security/finance audit trail.
+
+![System & Audit](erd/audit.png)
+
+<details>
+<summary>Mermaid source</summary>
 
 ```mermaid
 erDiagram
@@ -1405,6 +1626,8 @@ erDiagram
     USERS |o--o{ AUDIT_EVENTS : "acts in (actor_user_id)"
 ```
 
+</details>
+
 - `audit_events` is never soft- or hard-deleted. Its `organization_id` FK is
   uniquely `ON DELETE RESTRICT` (the trail must survive), and `actor_user_id` is
   `SET NULL` (anonymous or failed sign-ins have no actor).
@@ -1416,6 +1639,11 @@ publishes domain events to RabbitMQ, the short-lived `seat_holds` that reserve
 inventory during checkout, and the inbound `webhook_events` log for
 signature-verified, idempotent provider callbacks. `outbox_events` and
 `webhook_events` are high-volume, append-mostly infrastructure logs.
+
+![Platform & Infrastructure](erd/platform.png)
+
+<details>
+<summary>Mermaid source</summary>
 
 ```mermaid
 erDiagram
@@ -1484,6 +1712,8 @@ erDiagram
     SEATS |o--o{ SEAT_HOLDS : "held as"
 ```
 
+</details>
+
 - `outbox_events` is written in the same transaction as its aggregate change; a
   relay polls the partial `ix_outbox_unpublished` index and publishes to RabbitMQ,
   then stamps `published_at` (with `attempts`/`available_at` driving backoff).
@@ -1520,7 +1750,7 @@ merely-referential = No).
 | 7 | organizations | payouts | `\|\|--o{` | payouts.organization_id | CASCADE | No |
 | 8 | organizations | tax_periods | `\|\|--o{` | tax_periods.organization_id | CASCADE | No |
 | 9 | organizations | audit_events | `\|\|--o{` | audit_events.organization_id | RESTRICT | No |
-| 10 | organizations | *(all 42 tenant-owned tables)* | `\|\|--o{` | `organization_id` | CASCADE (RESTRICT for audit_events, SET NULL for webhook_events) | No |
+| 10 | organizations | *(all 46 tenant-scoped tables)* | `\|\|--o{` | `organization_id` | CASCADE (RESTRICT for audit_events, SET NULL for webhook_events) | No |
 | 11 | users | memberships | `\|\|--o{` | memberships.user_id | CASCADE | Yes |
 | 12 | roles | memberships | `\|\|--o{` | memberships.role_id | RESTRICT | No |
 | 13 | roles | role_permissions | `\|\|--o{` | role_permissions.role_id | CASCADE | Yes |
@@ -1594,6 +1824,13 @@ merely-referential = No).
 | 81 | orders | seat_holds | `\|o--o{` | seat_holds.order_id | SET NULL | No |
 | 82 | ticket_types | seat_holds | `\|o--o{` | seat_holds.ticket_type_id | CASCADE | No |
 | 83 | seats | seat_holds | `\|o--o{` | seat_holds.seat_id | CASCADE | No |
+| 84 | organizations | payment_settings | `\|\|--o\|` | payment_settings.organization_id (UK) | CASCADE | No |
+| 85 | organizations | payment_method_settings | `\|\|--o{` | payment_method_settings.organization_id | CASCADE | No |
+| 86 | users | social_identities | `\|\|--o{` | social_identities.user_id | CASCADE | Yes |
+| 87 | events | event_highlights | `\|\|--o{` | event_highlights.event_id | CASCADE | Yes |
+| 88 | events | event_faqs | `\|\|--o{` | event_faqs.event_id | CASCADE | Yes |
+| 89 | users | saved_events | `\|\|--o{` | saved_events.user_id | CASCADE | Yes |
+| 90 | events | saved_events | `\|\|--o{` | saved_events.event_id | CASCADE | Yes |
 
 > **Note on rows 15/16/42/47/61/65.** These are the *conceptual* M:N edges named
 > in the catalog; each is physically realized by its junction table's two
@@ -1617,14 +1854,15 @@ time**, not stored as duplicated fact — the few stored counters (`ticket_types
 `discount_codes.used`) are guarded atomic denormalizations kept for hot-path
 booking checks, with `CHECK` constraints (`sold BETWEEN 0 AND total`).
 
-**Multi-tenancy via `organization_id`.** 42 of 47 tables carry
+**Multi-tenancy via `organization_id`.** 46 of 53 tables carry
 `organization_id … REFERENCES organizations(id)` (NOT NULL except the inbound
 `webhook_events` log, whose tenant is resolved after signature verification), and
 every read/write is filtered by the caller's org (row-level tenant isolation). The
-five tables with no tenant column are the root `organizations`, the globally-seeded
-lookups `permissions` and `landing_templates` (shared across tenants), and the
-sub-children `recovery_codes` and `role_permissions` (isolated transitively through
-their parents). Tenant tables cascade from `organizations` on delete, except
+seven tables with no tenant column are the root `organizations`, the globally-seeded
+lookups `permissions` and `landing_templates` (shared across tenants), the
+sub-children `recovery_codes`, `role_permissions`, and `session_speakers`
+(isolated transitively through their parents), and `saved_events` (isolated by
+`user_id` so a personal bookmark list can cross tenant boundaries). Tenant tables cascade from `organizations` on delete, except
 `audit_events` (`RESTRICT`, so the compliance trail cannot be dropped) and
 `webhook_events` (`SET NULL`).
 

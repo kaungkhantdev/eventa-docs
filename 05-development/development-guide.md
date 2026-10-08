@@ -16,7 +16,7 @@ restate the architecture (see the SAD) — it tells you how to build against it.
 |---|---|---|
 | Frontend | React 19 · TypeScript · Vite · Tailwind v4 (existing `../../eventa-web`, built from `../../eventa-ui-kit`) | [Design reference](../03-ux-ui-design/design-reference.md) |
 | Backend | **NestJS** (TypeScript) — modular monolith; REST | [SAD §5–6](../04-architecture/software-architecture.md) |
-| Data | PostgreSQL 15+ (migrations + a query layer), Redis | [entities.md](../04-architecture/entities.md) |
+| Data | PostgreSQL 15+ · **Drizzle ORM** (SQL-first, typed) · Redis | [entities.md](../04-architecture/entities.md) |
 | Messaging | RabbitMQ (consumer + outbox relay) | [SAD §6.3, §7.2](../04-architecture/software-architecture.md) |
 | Language baseline | TypeScript **strict**, ESLint + Prettier, end-to-end | §4 |
 
@@ -29,8 +29,9 @@ tests**, each service owning its own event type.
 | Repository | Deployable | Notes |
 |---|---|---|
 | **`eventa-web`** | web | React SPA + SSR (today's `../../eventa-web`) + generated API client |
-| **`eventa-api`** | api (check-in pool image; ships the outbox relay) | NestJS modular monolith; **owns DB schema & migrations**; emits `openapi.json` |
-| **`eventa-worker`** | worker | NestJS RabbitMQ consumers — async side effects |
+| **`eventa-api`** | api | NestJS modular monolith; **owns DB schema & migrations**; emits `openapi.json`; writes the outbox but never publishes |
+| **`eventa-worker`** | worker | NestJS RabbitMQ consumers — async side effects; plus scheduled domain jobs (ADR-14) |
+| **`eventa-relay`** | relay | Outbox → RabbitMQ publisher. Own repo, single replica (no row lock yet) |
 | **`eventa-infra`** | — | Terraform + Helm + Argo CD (Stage 7) |
 
 **`eventa-api`** — domain (bounded-context) modules, each a vertical slice:
@@ -38,18 +39,22 @@ tests**, each service owning its own event type.
 eventa-api/
 ├── src/
 │   ├── main.ts                     # HTTP entrypoint (also the check-in pool image)
-│   ├── relay.ts                    # outbox publisher
-│   ├── modules/
-│   │   ├── identity/  organization/  events/  ticketing/
-│   │   ├── registration/
-│   │   │   ├── registration.controller.ts   # DTOs → drive OpenAPI
+│   ├── db/                         # Drizzle: schema/ · migrations/ (SQL) · meta/
+│   ├── modules/                     # FLAT siblings — never nest one inside another
+│   │   ├── auth/  users/  auth-signup/  auth-password/  access/
+│   │   ├── events/  event-categories/  event-program/  event-seating/
+│   │   ├── event-sharing/  event-monitoring/  event-duplication/
+│   │   ├── ticketing/
+│   │   ├── registration/            # seat-hold money path
+│   │   │   ├── registration.module.ts
 │   │   │   ├── registration.service.ts
 │   │   │   ├── registration.repository.ts
 │   │   │   ├── dto/
 │   │   │   └── events/order-confirmed.event.ts   # producer owns its payload
-│   │   ├── attendance/  payments/  engagement/
-│   │   └── meetings/  platform/     # outbox, idempotency, audit, jobs
-│   └── common/                      # guards, interceptors, filters, tenancy
+│   │   ├── registration-stats/      # read model behind EventStatsPort
+│   │   └── platform/                # outbox, idempotency, audit, jobs
+│   └── common/                      # guards/ decorators/ interceptors/ filters/
+│                                    # http/ util/ tenancy — anything >1 module uses
 ├── test/contract/                   # Pact PROVIDER verification
 └── openapi.json                     # generated → consumed by web
 ```
@@ -59,7 +64,9 @@ eventa-api/
 eventa-worker/
 ├── src/
 │   ├── main.ts                      # consumer bootstrap
-│   ├── modules/                     # mirror the api's domains
+│   ├── modules/                     # mirror the api's module names, 1:1
+│   │   ├── auth/  auth-signup/  auth-password/   # the identity.* consumers
+│   │   ├── events/                  # the events.* family
 │   │   ├── registration/
 │   │   │   ├── order-confirmed.handler.ts
 │   │   │   └── order-confirmed.schema.ts     # zod: the shape it expects
@@ -81,9 +88,14 @@ eventa-web/
     └── lib/
 ```
 
-A NestJS **module = a bounded context** (SAD §6.2); modules depend on each other's **service
-interface**, never on another module's tables. The **worker mirrors the api's domain modules** (same
-names), with channel clients (email/sms/calendar) injected from `common/providers` — never used as the
+A NestJS **module = one responsibility**, and a bounded context (SAD §6.2) may be delivered by
+**several prefix-grouped sibling modules** — `auth` + `auth-signup` + `auth-password` + `users` + `access`
+together implement Accounts; `events` + the six `event-*` modules implement Create & Manage Events. Split
+whenever describing a module needs the word "and". Modules are **flat** under `src/modules/` — never a
+sub-feature folder nested inside another module — and depend on each other's **exported service
+interface**, never on another module's tables *or repository*. Cross-cutting code (guards, decorators,
+shared utils) lives in `src/common/`, never in a domain module. The **worker mirrors the api's module
+names** 1:1, with channel clients (email/sms/calendar) injected from `common/providers` — never used as the
 folder structure.
 
 **Contract safety (no shared package):**
@@ -91,20 +103,39 @@ folder structure.
 - **api ↔ worker** → each owns its event type (`events/*.event.ts` in api, `*.schema.ts` in worker);
   the worker validates every message (tolerant reader) and **Pact** tests in both `test/contract/`
   folders fail CI on drift. Payloads carry a `version` field for breaking-change overlap.
-- **Schema ownership:** `eventa-api` owns migrations; `eventa-worker` touches only agreed read-model tables.
+- **Schema ownership:** `eventa-api` owns migrations. `eventa-worker` touches only agreed read-model tables plus the ADR-14 exception; `eventa-relay` reads `outbox_events` and sets `published_at`, nothing else. Both keep typed mirrors that must track this repo's enums.
 
 ## 3. Local development setup
 **Prerequisites:** Node LTS, pnpm, Docker. Clone each service repo you're working on.
 1. **Shared infra** — in `eventa-infra` (or a dev compose), `docker compose up -d` → PostgreSQL, Redis, RabbitMQ.
 2. In each repo: `pnpm install`; copy `.env.example` → `.env` (sandbox keys; never commit secrets — §12).
-3. **`eventa-api`**: `pnpm migrate && pnpm seed` (api owns the schema), then `pnpm dev` (HTTP) and `pnpm relay`.
-4. **`eventa-worker`**: `pnpm dev`.
-5. **`eventa-web`**: `pnpm dev` (port 5180).
+3. **`eventa-api`**: `pnpm migrate && pnpm seed` (api owns the schema), then `pnpm dev`.
+4. **`eventa-relay`**: `pnpm dev`. **Required** — without it nothing leaves `outbox_events`, so no
+   email is ever sent. The failure is silent: orders commit, rows accumulate unpublished, and the
+   product looks healthy.
+5. **`eventa-worker`**: `pnpm dev`.
+6. **`eventa-web`**: `pnpm dev` (port 5180).
 
 > The **front-end prototype runs today** against mock data; point it at the local API as endpoints
 > land. Web regenerates its API client from `eventa-api`'s `openapi.json` in CI.
 
 ## 4. Coding standards & conventions
+
+**Design principles (all backend code):**
+- **Feature-first, not layer-first** — organize by feature (a module owns its
+  controller/service/repository/dto/events), never by technical layer (`controllers/`, `services/`, …).
+  One module = one responsibility; file names mirror class names (`event-categories.service.ts` →
+  `EventCategoriesService`); related modules share a name prefix. See Appendix A.2 for the full layout.
+- **SOLID, especially Single Responsibility & Dependency Inversion** — one reason to change per unit;
+  depend on abstractions (service interfaces, repositories, injected providers), not concretions.
+- **Thin controllers, orchestration-focused services, and repositories dedicated to data access.**
+- **Separate domain/business logic from infrastructure** (database, email, external APIs, queues) — reach
+  infrastructure only through injected ports.
+- **Side effects via events & background jobs** — emit to the **outbox**; the worker performs
+  email/SMS/projections, keeping core business workflows focused and easier to evolve.
+- **Small functions (≤ 10 lines) with one level of abstraction each** — extract helpers rather than nesting.
+
+**Baseline conventions:**
 - **TypeScript strict** everywhere; no `any` without justification. ESLint + Prettier enforced in CI.
 - **Frontend** — keep the existing **feature-based** structure and `components/ui` primitives; follow
   `../../eventa-web/CONVENTIONS.md`; Tailwind utilities, class-based light/dark.
@@ -132,23 +163,59 @@ From a backlog story to shipped, every time:
 9. **PR** with acceptance criteria verified in the preview env (§11).
 
 ## 6. Database & migrations
-- **Migration-first** (Prisma or TypeORM; raw SQL where RLS or performance needs it). The schema of
-  record is [entities.md](../04-architecture/entities.md)/[erd.md](../04-architecture/erd.md).
+- **ORM: Drizzle** (SQL-first, fully typed) — chosen because the money path needs first-class row
+  locking (`.for('update')` → `SELECT … FOR UPDATE`) and multi-tenant **RLS**
+  (`SET LOCAL app.current_org` via a raw `sql` fragment), both of which Drizzle does cleanly while
+  keeping inferred types. The schema of record is [entities.md](../04-architecture/entities.md)/[erd.md](../04-architecture/erd.md); `eventa-api` owns it.
+- **Migration workflow** — the schema lives in TS (`src/db/schema`); `drizzle-kit` diffs it into **plain
+  SQL** migration files (reviewed in the PR):
+  - `pnpm drizzle-kit generate --name <change>` → emits `NNNN_<change>.sql` + a `meta/` snapshot.
+  - `pnpm drizzle-kit migrate` → applies pending migrations (tracked in `__drizzle_migrations`).
+  - Non-diffable SQL (RLS **policies**, functions) goes in a **custom** migration:
+    `drizzle-kit generate --custom --name enable_rls`, then hand-write `CREATE POLICY …`.
 - **Expand/contract** for zero-downtime: add columns/tables (expand) → deploy code that writes both →
   backfill → switch reads → remove old (contract). Never edit a shipped migration — add a new one.
-- **Row-level security** + tenant-scoped data layer as defence-in-depth.
+- **Row-level security**: policies in a migration + `SET LOCAL app.current_org` per transaction + a
+  tenant-scoped data layer (defence-in-depth).
 - **Seed data** for local/test: ≥2 tenants, events across states, ticket types, test cards, sandbox PromptPay.
 
 ## 7. API conventions
-- **REST/JSON**, versioned `/api/v1`, authenticated by the session cookie, tenant-scoped (SAD §6.4).
+- **REST/JSON**, versioned `/api/v1`, authenticated by a **Bearer JWT** access token (short-lived;
+  refresh via `POST /auth/refresh`, revocable through `auth_sessions`), tenant-scoped (SAD §6.4).
 - **DTO validation** on every input; consistent pagination, filtering, sorting.
-- **Standard error envelope**; correct status codes; `403` for authz denial (enforced **server-side**, not just hidden UI).
+- **Response envelope — one shape for every endpoint.** HTTP status codes carry the result; the body
+  holds business data only; validation errors are structured `{ field, message }`; pagination `meta` is
+  always identical; internal errors / stack / SQL / secrets are **never** exposed. `403` for authz denial
+  (server-side, not just hidden UI). The `correlationId` rides the `x-correlation-id` header, not the body;
+  health probes are raw (opt out).
+
+  ```jsonc
+  // success
+  { "success": true, "statusCode": 200, "message": "…", "data": { … }, "timestamp": "…" }
+  // list + pagination (data is the array; meta is always this shape)
+  { "success": true, "statusCode": 200, "message": "…", "data": [ … ],
+    "meta": { "page": 1, "limit": 20, "total": 325, "totalPages": 17, "hasNext": true, "hasPrevious": false },
+    "timestamp": "…" }
+  // failure (validation 400 adds errors[])
+  { "success": false, "statusCode": 400, "message": "Validation failed.",
+    "errors": [ { "field": "email", "message": "Email is invalid." } ], "timestamp": "…" }
+  ```
+- **Auth** — passport-jwt: `JwtStrategy` verifies the Bearer access token statelessly; a global guard
+  honours a `@Public` opt-out and stamps tenant context.
 - **Webhooks** (Stripe/PromptPay) land on the API, are **signature-verified and idempotent** (dedupe via `webhook_events`).
 
 ## 8. Async & messaging in code
 - **Publish** only through the outbox (§5); the relay delivers to RabbitMQ with publisher confirms.
 - **Consume** with idempotent handlers; ack on success, nack→retry→DLQ on failure.
 - **Event contracts** are owned per service (no shared package): the producer defines the payload; each consumer validates it (tolerant reader) and pins expectations with **Pact** tests; payloads carry a `version` for breaking-change overlap.
+- **Scheduled jobs** (ADR-14) live in `eventa-worker` under their own module, driven by `@nestjs/schedule`'s
+  `@Cron` — never a `setInterval` in the API, which would run in every replica. Reach for one only when the
+  transition is something **no event can announce** (a deadline passing), not as a substitute for consuming
+  one. Each must be **idempotent and cursor-free** — select by the data, so a replicated or overlapping run
+  simply finds nothing — and must swallow its own errors, because an unhandled rejection in a scheduled
+  callback kills the process. Keep the rule in a plain service the cron calls: unit-testable, and an
+  operator can run it by hand. Writing an eventa-api aggregate from one is the ADR-14 exception and must be
+  enumerated per-table in [`entities.md`](../04-architecture/entities.md) before you add it.
 
 ## 9. Testing during development
 - **Unit-test the rules** (VAT, fees, capacity, discounts) TDD-style; **integration-test** flows against
@@ -186,6 +253,122 @@ NFRs · no known S1/S2 defects · PO-accepted in staging. (Matches the [project 
 - Emit **structured logs** with a **correlation id** propagated across HTTP requests **and** RabbitMQ messages.
 - Instrument **OpenTelemetry spans** on requests, DB calls, and message handlers; expose Prometheus metrics.
 - Surface domain signals the SRE doc consumes (checkout success, outbox lag, queue depth) — see [Stage 8](../08-maintenance/devops-observability-sre.md).
+
+---
+
+## Appendix A — Engineering standards (house rules)
+
+The enforced standard for all backend code (`eventa-api` + `eventa-worker`); mirrored in each repo's
+`CLAUDE.md`. Built for long-term maintainability — **priority order: Correctness → Maintainability →
+Readability → Testability → Performance → Developer Experience.** Never sacrifice architecture for
+short-term speed. Stack-adapted: **Drizzle ORM** + Postgres (not TypeORM), **RabbitMQ** for events/jobs,
+**pino** logging, `ConfigService` (zod) for config, `DomainException`/`ErrorCode` for errors.
+
+### A.1 SOLID
+- **Single Responsibility** — one job per class: controller = HTTP; service = orchestration; repository =
+  DB; mapper (`toXResponse`) = DTO conversion; DTO/validator = validation; guard/policy = authz + business
+  rules; factory = construction; (worker) handler = decode/validate/delegate/ack. Never mix.
+- **Dependency Inversion** — depend on interfaces / injection tokens, not concrete implementations, wherever
+  a seam is valuable (repositories, providers, clock).
+- **Open/Closed** — extend via Strategy / polymorphism instead of long `if/else`; don't modify working
+  business logic when you can extend it.
+
+### A.2 Architecture & structure
+- **Feature-first** — organize by business feature (`src/modules/<name>/`), never by technical layer.
+  **One module = one responsibility**; if describing it needs the word "and", it is two modules. Modules are
+  **flat siblings** — never a sub-feature folder nested inside another module — and related ones share a
+  **name prefix** (`auth`, `auth-signup`, `auth-password` · `events`, `event-categories`, `event-program`, …)
+  so they sort together. **File names mirror the module name, class names mirror the file name**
+  (`event-categories.service.ts` → `EventCategoriesService`); no `index.ts` barrels.
+- **Thin controllers** — validate · authenticate · authorize · call service · return. No business logic.
+- **Services orchestrate** — no SQL, HTTP, email, or storage code; delegate to dedicated services.
+- **Repository pattern** — all DB access in repositories exposing **descriptive** methods (`findActive`,
+  `findPending`, `findExpired`, `findValidSession`); no query builders in services.
+- **DTOs everywhere** — never expose ORM row/schema types: Request DTO → domain → Response DTO.
+- **Separation of concerns** — business logic must never directly depend on AWS / email / DB / external
+  APIs; infrastructure lives in dedicated adapters/services.
+- **Cross-cutting code lives in `src/common/`, never in a domain module** — a guard, decorator, pipe or
+  helper used by more than one module belongs in `common/guards/`, `common/decorators/`, `common/util/` …
+  so a controller never imports from an unrelated domain module just to annotate a route.
+- **A module is a black box** — depend on another module's **exported service**, never on its repository,
+  its tables or its internals. If a service needs another module's rows, call that module's service. Invert
+  cross-context *reads* with a **consumer-owned port**: the consumer declares an abstract class in its own
+  `ports/`, the owner implements it as an adapter and binds it
+  (`{ provide: EventStatsPort, useClass: RegistrationStatsAdapter }`). Use `forwardRef` **only** for a
+  genuine bidirectional dependency, never to paper over a bad boundary.
+- Target module layout (DB schema is centralized in `src/db/schema`, Drizzle):
+  ```
+  src/modules/<name>/
+    <name>.module.ts       # wiring only: imports, controllers, providers, exports
+    <name>.controller.ts   # thin HTTP: validate · authorize · call service · return
+    <name>.service.ts      # the rules (orchestration; no SQL, HTTP, email)
+    <name>.repository.ts   # all DB access, descriptive method names
+    <name>.mapper.ts       # row → response DTO, when non-trivial
+    <name>.types.ts        # internal domain types (never API shapes)
+    dto/   events/   ports/
+    (as it grows: validators/ · policies/ · listeners/ · interfaces/ · use-cases/)
+  ```
+  A module may hold **extra, descriptively-named** services when they are facets of the same concern
+  (`event-program/` has `sessions.service.ts` + `speakers.service.ts`; `events/` splits writes from reads
+  as `events.service.ts` + `events-query.service.ts`). That is SRP at the class level inside one boundary —
+  the alternative, a sibling module, would have to reach into this module's repository.
+- **The e2e suite is what proves the DI graph resolves — a green `tsc` does not.** A module that injects
+  another module's provider compiles fine and fails at boot.
+
+### A.3 Domain & correctness
+- **Business rules** belong in a Policy / Domain service / Validator — never scattered.
+- **Custom, meaningful exceptions** — named, via `DomainException.notFound()/.forbidden()/.conflict()/
+  .validation()` with a stable `ErrorCode`.
+- **Enums over magic strings** (`pgEnum`, `ErrorCode`); **constants over magic numbers**.
+- **No hard-coding** — never inline a literal that has a canonical home. Magic strings → enums; magic
+  numbers / limits / timeouts → module-level `const`; env, hosts, ports, URLs, secrets, credentials,
+  feature flags → `ConfigService` (zod `Env`), never `process.env` or a literal in app code; money & tax
+  rates (VAT, service fee) and quotas → the org-settings row or a named constant. **Derive enumerations
+  from their single source of truth** — Swagger `enum` and DTO validators from the Drizzle
+  `pgEnum().enumValues`; the worker's routing keys and payload field names from the producer's event
+  contract. A literal that repeats or carries domain meaning → name it once.
+- **Transactions** for any operation affecting multiple tables (`withTenant` / `db.transaction`).
+- **Domain events for side effects** — e.g. `OrderConfirmed`, `PaymentSucceeded`; the worker's listeners
+  handle email / notification / ERP-sync / audit. Emit via the **transactional outbox** (never dual-write).
+- **Background jobs** — move expensive work (email, PDF, S3, external APIs, report generation) to the queue
+  (RabbitMQ → worker), off the request path.
+
+### A.4 Cross-cutting
+- **Configuration** — never read `process.env` directly; always `ConfigService` (zod-validated `Env`).
+- **Logging** — never `console.log`; use the `Logger`. Include correlation/request id, user id, module,
+  timing. **Never log passwords/tokens/PANs** (redact).
+- **Dependency injection** — a class with more than ~6 injected deps is a smell; split responsibilities.
+- **No circular dependencies** — extract shared logic into another service or publish an event.
+
+### A.5 Methods, TypeScript, naming
+- **Small methods** — house target **≤ 10 lines**, ~40 hard ceiling; extract private methods over giant
+  functions; **one level of abstraction** per method.
+- **TypeScript** — strict mode; `readonly` where possible; async/await; optional chaining; nullish
+  coalescing. Avoid `any`, `@ts-ignore`, nested ternaries, deep nesting.
+- **Naming** — explicit (`PurchaseRepository`, `PurchasePolicy`, `PurchaseValidator`, `PurchaseFactory`);
+  avoid `Helper` / `Util` / `Manager` / `CommonService` / `GeneralService`.
+
+### A.6 API, data, security
+- **API** — RESTful naming; versioned (`/api/v1`); consistent response format; correct HTTP status codes.
+- **Postgres/Drizzle** — explicit relations/FKs; **pagination** for list endpoints; indexes for searchable
+  columns; transactions for multi-table writes. Never: N+1 queries, business logic in schema, exposing
+  schema types.
+- **Security** — validate + sanitize input; parameterized queries; enforce authorization server-side; never
+  expose secrets; never log passwords/tokens.
+- **Performance** — prefer pagination, batching, lazy loading, and caching only when justified; avoid
+  premature optimization.
+
+### A.7 Testing, docs & review
+- **Testing** — unit + integration + e2e; new behaviour ships with tests (this codebase mandates TDD — §9).
+- **Documentation** — clear public method names; concise comments on complex logic explaining **why**, not what.
+- **Review checklist** — before finishing: SRP respected · SOLID followed · no duplicated code · no magic
+  strings/numbers · DTOs used · validation added · logging where useful · exceptions meaningful · repository
+  pattern respected · no business logic in controllers · tenant scoping + idempotency on money paths · tests
+  updated if behaviour changed.
+
+### A.8 When unsure
+Prefer maintainability over clever code. **Ask before making architectural changes.** Don't refactor
+unrelated code while implementing a feature.
 
 ---
 

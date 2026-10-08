@@ -3,6 +3,10 @@
 The technical blueprint: the software architecture plus the data model that satisfy the requirements.
 
 ## Documents
+- **[how-services-connect.md](how-services-connect.md)** — **start here.** A plain-language
+  walkthrough of how `eventa-api`, `eventa-relay` and `eventa-worker` fit together: one diagram, one
+  registration followed hop by hop, what breaks when each service stops, and who is allowed to write
+  which tables. The five-minute version of the SAD.
 - **[software-architecture.md](software-architecture.md)** — the **baseline Software Architecture
   Document (SAD)**: goals & constraints, principles, C4 context & container views, the NestJS
   **module (bounded-context)** design, the **event-driven** topology (RabbitMQ + a NestJS consumer
@@ -10,11 +14,11 @@ The technical blueprint: the software architecture plus the data model that sati
   boundary; reliable eventing), deployment, cross-cutting concerns (payments/PCI, multi-tenancy,
   concurrency & overselling, PDPA, observability, security), the technology stack, **13 ADRs**, and
   an NFR → mechanism mapping.
-- **[entities.md](entities.md)** — the **data architecture**: relational data dictionary, 47
-  PostgreSQL tables across 11 bounded contexts, with keys, constraints, indexes, enums, junction
+- **[entities.md](entities.md)** — the **target data architecture**: relational data dictionary, 53
+  PostgreSQL tables across 12 bounded contexts, with keys, constraints, indexes, enums, junction
   tables. Multi-tenant, money-as-satang, order→ticket commerce model.
 - **[erd.md](erd.md)** — the **Entity Relationship Diagram**: master crow's-foot Mermaid diagram +
-  11 domain views + a 76-row relationship matrix, derived from `entities.md`.
+  12 domain views + a 90-row relationship matrix, derived from `entities.md`.
 
 ## Stack (baseline)
 React (SPA + SSR) · **NestJS** API (modular monolith) · **RabbitMQ** eventing + NestJS consumers ·
