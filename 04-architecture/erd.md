@@ -13,17 +13,17 @@
 > below was read back from `information_schema.columns` and `pg_constraint` on
 > **2026-10-09**. The database, not a document, is the source of truth here.
 >
-> **Scope of that claim.** "The database wins" governs *this* document only, and
-> only for statements of fact about the shipped schema: what tables, columns,
-> types, keys, constraints and cardinalities exist right now. It is **not** a
-> ruling that the design catalog [entities.md](entities.md) is wrong. The catalog
-> remains the place to read *why* each table exists, and its 53 tables are its own
-> declared **target physical model** ([entities.md](entities.md), *Schema status*),
-> not a stale count of what shipped. The 56 here is the implementation inventory.
-> Two numbers, two different claims — and the drift between them runs **both
-> ways**, so neither is simply behind the other. Which document *governs* the
-> schema is an open question this ERD does not settle; see
-> [Design notes → Which document governs the schema](#which-document-governs).
+> **Scope of that claim.** "The database wins" is a rule about *facts*, not a
+> ranking of documents. It settles what tables, columns, types, keys, constraints
+> and cardinalities exist right now; it says nothing about *why* any of them
+> exist. The repository guide now draws the same line — the live schema is the
+> reference for the data model, and both this ERD and the design catalog
+> [entities.md](entities.md) **describe** it (`CLAUDE.md`, *Architecture is
+> layered*) — so the catalog is not a rival inventory to be out-counted but the
+> data dictionary a reader goes to for a table's purpose. The 57 here is the
+> implementation inventory, and a shipped table needs an entry in both documents;
+> where either lags the schema, the document is what gets corrected. See
+> [Design notes → Which document describes the schema](#which-document-governs).
 > Column-level differences — things the catalog designed that the database does
 > not have — are recorded in
 > [Design notes → Designed but not built](#designed-but-not-built) rather than
@@ -34,7 +34,7 @@
 > `ENUM` types, integer-satang money, `timestamptz` in UTC, 3NF normalization,
 > row-level tenant isolation via `organization_id`.
 >
-> **Measured scale.** 56 tables · 124 enforced foreign-key constraints (49 of them
+> **Measured scale.** 57 tables · 129 enforced foreign-key constraints (50 of them
 > the shared tenant `organization_id` edge) · 7 conceptual many-to-many edges
 > resolved by junction tables · **6 reference columns carried with no foreign-key
 > constraint behind them** (see
@@ -103,15 +103,15 @@ timestamps. By that measure it is a *stricter* junction than `memberships`
 `discount_redemptions` (`buyer_email`, `amount_satang`), both of which this
 document has always counted as junctions. The absent `organization_id` does not
 disqualify it: `role_permissions` and `session_speakers` carry no tenant column
-either. So it appears as the seventh M:N in the headline above, as row 92
-of the Relationship matrix (physically realized by rows 27 and 82), and in the
+either. So it appears as the seventh M:N in the headline above, as row 96
+of the Relationship matrix (physically realized by rows 27 and 85), and in the
 associative-table list under [Normalization](#normalization-3nf).
 
 In the diagrams a junction sits between its two parents with a solid, identifying
 `||--o{` edge to each; the conceptual M:N is annotated in the Relationship matrix
 as `}o--o{`.
 
-**Tenancy edge.** Most tables carry `organization_id` (49 of 56 tables).
+**Tenancy edge.** Most tables carry `organization_id` (50 of 57 tables).
 To keep the domain views legible, that shared edge is drawn explicitly only in the
 Master ERD and the *Identity & Access* view; in the other domain views the tenant
 column is listed as an attribute (`bigint organization_id FK`) and its edge to
@@ -125,7 +125,7 @@ column is listed as an attribute (`bigint organization_id FK`) and its edge to
 
 ## Master ERD
 
-The single canonical picture: **all 56 entities** and **all** their foreign-key
+The single canonical picture: **all 57 entities** and **all** their foreign-key
 relationships, including the tenant `organization_id` fan from `ORGANIZATIONS`.
 Attributes are trimmed to the primary key, the salient foreign keys, and one to
 three defining columns per table — the domain views below carry fuller attribute
@@ -133,9 +133,13 @@ lists. This diagram is intentionally large; it is the authoritative wiring
 diagram.
 
 `erd/eventa-full.drawio` is a second rendering of the same schema, generated
-straight from the database rather than hand-maintained. The two now agree: 56
-entities and 124 foreign-key edges in both. Edit the Mermaid here; regenerate the
-`.drawio` from the database rather than editing it by hand.
+straight from the database rather than hand-maintained. **It is one table behind
+this one.** It was generated before migration `0068` and so draws 56 entities and
+124 foreign-key edges, missing `scan_attempts` and its five FKs; the Mermaid below
+draws all 57 and 129. Edit the Mermaid here; the `.drawio` is a generated artifact
+and must be **regenerated from the database**, never hand-reconciled — patching one
+table into it by hand is how it would stop being a second, independent reading of
+the schema and become a copy of this diagram's mistakes.
 
 ![Master ERD](erd/full.png)
 
@@ -396,6 +400,16 @@ erDiagram
         check_in_method method
         timestamptz checked_in_at
     }
+    SCAN_ATTEMPTS {
+        bigint id PK
+        bigint organization_id FK
+        uuid event_id FK
+        uuid ticket_id FK
+        uuid ticket_event_id FK
+        uuid scanned_by FK
+        scan_outcome outcome
+        timestamptz scanned_at
+    }
     PAYMENTS {
         uuid id PK
         bigint organization_id FK
@@ -567,6 +581,7 @@ erDiagram
     ORGANIZATIONS ||--o{ SEATS : "owns"
     ORGANIZATIONS ||--o{ SEAT_ASSIGNMENTS : "owns"
     ORGANIZATIONS ||--o{ CHECK_INS : "owns"
+    ORGANIZATIONS ||--o{ SCAN_ATTEMPTS : "owns"
     ORGANIZATIONS ||--o{ PAYMENTS : "owns"
     ORGANIZATIONS ||--o{ REFUNDS : "owns"
     ORGANIZATIONS ||--o{ INVOICES : "owns"
@@ -624,6 +639,8 @@ erDiagram
     EVENTS ||--o{ INVOICES : "billed for"
     EVENTS |o--o{ PAYOUTS : "attributes"
     EVENTS ||--o{ CHECK_INS : "checked in at"
+    EVENTS ||--o{ SCAN_ATTEMPTS : "scanned at"
+    EVENTS |o--o{ SCAN_ATTEMPTS : "pass belonged to"
     USERS ||--o{ SAVED_EVENTS : "bookmarks"
     EVENTS ||--o{ SAVED_EVENTS : "saved as"
 
@@ -656,6 +673,8 @@ erDiagram
     TICKETS ||--o| SEAT_ASSIGNMENTS : "bound to"
     TICKETS ||--o| CHECK_INS : "admitted by"
     USERS |o--o{ CHECK_INS : "checks in"
+    TICKETS |o--o{ SCAN_ATTEMPTS : "presented as"
+    USERS |o--o{ SCAN_ATTEMPTS : "scans"
 
     PAYMENTS ||--o{ REFUNDS : "reversed by"
     PAYMENTS ||--o| PAYOUT_ITEMS : "settled in"
@@ -1321,9 +1340,14 @@ erDiagram
 
 ### Attendance & Check-in
 
-The admission record: **one row per admitted ticket**, not per scan attempt.
-`check_ins.ticket_id` is `NOT NULL` and `UNIQUE`, so the table is a set of
-successful admissions rather than a log of everything the door scanner saw.
+Two tables that answer two different questions. `check_ins` is the **state of the
+room**: one row per admitted ticket, `ticket_id` `NOT NULL` and `UNIQUE`, so it is
+a set of successful admissions and the authority on who is inside.
+`scan_attempts` is the **history of the door**: one append-only row per scan
+presented, refusals included, so a bad QR or a pass for the wrong event leaves a
+trace. An admission writes both rows in one transaction; undoing a check-in
+deletes the `check_ins` row and leaves the `admitted` scan standing, because the
+admission was reversed but the scan still happened.
 
 ![Attendance & Check-in](erd/checkin.png)
 
@@ -1342,6 +1366,20 @@ erDiagram
         check_in_method method
         uuid checked_in_by FK
         text station_id
+        timestamptz created_at
+    }
+    SCAN_ATTEMPTS {
+        bigint id PK
+        bigint organization_id FK
+        uuid event_id FK
+        scan_outcome outcome
+        check_in_method method
+        uuid ticket_id FK
+        uuid ticket_event_id FK
+        text token_fingerprint
+        text station_id
+        uuid scanned_by FK
+        timestamptz scanned_at
         timestamptz created_at
     }
     EVENTS {
@@ -1367,6 +1405,10 @@ erDiagram
     TICKETS ||--o| CHECK_INS : "admitted by (ticket_id, UK)"
     ATTENDEES |o--o{ CHECK_INS : "checked in as (attendee_id)"
     USERS |o--o{ CHECK_INS : "checks in (checked_in_by)"
+    EVENTS ||--o{ SCAN_ATTEMPTS : "scanned at (event_id)"
+    EVENTS |o--o{ SCAN_ATTEMPTS : "pass belonged to (ticket_event_id)"
+    TICKETS |o--o{ SCAN_ATTEMPTS : "presented as (ticket_id)"
+    USERS |o--o{ SCAN_ATTEMPTS : "scans (scanned_by)"
 ```
 
 </details>
@@ -1379,13 +1421,56 @@ erDiagram
   `checked_in_by` are both `SET NULL`, so the record survives a deleted attendee
   CRM row or a departed gate steward; `checked_in_by → users` needs `regCheckin`.
 - `method` is the `check_in_method` enum (`qr`, `manual`, `upload`) — *how* the
-  person was admitted, which is not the same thing as the scan-outcome taxonomy the
-  design called for. The failed-scan half of the design — the raw scanned string,
-  the outcome state, the wrong-event pointer — **was never built**; see
-  [Designed but not built](#designed-but-not-built).
+  person came through the door, which is a different axis from *what the scanner
+  decided*. Both tables carry it: the outcome taxonomy lives in `scan_attempts`
+  as the separate `scan_outcome` enum.
 - `station_id` identifies the door/kiosk. Writing a row authoritatively sets
   `tickets.status = checked_in` and `tickets.checked_in_at`. `tickets`, `events`,
   `attendees`, `users` are defined elsewhere.
+- **`scan_attempts` exists because a refusal is not shaped like an admission.**
+  The design asked for the failed-scan half as columns on `check_ins`
+  (`scanned_qr`, `state`, `other_event_id`), and that cannot work:
+  `uq_check_ins_ticket` is a `UNIQUE` on `ticket_id` alone, and that one
+  constraint is the whole concurrency story of the door — two staff scanning the
+  same code both insert, one wins, and the loser reads back the winner's arrival
+  time instead of letting a second person in. One row per ticket is the guarantee.
+  Refusals break it on both arms: the same damaged pass is presented five times in
+  a minute, and an unrecognised code has no ticket to be unique *on*, so
+  `ticket_id` could not stay `NOT NULL` either. Widening `check_ins` would have
+  meant weakening the only constraint protecting the admission, which is almost
+  certainly why those columns were drawn and never built. The ledger is additive —
+  `check_ins` is untouched.
+- **It records admissions too, not just refusals,** because a refusal count has no
+  meaning without a denominator: "19 invalid scans" is unreadable without the
+  1,340 that worked, and it is the refusal *rate* that tells a busy door from a
+  broken scanner. `outcome` is the `scan_outcome` enum — `admitted`,
+  `already_checked_in`, `invalid`, `wrong_event`, `cancelled` — the enum created
+  by migration `0039` and left without a column until `0068`.
+- **`token_fingerprint` is a SHA-256 digest of the code presented, never the code.**
+  `tickets.qr_token` is a bearer credential: holding the string is the entitlement
+  to walk in. This table is append-only, outlives both the event and the ticket,
+  and is readable by anyone who may review a door — so raw tokens would turn a
+  door-incident log into a list of working passes and an export of it into a set
+  of usable tickets. The digest loses nothing needed: a recognised code already
+  carries its `ticket_id`, and grouping on the digest still separates "one broken
+  pass presented forty times" from "forty different bad codes", which is the
+  difference between a faulty ticket and somebody probing the door. `NULL` means
+  no code was presented at all, which is precisely what a manual admission is.
+  The same digest-not-credential choice is already made in `api_keys.key_hash`.
+- `event_id` is `RESTRICT`, matching `check_ins.event_id` — what happened at a door
+  is history and must outlive the event row. `ticket_id`, `ticket_event_id` and
+  `scanned_by` are all `SET NULL`: deleting a ticket must not erase the evidence
+  that it was turned away, deleting some *other* event must not be blocked by a
+  refusal recorded here, and the row has to survive a departed gate steward.
+  `ticket_event_id` — the design's `other_event_id` — is written **only when it
+  differs from `event_id`**, which is what lets `ticket_event_id IS NOT NULL` read
+  as "a pass for somewhere else turned up here" instead of also matching every row
+  where it would merely repeat the event we already know.
+- **Append-only is a property of the writer, not of the schema.**
+  `CheckInRepository` has no update or delete path for this table, which is what
+  makes it evidence; no constraint enforces that, and a `REVOKE` would not bind an
+  application connecting as the schema owner — the same reason its RLS policy is
+  defence in depth rather than the guarantee.
 
 ### Payments & Finance
 
@@ -1961,9 +2046,9 @@ end is `o|` when a single-column unique index makes the child at-most-one.
 **Identifying?** = existential ownership (composition/junction = Yes; optional or
 merely-referential = No).
 
-Rows 1–10 cover the tenant `organization_id` fan, which is 49 of the 124
-constraints and would otherwise swamp the table; rows 11–85 are the remaining 75
-constraints, one row each; rows 86–92 are the conceptual many-to-many edges that
+Rows 1–10 cover the tenant `organization_id` fan, which is 50 of the 129
+constraints and would otherwise swamp the table; rows 11–89 are the remaining 79
+constraints, one row each; rows 90–96 are the conceptual many-to-many edges that
 junction tables resolve. The six **unenforced** reference columns are not foreign
 keys and are tabulated separately below.
 
@@ -1978,7 +2063,7 @@ keys and are tabulated separately below.
 | 7 | organizations | payment_credentials | `\|\|--o{` | payment_credentials.organization_id | CASCADE | No |
 | 8 | organizations | audit_events | `\|\|--o{` | audit_events.organization_id | RESTRICT | No |
 | 9 | organizations | webhook_events | `\|o--o{` | webhook_events.organization_id | SET NULL | No |
-| 10 | organizations | *(all 49 tenant-scoped tables)* | `\|\|--o{` — except `\|\|--o\|` for payment_settings (`UNIQUE (organization_id)`) | `organization_id` | CASCADE (RESTRICT for audit_events, SET NULL for webhook_events) | No |
+| 10 | organizations | *(all 50 tenant-scoped tables)* | `\|\|--o{` — except `\|\|--o\|` for payment_settings (`UNIQUE (organization_id)`) | `organization_id` | CASCADE (RESTRICT for audit_events, SET NULL for webhook_events) | No |
 | 11 | attendees | check_ins | `\|o--o{` | check_ins.attendee_id | SET NULL | No |
 | 12 | attendees | orders | `\|o--o{` | orders.attendee_id | SET NULL | No |
 | 13 | attendees | tickets | `\|o--o{` | tickets.attendee_id | SET NULL | No |
@@ -1996,80 +2081,84 @@ keys and are tabulated separately below.
 | 25 | events | payments | `\|\|--o{` | payments.event_id | RESTRICT | No |
 | 26 | events | payouts | `\|o--o{` | payouts.event_id | SET NULL | No |
 | 27 | events | saved_events | `\|\|--o{` | saved_events.event_id | CASCADE | Yes |
-| 28 | events | seat_holds | `\|\|--o{` | seat_holds.event_id | CASCADE | Yes |
-| 29 | events | seat_maps | `\|\|--o\|` | seat_maps.event_id (UK) | CASCADE | Yes |
-| 30 | events | sessions | `\|\|--o{` | sessions.event_id | CASCADE | Yes |
-| 31 | events | speakers | `\|\|--o{` | speakers.event_id | CASCADE | Yes |
-| 32 | events | ticket_types | `\|\|--o{` | ticket_types.event_id | CASCADE | Yes |
-| 33 | events | tickets | `\|\|--o{` | tickets.event_id | RESTRICT | No |
-| 34 | landing_templates | events | `\|o--o{` | events.landing_template_id | SET NULL | No |
-| 35 | order_items | tickets | `\|\|--o{` | tickets.order_item_id | CASCADE | Yes |
-| 36 | orders | discount_redemptions | `\|\|--o{` | discount_redemptions.order_id | CASCADE | Yes |
-| 37 | orders | invoices | `\|\|--o{` | invoices.order_id | RESTRICT | No |
-| 38 | orders | order_items | `\|\|--o{` | order_items.order_id | CASCADE | Yes |
-| 39 | orders | payments | `\|\|--o{` | payments.order_id | RESTRICT | No |
-| 40 | orders | refunds | `\|\|--o{` | refunds.order_id | RESTRICT | No |
-| 41 | orders | seat_holds | `\|o--o{` | seat_holds.order_id | SET NULL | No |
-| 42 | orders | tickets | `\|\|--o{` | tickets.order_id | CASCADE | Yes |
-| 43 | payments | payout_items | `\|\|--o\|` | payout_items.payment_id (UK) | RESTRICT | Yes |
-| 44 | payments | refunds | `\|\|--o{` | refunds.payment_id | RESTRICT | No |
-| 45 | payouts | payout_items | `\|\|--o{` | payout_items.payout_id | CASCADE | Yes |
-| 46 | permissions | role_permissions | `\|\|--o{` | role_permissions.permission_key | RESTRICT | Yes |
-| 47 | roles | memberships | `\|\|--o{` | memberships.role_id | RESTRICT | No |
-| 48 | roles | role_permissions | `\|\|--o{` | role_permissions.role_id | CASCADE | Yes |
-| 49 | seat_maps | seats | `\|\|--o{` | seats.seat_map_id | CASCADE | Yes |
-| 50 | seats | seat_assignments | `\|\|--o{` | seat_assignments.seat_id | RESTRICT | Yes |
-| 51 | seats | seat_holds | `\|o--o{` | seat_holds.seat_id | CASCADE | No |
-| 52 | sessions | session_speakers | `\|\|--o{` | session_speakers.session_id | CASCADE | Yes |
-| 53 | speakers | session_speakers | `\|\|--o{` | session_speakers.speaker_id | CASCADE | Yes |
-| 54 | survey_questions | survey_answers | `\|\|--o{` | survey_answers.question_id | CASCADE | Yes |
-| 55 | survey_responses | survey_answers | `\|\|--o{` | survey_answers.response_id | CASCADE | Yes |
-| 56 | surveys | survey_questions | `\|\|--o{` | survey_questions.survey_id | CASCADE | Yes |
-| 57 | surveys | survey_responses | `\|\|--o{` | survey_responses.survey_id | CASCADE | Yes |
-| 58 | ticket_types | order_items | `\|\|--o{` | order_items.ticket_type_id | RESTRICT | No |
-| 59 | ticket_types | seat_holds | `\|o--o{` | seat_holds.ticket_type_id | CASCADE | No |
-| 60 | ticket_types | seats | `\|o--o{` | seats.ticket_type_id | SET NULL | No |
-| 61 | ticket_types | tickets | `\|\|--o{` | tickets.ticket_type_id | RESTRICT | No |
-| 62 | tickets | check_ins | `\|\|--o\|` | check_ins.ticket_id (UK) | CASCADE | Yes |
-| 63 | tickets | seat_assignments | `\|\|--o\|` | seat_assignments.ticket_id (UK) | CASCADE | Yes |
-| 64 | two_factors | recovery_codes | `\|\|--o{` | recovery_codes.two_factor_id | CASCADE | Yes |
-| 65 | users | announcements | `\|o--o{` | announcements.cancelled_by_user_id | SET NULL | No |
-| 66 | users | announcements | `\|o--o{` | announcements.sent_by_user_id | SET NULL | No |
-| 67 | users | api_keys | `\|\|--o{` | api_keys.created_by | RESTRICT | No |
-| 68 | users | audit_events | `\|o--o{` | audit_events.actor_user_id | SET NULL | No |
-| 69 | users | auth_sessions | `\|\|--o{` | auth_sessions.user_id | CASCADE | Yes |
-| 70 | users | check_ins | `\|o--o{` | check_ins.checked_in_by | SET NULL | No |
-| 71 | users | event_invitations | `\|o--o{` | event_invitations.invited_by | SET NULL | No |
-| 72 | users | events | `\|o--o{` | events.created_by | SET NULL | No |
-| 73 | users | invoices | `\|o--o{` | invoices.voided_by | SET NULL | No |
-| 74 | users | meetings | `\|o--o{` | meetings.created_by | SET NULL | No |
-| 75 | users | memberships | `\|\|--o{` | memberships.user_id | CASCADE | Yes |
-| 76 | users | notification_preferences | `\|\|--o{` | notification_preferences.user_id | CASCADE | Yes |
-| 77 | users | notification_reads | `\|\|--o{` | notification_reads.user_id | CASCADE | Yes |
-| 78 | users | orders | `\|o--o{` | orders.created_by | SET NULL | No |
-| 79 | users | orders | `\|o--o{` | orders.decided_by | SET NULL | No |
-| 80 | users | orders | `\|o--o{` | orders.offered_by | SET NULL | No |
-| 81 | users | refunds | `\|\|--o{` | refunds.issued_by | RESTRICT | No |
-| 82 | users | saved_events | `\|\|--o{` | saved_events.user_id | CASCADE | Yes |
-| 83 | users | social_identities | `\|\|--o{` | social_identities.user_id | CASCADE | Yes |
-| 84 | users | survey_responses | `\|\|--o{` | survey_responses.user_id | CASCADE | Yes |
-| 85 | users | two_factors | `\|\|--o\|` | two_factors.user_id (UK) | CASCADE | Yes |
-| 86 | roles ⇄ permissions | role_permissions | `}o--o{` | junction role_permissions | CASCADE / RESTRICT | Yes |
-| 87 | users ⇄ organizations | memberships | `}o--o{` | junction memberships | CASCADE | Yes |
-| 88 | sessions ⇄ speakers | session_speakers | `}o--o{` | junction session_speakers | CASCADE | Yes |
-| 89 | discount_codes ⇄ orders | discount_redemptions | `}o--o{` | junction discount_redemptions | RESTRICT / CASCADE | Yes |
-| 90 | seats ⇄ tickets | seat_assignments | `}o--o{` | junction seat_assignments | RESTRICT / CASCADE | Yes |
-| 91 | payments ⇄ payouts | payout_items | `}o--o{` | junction payout_items | RESTRICT / CASCADE | Yes |
-| 92 | users ⇄ events | saved_events | `}o--o{` | junction saved_events | CASCADE | Yes |
+| 28 | events | scan_attempts | `\|\|--o{` | scan_attempts.event_id | RESTRICT | No |
+| 29 | events | scan_attempts | `\|o--o{` | scan_attempts.ticket_event_id | SET NULL | No |
+| 30 | events | seat_holds | `\|\|--o{` | seat_holds.event_id | CASCADE | Yes |
+| 31 | events | seat_maps | `\|\|--o\|` | seat_maps.event_id (UK) | CASCADE | Yes |
+| 32 | events | sessions | `\|\|--o{` | sessions.event_id | CASCADE | Yes |
+| 33 | events | speakers | `\|\|--o{` | speakers.event_id | CASCADE | Yes |
+| 34 | events | ticket_types | `\|\|--o{` | ticket_types.event_id | CASCADE | Yes |
+| 35 | events | tickets | `\|\|--o{` | tickets.event_id | RESTRICT | No |
+| 36 | landing_templates | events | `\|o--o{` | events.landing_template_id | SET NULL | No |
+| 37 | order_items | tickets | `\|\|--o{` | tickets.order_item_id | CASCADE | Yes |
+| 38 | orders | discount_redemptions | `\|\|--o{` | discount_redemptions.order_id | CASCADE | Yes |
+| 39 | orders | invoices | `\|\|--o{` | invoices.order_id | RESTRICT | No |
+| 40 | orders | order_items | `\|\|--o{` | order_items.order_id | CASCADE | Yes |
+| 41 | orders | payments | `\|\|--o{` | payments.order_id | RESTRICT | No |
+| 42 | orders | refunds | `\|\|--o{` | refunds.order_id | RESTRICT | No |
+| 43 | orders | seat_holds | `\|o--o{` | seat_holds.order_id | SET NULL | No |
+| 44 | orders | tickets | `\|\|--o{` | tickets.order_id | CASCADE | Yes |
+| 45 | payments | payout_items | `\|\|--o\|` | payout_items.payment_id (UK) | RESTRICT | Yes |
+| 46 | payments | refunds | `\|\|--o{` | refunds.payment_id | RESTRICT | No |
+| 47 | payouts | payout_items | `\|\|--o{` | payout_items.payout_id | CASCADE | Yes |
+| 48 | permissions | role_permissions | `\|\|--o{` | role_permissions.permission_key | RESTRICT | Yes |
+| 49 | roles | memberships | `\|\|--o{` | memberships.role_id | RESTRICT | No |
+| 50 | roles | role_permissions | `\|\|--o{` | role_permissions.role_id | CASCADE | Yes |
+| 51 | seat_maps | seats | `\|\|--o{` | seats.seat_map_id | CASCADE | Yes |
+| 52 | seats | seat_assignments | `\|\|--o{` | seat_assignments.seat_id | RESTRICT | Yes |
+| 53 | seats | seat_holds | `\|o--o{` | seat_holds.seat_id | CASCADE | No |
+| 54 | sessions | session_speakers | `\|\|--o{` | session_speakers.session_id | CASCADE | Yes |
+| 55 | speakers | session_speakers | `\|\|--o{` | session_speakers.speaker_id | CASCADE | Yes |
+| 56 | survey_questions | survey_answers | `\|\|--o{` | survey_answers.question_id | CASCADE | Yes |
+| 57 | survey_responses | survey_answers | `\|\|--o{` | survey_answers.response_id | CASCADE | Yes |
+| 58 | surveys | survey_questions | `\|\|--o{` | survey_questions.survey_id | CASCADE | Yes |
+| 59 | surveys | survey_responses | `\|\|--o{` | survey_responses.survey_id | CASCADE | Yes |
+| 60 | ticket_types | order_items | `\|\|--o{` | order_items.ticket_type_id | RESTRICT | No |
+| 61 | ticket_types | seat_holds | `\|o--o{` | seat_holds.ticket_type_id | CASCADE | No |
+| 62 | ticket_types | seats | `\|o--o{` | seats.ticket_type_id | SET NULL | No |
+| 63 | ticket_types | tickets | `\|\|--o{` | tickets.ticket_type_id | RESTRICT | No |
+| 64 | tickets | check_ins | `\|\|--o\|` | check_ins.ticket_id (UK) | CASCADE | Yes |
+| 65 | tickets | scan_attempts | `\|o--o{` | scan_attempts.ticket_id | SET NULL | No |
+| 66 | tickets | seat_assignments | `\|\|--o\|` | seat_assignments.ticket_id (UK) | CASCADE | Yes |
+| 67 | two_factors | recovery_codes | `\|\|--o{` | recovery_codes.two_factor_id | CASCADE | Yes |
+| 68 | users | announcements | `\|o--o{` | announcements.cancelled_by_user_id | SET NULL | No |
+| 69 | users | announcements | `\|o--o{` | announcements.sent_by_user_id | SET NULL | No |
+| 70 | users | api_keys | `\|\|--o{` | api_keys.created_by | RESTRICT | No |
+| 71 | users | audit_events | `\|o--o{` | audit_events.actor_user_id | SET NULL | No |
+| 72 | users | auth_sessions | `\|\|--o{` | auth_sessions.user_id | CASCADE | Yes |
+| 73 | users | check_ins | `\|o--o{` | check_ins.checked_in_by | SET NULL | No |
+| 74 | users | event_invitations | `\|o--o{` | event_invitations.invited_by | SET NULL | No |
+| 75 | users | events | `\|o--o{` | events.created_by | SET NULL | No |
+| 76 | users | invoices | `\|o--o{` | invoices.voided_by | SET NULL | No |
+| 77 | users | meetings | `\|o--o{` | meetings.created_by | SET NULL | No |
+| 78 | users | memberships | `\|\|--o{` | memberships.user_id | CASCADE | Yes |
+| 79 | users | notification_preferences | `\|\|--o{` | notification_preferences.user_id | CASCADE | Yes |
+| 80 | users | notification_reads | `\|\|--o{` | notification_reads.user_id | CASCADE | Yes |
+| 81 | users | orders | `\|o--o{` | orders.created_by | SET NULL | No |
+| 82 | users | orders | `\|o--o{` | orders.decided_by | SET NULL | No |
+| 83 | users | orders | `\|o--o{` | orders.offered_by | SET NULL | No |
+| 84 | users | refunds | `\|\|--o{` | refunds.issued_by | RESTRICT | No |
+| 85 | users | saved_events | `\|\|--o{` | saved_events.user_id | CASCADE | Yes |
+| 86 | users | scan_attempts | `\|o--o{` | scan_attempts.scanned_by | SET NULL | No |
+| 87 | users | social_identities | `\|\|--o{` | social_identities.user_id | CASCADE | Yes |
+| 88 | users | survey_responses | `\|\|--o{` | survey_responses.user_id | CASCADE | Yes |
+| 89 | users | two_factors | `\|\|--o\|` | two_factors.user_id (UK) | CASCADE | Yes |
+| 90 | roles ⇄ permissions | role_permissions | `}o--o{` | junction role_permissions | CASCADE / RESTRICT | Yes |
+| 91 | users ⇄ organizations | memberships | `}o--o{` | junction memberships | CASCADE | Yes |
+| 92 | sessions ⇄ speakers | session_speakers | `}o--o{` | junction session_speakers | CASCADE | Yes |
+| 93 | discount_codes ⇄ orders | discount_redemptions | `}o--o{` | junction discount_redemptions | RESTRICT / CASCADE | Yes |
+| 94 | seats ⇄ tickets | seat_assignments | `}o--o{` | junction seat_assignments | RESTRICT / CASCADE | Yes |
+| 95 | payments ⇄ payouts | payout_items | `}o--o{` | junction payout_items | RESTRICT / CASCADE | Yes |
+| 96 | users ⇄ events | saved_events | `}o--o{` | junction saved_events | CASCADE | Yes |
 
-> **Note on rows 86–92.** These are the *conceptual* M:N edges; each is physically
+> **Note on rows 90–96.** These are the *conceptual* M:N edges; each is physically
 > realized by its junction table's two constituent foreign keys, which also appear
-> as their own numbered rows (e.g. 46+48 realize 86; 82+27 realize 92). The
+> as their own numbered rows (e.g. 48+50 realize 90; 85+27 realize 96). The
 > `On delete` column lists the two junction-arm behaviors.
 
 > **Note on row 10 — one cardinality exception.** Row 10 carves out exceptions for
 > `ON DELETE` behaviour, but the tenant fan is not uniform in *cardinality*
-> either. `payment_settings` is the only one of the 49 tenant-scoped tables whose
+> either. `payment_settings` is the only one of the 50 tenant-scoped tables whose
 > `organization_id` carries a single-column `UNIQUE` index
 > (`uq_payment_settings_org`), so an organization has **at most one**
 > `payment_settings` row: that edge is `||--o|`, a 1:1, not the `||--o{` 1:N every
@@ -2116,50 +2205,52 @@ this document; recording it is not.
 ## Design notes
 
 <a id="which-document-governs"></a>
-### Which document governs the schema
+### Which document describes the schema
 
-**Unresolved — recorded here, decided elsewhere.** Two documents currently claim
-authority over the same schema, and this ERD is not the right place to pick
-between them.
+**Answered.** Earlier revisions of this section recorded a genuine conflict: the
+repository guide named the design catalog [entities.md](entities.md) the schema
+**source of truth** and called this ERD *derived from it*, while this ERD's own
+Derivation note claimed the database wins. Both could not govern, and the
+disagreement was left open here because it was a decision for whoever owned those
+files, not a fact readable out of `pg_catalog`.
 
-- The repository guide (`CLAUDE.md`, *Architecture is layered*) names
-  `entities.md` the schema **source of truth (53 tables)** and says `erd.md` is
-  **derived from it**, with an instruction to keep the two consistent and to
-  update their shared counts together.
-- This ERD's own Derivation note says it is read back from
-  `information_schema.columns` and `pg_constraint`, and that **where the catalog
-  and the database disagree, the database wins**.
+`CLAUDE.md` (*Architecture is layered*) now settles it, and the ruling is not that
+one document beat the other:
 
-Both cannot govern. If the catalog is the source of truth, this document may not
-contradict it; if the database is, the catalog is no longer the source of truth
-for the implemented schema and `CLAUDE.md` describes a relationship that has
-stopped holding.
+- **The live PostgreSQL schema is the reference for the data model.** Where a
+  document and the database disagree, the database wins and **the document is what
+  gets corrected** — which is the licence this pass and the one before it acted on.
+- **`entities.md` and `erd.md` both *describe* that schema**, in different
+  registers. This ERD is read back from `information_schema.columns` and
+  `pg_constraint` and answers *what exists*. The catalog stays the **data
+  dictionary** and is the only place a reader learns *why* a table exists.
+- **A shipped table therefore needs an entry in both.** Neither document is
+  derived from the other, and neither is a target the other is behind.
 
-**The count difference is not the contradiction, and 53 is not a mistake.** The
-catalog states deliberately that its 53 tables are the **target physical model**,
-"not a claim that every table has already shipped", and tells the reader to count
-the API's committed `pgTable` definitions separately when reporting delivery. So
-53 is a design target and 56 is an implementation inventory — two different
-claims, both internally honest. The drift between them is **bidirectional**:
+**What that changes in practice.** The old framing made a count difference look
+like a contradiction to be adjudicated, so drift could sit unresolved while the
+two documents disagreed in public. Under the new rule a difference is simply a
+defect in whichever document is behind, with a known fix: read the database and
+correct the document. Counts are measured, never copied between documents — the
+57 in this file was taken from `pg_catalog`, and so was every figure derived from
+it.
 
-| Direction | Tables | Reading |
-|---|---|---|
-| Shipped, never catalogued | `event_invitations`, `event_message_runs`, `notification_reads`, `payment_credentials` | The implementation went past the design without the catalog being told |
-| Catalogued, never shipped | `notifications` | The design target has not been built (see [Designed but not built](#designed-but-not-built)) |
+**The drift that remains is one-directional and in the catalog's column.** One
+catalogued entity, `notifications`, describes a table the database does not have
+(see [Designed but not built](#designed-but-not-built)); whether it is still a
+target or abandoned is a product decision and not something this ERD can read. In
+the other direction, tables shipped ahead of their catalog entries are now a
+correction task rather than an open question. Do not take any list of them from
+this document — it is a snapshot that goes stale on the next migration. Measure it:
 
-That is 53 − 1 + 4 = 56, so neither number is arithmetically wrong; they are
-measuring different things and have drifted apart in both directions. Reconciling
-them means deciding whether the four shipped tables were intended (so the catalog
-gains them) or were built ahead of the design (so the target moves), and whether
-`notifications` is still a target or is abandoned. **Those are product and design
-decisions, not facts readable out of `pg_catalog`**, which is why no count is
-changed and no document is edited to match another here.
+```sh
+docker exec eventa-postgres-1 psql -U eventa -d eventa -At -c \
+  "SELECT table_name FROM information_schema.tables
+    WHERE table_schema='public' AND table_type='BASE TABLE' ORDER BY table_name;"
+```
 
-**Owner.** The governance question belongs to whoever owns `entities.md` and
-`CLAUDE.md`. Until it is answered, read this document as the authority on *what
-the database contains today* and the catalog as the authority on *what the schema
-is meant to become* — and treat `CLAUDE.md`'s "derived from it" as describing a
-relationship that is currently in dispute rather than one you can rely on.
+and check each name against both documents. `scan_attempts` was the newest such
+table when this pass ran; see [The 57th table](#the-57th-table).
 
 <a id="designed-but-not-built"></a>
 ### Designed but not built
@@ -2168,7 +2259,9 @@ These are the places where the design catalog describes something the database
 does not have. They are listed rather than deleted because each one is a product
 capability a reader could reasonably assume exists — a reader who sees
 "`announcements.audience`" in a diagram will go looking for audience targeting and
-find nothing. Fourteen columns and one whole entity fall in this class.
+find nothing. Eleven columns and one whole entity fall in this class — three
+columns fewer than before migration `0068`, which built the failed-scan capability
+on a new table instead and moved it out of this list into the remodels below.
 
 | Designed | Status in the database | What the product therefore cannot do |
 |---|---|---|
@@ -2177,15 +2270,134 @@ find nothing. Fourteen columns and one whole entity fall in this class.
 | `announcements.deleted_at` | Absent; `cancelled_at` + `cancelled_by_user_id` were built instead | No soft delete; withdrawing a scheduled announcement is a cancellation, which is the better model and should be folded back into the catalog |
 | `message_deliveries.recipient_attendee_id`, `.order_id`, `.announcement_id`, `.message_template_id` | All four absent | **A delivery cannot be traced to its cause.** There is no join from a send back to the announcement or template that produced it, the order it confirmed, or the attendee CRM row it went to — only a bare `recipient_email`. The `CHECK` that "exactly one source is set" cannot exist because no source column does |
 | `message_deliveries.provider_message_id` | Absent | No way to reconcile a send against the email provider's own record, so bounces and complaints cannot be matched back |
-| `check_ins.scanned_qr`, `.state` (`scan_state`), `.other_event_id` | Absent. The `scan_outcome` enum (`admitted`, `already_checked_in`, `invalid`, `wrong_event`, `cancelled`) **was created but no column uses it** | **Failed scans are not recorded at all.** `check_ins` holds one row per admitted ticket (`ticket_id` `NOT NULL` and `UNIQUE`), so a bad QR, a duplicate scan or a wrong-event scan leaves no trace. Door-incident reporting is impossible on this schema. The orphan enum is the clearest evidence this was built halfway |
 | `survey_questions.required` | Absent | No question can be made mandatory; completeness must be enforced in the client, where it can be bypassed |
 | `survey_responses.respondent_name` | Absent; `user_id` is `NOT NULL` | Responses are never anonymous and never from a non-user — the catalog's "optionally anonymous" survey does not exist |
 | `surveys.deleted_at` | Absent | Surveys are hard-deleted or not deleted; there is no recoverable archive, and deleting one cascades its questions, responses and answers away |
 
-One further difference is a **remodel**, not a gap: the catalog gives
-`survey_responses` a nullable `attendee_id → attendees`; the table has a
-`NOT NULL` `user_id → users`. The parent changed, so the old edge was removed
-rather than renamed.
+Two further differences are **remodels**, not gaps — the capability exists, but not
+where or how the catalog drew it, so looking for the designed column still fails.
+
+- **Failed scans.** The catalog puts them on `check_ins` as `scanned_qr`, `state`
+  (`scan_state`) and `other_event_id`. Those three columns do not exist and will
+  not be added: `uq_check_ins_ticket` is a `UNIQUE` on `ticket_id` alone and is the
+  concurrency guarantee of the door, and a refusal is neither unique per ticket nor
+  guaranteed to have a ticket at all, so the designed shape would have cost that
+  constraint. Migration `0068` built the capability as a separate append-only
+  ledger, `scan_attempts`, with `outcome` carrying the `scan_outcome` enum,
+  `ticket_event_id` standing in for `other_event_id`, and one deliberate
+  divergence: `token_fingerprint` stores a SHA-256 digest where the catalog asked
+  for the raw `scanned_qr`, because the raw value is a bearer credential. Door
+  incidents are reportable; the designed columns are not the way in. See
+  [Attendance & Check-in](#attendance--check-in) and
+  [The 57th table](#the-57th-table).
+- **Survey respondents.** The catalog gives `survey_responses` a nullable
+  `attendee_id → attendees`; the table has a `NOT NULL` `user_id → users`. The
+  parent changed, so the old edge was removed rather than renamed.
+
+<a id="what-this-pass-changed"></a>
+### What the 56-table pass changed in the diagrams and the counts
+
+*This records the pass that moved the document from 53 to 56. The 57th table
+arrived afterwards and is recorded in the next subsection.*
+
+**The diagrams and the counts in this document were brought onto the live schema
+in the same pass that produced the notes above.** Three entities the Mermaid
+source had never drawn — `notification_reads`, `payment_credentials` and
+`event_invitations` — were added, each to the [Master ERD](#master-erd) and to
+the one domain view it belongs in (`payment_credentials` to *Organization &
+Settings*; the other two to *Engagement & Messaging*). **Nine** of the rendered
+diagrams in [`erd/`](erd/) were re-rendered from the updated source over that
+pass — the ones the new entities, the renames below and the corrected
+cardinalities appear in. The entity count was moved off the catalog's **53**
+target and onto the **56** measured in the database, at the five statements that
+carried the old `53 tables / 46 tenant-scoped` pair: the *Measured scale*
+headline at the top, the tenancy-edge line under
+[How to read this ERD](#how-to-read-this-erd),
+the [Master ERD](#master-erd) preamble, row 10 of the
+[Relationship matrix](#relationship-matrix), and the multi-tenancy paragraph
+under [Normalization (3NF)](#normalization-3nf).
+
+**Why that is recorded here rather than left to the history.** The commit
+carrying those changes (`18bf34d`) describes them incorrectly: its message
+states that no Mermaid source changed, that no diagram therefore needed
+re-rendering, and that no count was changed. All three are false of that same
+commit — it is the one that added the three entities, re-rendered the nine
+diagrams and moved the counts. That message is already published, and rewriting
+released history to fix a description is not worth the cost, so the record is
+corrected in the document a reader actually opens. **Only the description was
+wrong; nothing above needs changing as a result.** The content was re-verified
+against the live schema when that pass ran — 56 tables, 49 of them carrying
+`organization_id`, 124 enforced foreign-key constraints. Those three figures were
+correct that day and are **superseded**: migration `0068` landed afterwards and
+every count in this document now reads 57 / 50 / 129. They are left here as the
+record of what that pass measured, not as current figures.
+
+**One derived artifact is still behind.** That pass edited Mermaid fences without
+regenerating the `erd.tldr` companion, which the repository guide flags as an
+artifact that goes stale silently; the three entities above are therefore missing
+from the canvas file, and `scan_attempts` now with them. The Markdown here stays
+the source of truth, so the `.tldr` should be regenerated rather than
+hand-reconciled.
+
+<a id="the-57th-table"></a>
+### The 57th table — `scan_attempts`
+
+**Why a reader arriving at a 57th table finds one more than the pass above left.**
+Migration `0068_scan_attempts.sql` was applied after that reconciliation, so this
+document went from correct to one table short without anything in it changing. The
+table is real and applied; the API code that writes it was still uncommitted when
+this pass ran, which is a reason to document the table and no reason to leave it
+out of the diagrams.
+
+**It exists because a refused scan at the door left no trace.** Migration `0039`
+created the `scan_outcome` enum — `admitted`, `already_checked_in`, `invalid`,
+`wrong_event`, `cancelled` — and then gave it no column. A query for
+`information_schema.columns WHERE udt_name = 'scan_outcome'` returned zero rows
+for twenty-nine migrations. Earlier revisions of this document called that orphan
+enum "the clearest evidence this was built halfway", and it was: a bad QR, a pass
+for another event, or a refunded ticket turned away at the gate produced no row
+anywhere, so there was no count, nothing to settle a disputed entry with, and **no
+way to tell a quiet night from a scanner that had stopped working**. `0068` is
+where that enum finally lands.
+
+**Why a new table and not columns on `check_ins`.** The design asked for the
+failed-scan half as `check_ins.scanned_qr`, `.state` and `.other_event_id`, and
+that shape is unbuildable without giving up `uq_check_ins_ticket` — the
+single-column `UNIQUE` on `ticket_id` that makes two staff scanning one code
+resolve to one admission. A refusal is not one row per ticket, and an unknown code
+has no ticket at all. The reasoning is set out in full under
+[Attendance & Check-in](#attendance--check-in) and in the migration's own header;
+the short version is that `check_ins` is the state of the room and
+`scan_attempts` is the history of the door, and the two were conflated in the
+design.
+
+**What moved in this document.** `SCAN_ATTEMPTS` was added to the
+[Master ERD](#master-erd) and to the *Attendance & Check-in* domain view, the one
+context it belongs in, with its columns, keys and foreign keys read from
+`information_schema.columns` and `pg_constraint`. Four foreign-key rows were added
+to the [Relationship matrix](#relationship-matrix) — 28 and 29
+(`events`, via `event_id` and `ticket_event_id`), 65 (`tickets`) and 86 (`users`) —
+and because the matrix is numbered sequentially, **every row from 28 onward shifted
+and the three cross-references into it were repointed** (rows 48+50 realize 90;
+rows 85+27 realize 96; the `saved_events` note in
+[How to read this ERD](#how-to-read-this-erd) now names rows 96, 27 and 85). Each
+count was re-measured against `pg_constraint` rather than incremented: **57**
+tables, **50** carrying `organization_id`, **129** enforced foreign keys, at the
+*Measured scale* headline, the tenancy-edge line, the
+[Master ERD](#master-erd) preamble, the matrix preamble, row 10 and both notes
+below the matrix, and the multi-tenancy paragraph under
+[Normalization (3NF)](#normalization-3nf). The seven tables with no tenant column
+are unchanged — `scan_attempts` carries `organization_id`, so it joins the fan.
+The two rendered diagrams whose Mermaid changed, `erd/full.png` and
+`erd/checkin.png`, were re-rendered in the same pass.
+
+**`erd/eventa-full.drawio` was deliberately not touched.** It is generated from
+the live database, and the copy in the repository predates `0068`, so it draws 56
+entities and 124 edges. Hand-patching one table into a generated file would
+destroy the only thing that makes it useful — that it is an independent reading of
+the schema rather than a second copy of this diagram. It needs regenerating; that
+is recorded in the [Master ERD](#master-erd) preamble so a reader comparing the two
+is not misled in the meantime.
 
 ### Renames the diagrams had missed
 
@@ -2220,7 +2432,7 @@ kept for hot-path booking checks, with `CHECK` constraints
 One documented exception: `events.bucket` *is* a stored `event_bucket` column
 (`active`, `completed`), not a read-time derivation.
 
-**Multi-tenancy via `organization_id`.** 49 of 56 tables carry
+**Multi-tenancy via `organization_id`.** 50 of 57 tables carry
 `organization_id … REFERENCES organizations(id)` (NOT NULL except the inbound
 `webhook_events` log, whose tenant is resolved after signature verification), and
 every read/write is filtered by the caller's org (row-level tenant isolation). The
@@ -2264,8 +2476,12 @@ discounts are `smallint`. Display strings are derived at render time
 **Soft deletes.** Most aggregate roots and user-editable entities carry
 `deleted_at timestamptz NULL` and are recovered/filtered logically. The
 append-only ledgers — `payments`, `refunds`, `audit_events`, `check_ins`,
-`message_deliveries` — deliberately **omit** `deleted_at`: they are immutable
-history, and `invoices` reaches the same end through `voided_at` instead.
+`message_deliveries`, `scan_attempts` — deliberately **omit** `deleted_at`: they
+are immutable history, and `invoices` reaches the same end through `voided_at`
+instead. `check_ins` is the exception that proves the rule: it has no `deleted_at`
+yet its rows *are* deleted, because undoing a check-in means the person is not in
+the room, and that is exactly why `scan_attempts` exists beside it to keep the
+scan itself.
 `surveys` and `announcements` have no `deleted_at` either, which is a gap rather
 than a decision for `surveys` (see
 [Designed but not built](#designed-but-not-built)) and the right model for
@@ -2299,4 +2515,21 @@ so new permission keys extend the enum and seed rows without schema change;
 new channels, merge tags and choice sets; and `landing_templates` can gain rows for
 new public themes. Native PostgreSQL `ENUM`s make new status/kind tokens an
 `ALTER TYPE … ADD VALUE` rather than a structural migration — with the caveat that
-an enum can also be created and then never wired up, as `scan_outcome` was.
+an enum can also be created and then never wired up, as `scan_outcome` sat from
+migration `0039` until `0068` finally gave it a column on `scan_attempts`. Nothing
+in PostgreSQL complains about an unused type, so the gap stayed invisible for
+twenty-nine migrations. A periodic check for enums no column references is cheap
+insurance:
+
+```sql
+SELECT t.typname FROM pg_type t
+ WHERE t.typtype = 'e'
+   AND NOT EXISTS (SELECT 1 FROM pg_attribute a WHERE a.atttypid = t.oid);
+```
+
+Run on 2026-10-09 that returns one row — **`member_role`** (`Admin`, `Organizer`,
+`Staff`, `Attendee`), which no column uses because `memberships.role` is plain
+`text` and the authoritative grant is `memberships.role_id → roles`. So the same
+pattern that hid the failed-scan gap is still present once over, though here the
+enum looks like a superseded draft rather than an unbuilt feature. Confirming that
+is a schema question, not a drawing one, and is out of scope for this document.

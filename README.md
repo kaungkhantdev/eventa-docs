@@ -20,7 +20,7 @@ guide — one folder per stage.
 - **Stage 1** — `functional-requirements.md` (Product Owner backlog: 162 user stories across 13 epics, MoSCoW), `non-functional-requirements.md` (46 quality requirements), `user-story-map.md` (the backlog re-cut as a 16-activity journey backbone × 3 release bands; walking-skeleton check).
 - **Stage 2** — `project-plan.md` (phased delivery plan, 15-sprint schedule, milestones, risks; MVP launch Dec 2026, v1.0 GA Mar 2027).
 - **Stage 3** — `design-reference.md` (screen inventory, user flows & design-system index pointing at the `../eventa-web` prototype + `../eventa-ui-kit`).
-- **Stage 4** — `software-architecture.md` (baseline SAD: NestJS modular monolith + RabbitMQ event-driven consumers + transactional outbox, synchronous checkout, C4 views, 13 ADRs), `entities.md` (relational data dictionary, 53 tables), `erd.md` (crow's-foot ERD).
+- **Stage 4** — `software-architecture.md` (baseline SAD: NestJS modular monolith + RabbitMQ event-driven consumers + transactional outbox, synchronous checkout, C4 views, 13 ADRs), `entities.md` (relational data dictionary, 57 tables), `erd.md` (crow's-foot ERD).
 - **Stage 5** — `development-guide.md` (monorepo layout, local setup, coding standards, build-a-feature playbook, Git workflow, DoD).
 - **Stage 6** — `test-plan.md` (7-step cycle: strategy, environment, defect process, closure), `test-cases.md` (340 test cases across 13 epics, traced to all 162 user stories).
 - **Stage 7** — `devops-architecture.md` (DevOps overview: CALMS/Three Ways/DORA), `devops-ci-cd.md` (CI/CD & release, GitOps + canary), `devops-infrastructure.md` (Terraform/Helm/Argo CD, Kubernetes).
