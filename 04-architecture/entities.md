@@ -1654,7 +1654,9 @@ A feedback survey attached to an event.
 > **Designed, not built.** `deleted_at` and `version` do not exist. A survey is therefore hard-deleted or
 > not deleted, with no recoverable archive — and deleting one cascades its questions, responses and answers
 > away with it, which for collected feedback is a sharper edge than the rest of this schema has anywhere
-> else. The absent `version` means two organizers editing a survey at once do not get a `409`.
+> else. The absent `version` means two organizers editing a survey at once do not get a `409` — and worse
+> than losing one of the two edits, they can leave the survey holding **both** question sets, as the
+> `survey_questions` note below sets out.
 
 #### `survey_questions`
 A question within a survey.
@@ -1679,12 +1681,41 @@ A question within a survey.
   read can skip the null case.
 - **`nps`** is the 0–10 "how likely are you to recommend…" question NPS is computed from (US-MSG-08/09).
   It carries no `options`, like a rating; its answer goes in `survey_answers.score`, not `rating`.
+- **`position` is a server-assigned ordinal and is deliberately not unique.** The client never sends it:
+  it submits an *ordered list* of questions, and the API derives the ordinal as that list's index. An edit
+  **replaces the whole set** — delete every question of the survey, re-insert the new list as `0…n-1`, in
+  one transaction — so the stored positions are dense and distinct *by construction*, and reordering is an
+  ordinary save with the list rearranged rather than a row-by-row shuffle. No question is ever moved
+  *through* another's position, so no intermediate collision arises and none has to be dodged with
+  negative numbers or a deferred constraint. Both readers (the author's view and the attendee's) sort by
+  (`position`, `id`), which is a **total** order because `id` is unique — so the rendered order is fixed
+  even if two rows ever did share a position, and one further save renumbers them. The schema's other
+  ordinals (`event_faqs.position`, `event_highlights.position`, `sessions.sort_order`,
+  `session_speakers.sort_order`) are non-unique for exactly these reasons. `uq_seats_position` is unique
+  by contrast because a seat's section/row/number is an **address**, not a rank: a seat is never reordered.
 
 > **Designed, not built.** `required` does not exist, so **no question can be made mandatory** — a
-> survey's completeness is enforced only in the client, where it can be bypassed. There is also **no
-> unique constraint on (`survey_id`, `position`)**, which the catalog specified: `ix_survey_questions_survey`
-> indexes that pair but does not enforce it, so two questions can share a position and their order is then
-> whatever the plan returns. `sort_order` was built as `position`; that is a rename and is corrected above.
+> survey's completeness is enforced only in the client, where it can be bypassed.
+>
+> This catalog previously specified **UNIQUE (`survey_id`, `sort_order`)** here, and **neither half of that
+> survived the build**: the column is `position` (corrected above), and the constraint was deliberately not
+> created. The reason the catalog gave for it — that without it "two questions can share a position and
+> their order is then whatever the plan returns" — **was not true**, and it is worth recording why, because
+> it is the kind of claim that invites a migration that fixes nothing. Every read of this column sorts by
+> (`position`, `id`); ties fall to a unique key, so there is no plan-dependent order to protect. Verified
+> against the database: with all three questions of a survey forced to `position = 0`, the read returns the
+> same order under a sequential scan and under an index scan alike.
+>
+> **The gap that is real here is not uniqueness — it is the concurrent edit** named in the `surveys` note
+> above, and a unique index is the wrong remedy for it. Because `surveys` has no `version`, two organizers
+> saving at once both delete-and-replace the question set; under `READ COMMITTED` the second one's `DELETE`
+> cannot see rows the first has just inserted, so **the survey keeps both sets** — six questions where
+> three were meant, silently and with no error. A unique index would turn that silent duplication into a
+> raw unique-violation, which the API maps to a `500`: integrity preserved, but the organizer is told
+> "something went wrong" and their edit is discarded unexplained. It would also leave the lost update
+> itself in place — the racing **title** is overwritten just the same, and no constraint on an ordinal can
+> see that. The remedy is the `409` that optimistic locking on `surveys.version` would give, which fixes
+> the whole row rather than the one symptom that happens to be visible in an index.
 
 #### `survey_responses`
 One member's completed submission of a survey.
