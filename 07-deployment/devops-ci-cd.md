@@ -28,7 +28,7 @@ see the SAD ([software-architecture.md](../04-architecture/software-architecture
 | **web** | React SSR (public event pages) | Node SSR server | 1 Deployment + HPA |
 | **api** | NestJS modular monolith | HTTP API | 1 Deployment + HPA (**canary**) **+** a dedicated **check-in api pool** (same image, own Deployment + HPA + scaling policy) |
 | **worker** | NestJS RabbitMQ consumers | Queue consumers | 1 Deployment + HPA |
-| **relay** | Outbox publisher | Poller/publisher | 1 Deployment + HPA (singleton-safe) |
+| **relay** | Outbox publisher | Poller/publisher | 1 Deployment, **exactly 1 replica, no HPA** — a singleton ([devops-infrastructure.md](devops-infrastructure.md) §3.2) |
 
 **Guiding principles** — CALMS + the Three Ways: everything-as-code; small, frequent, reversible
 releases; shift-left quality & security; *you build it, you run it*. Every change is measured
@@ -205,7 +205,7 @@ integrity-critical, highest-blast-radius surface (checkout, payments, auth).
 | **check-in api pool** | Rolling (surge-friendly) | Same image, scaled independently; event-day burst, no long-lived state |
 | **web** (SSR) | Rolling | Stateless; fast to shift |
 | **worker** (consumers) | Rolling | At-least-once + idempotent consumers tolerate mixed versions (§5.3) |
-| **relay** (outbox) | Rolling, `maxSurge=0`/`maxUnavailable=1` | Publisher; avoid two overlapping publishers racing — brief single-replica cutover |
+| **relay** (outbox) | Rolling, `maxSurge=0`/`maxUnavailable=1` | A singleton ([devops-infrastructure.md](devops-infrastructure.md) §3.2): surging would run two publishers against the same unlocked outbox rows, so the old pod exits **before** the new one starts and publishing pauses for the gap (§5.3) |
 
 **Canary analysis (api)** — automated `AnalysisTemplate` queries Prometheus at each step; the step
 must satisfy all gates before advancing, else the rollout **aborts and rolls back**:
@@ -270,9 +270,16 @@ The transactional **outbox** (SAD §5, §7.2) and RabbitMQ are what make deploys
   **idempotent** (dedupe on event id) and handle at-least-once delivery, so an old worker and a new
   worker consuming the same queue is safe. Add new event *fields* additively; introduce a new routing
   key rather than repurposing an existing one.
-- **Relay during rollout** — deployed with `maxUnavailable=1`/`maxSurge=0` so publishing briefly
-  narrows to one replica rather than running two overlapping publishers; publisher confirms + the
-  `sent` marker make a duplicate publish harmless (consumers dedupe).
+- **Relay during rollout** — the relay runs as **exactly one replica**
+  ([devops-infrastructure.md](devops-infrastructure.md) §3.2), so it is deployed with
+  `maxUnavailable=1`/`maxSurge=0`: the old pod exits before the new one starts, and publishing
+  **pauses** for that gap rather than two publishers overlapping. The pause is safe — an
+  unpublished row keeps `published_at IS NULL` and goes out on the first poll after the new pod is
+  ready. A concurrent **duplicate** would not be safe: consumers dedupe on event id, but only
+  *after* the first copy has been handled, so two copies in flight at once are both handled (one
+  registration, two confirmation emails). Publisher confirms and the `published_at` marker protect
+  against **loss**, not against two publishers racing — which is why the replica count, not the
+  rollout strategy, is what keeps this correct.
 - **Draining** — workers/relay handle `SIGTERM` with a grace period: stop accepting new messages,
   finish in-flight handlers, `ack`, then exit. `terminationGracePeriodSeconds` ≥ longest handler.
 - **DLQ safety net** — a poison message during a deploy dead-letters (SAD §6.3) and does not block
