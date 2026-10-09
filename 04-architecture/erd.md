@@ -8,20 +8,37 @@
 > order→ticket commerce path, reserved seating, check-in, payments and finance,
 > messaging, feedback, meetings, and the audit trail.
 >
-> **Derivation.** This ERD is generated **directly from and is faithful to** the
-> authoritative data dictionary [entities.md](entities.md). Every entity,
-> attribute, key, foreign key, junction table, and cardinality shown here is
-> taken from that catalog and its *Relationship summary*; nothing is renamed,
-> added, or removed. Where the two documents could ever disagree,
-> [entities.md](entities.md) wins.
+> **Derivation.** This ERD is **verified against the live PostgreSQL schema** —
+> every entity, attribute, type, key, foreign key, junction table, and cardinality
+> below was read back from `information_schema.columns` and `pg_constraint` on
+> **2026-10-09**. The database, not a document, is the source of truth here.
+>
+> **Scope of that claim.** "The database wins" governs *this* document only, and
+> only for statements of fact about the shipped schema: what tables, columns,
+> types, keys, constraints and cardinalities exist right now. It is **not** a
+> ruling that the design catalog [entities.md](entities.md) is wrong. The catalog
+> remains the place to read *why* each table exists, and its 53 tables are its own
+> declared **target physical model** ([entities.md](entities.md), *Schema status*),
+> not a stale count of what shipped. The 56 here is the implementation inventory.
+> Two numbers, two different claims — and the drift between them runs **both
+> ways**, so neither is simply behind the other. Which document *governs* the
+> schema is an open question this ERD does not settle; see
+> [Design notes → Which document governs the schema](#which-document-governs).
+> Column-level differences — things the catalog designed that the database does
+> not have — are recorded in
+> [Design notes → Designed but not built](#designed-but-not-built) rather than
+> quietly dropped. The drifts closed in this pass are listed there too.
 >
 > **Target DBMS.** PostgreSQL 15+. Surrogate `id` primary keys (`bigint identity`
 > for high-volume commerce/ledger tables, `uuid` for aggregate roots), native
 > `ENUM` types, integer-satang money, `timestamptz` in UTC, 3NF normalization,
 > row-level tenant isolation via `organization_id`.
 >
-> **Target scale.** 53 tables · 90 catalogued relationships, including the shared
-> tenant `organization_id` edge carried by 46 tables.
+> **Measured scale.** 56 tables · 124 enforced foreign-key constraints (49 of them
+> the shared tenant `organization_id` edge) · 7 conceptual many-to-many edges
+> resolved by junction tables · **6 reference columns carried with no foreign-key
+> constraint behind them** (see
+> [Unenforced references](#unenforced-references)).
 
 ---
 
@@ -59,14 +76,42 @@ child literally embeds its parent's key in its PK; we therefore apply the
 and optional links are not. The **Relationship matrix** states the identifying
 verdict per edge.
 
-**Junction (associative) tables.** Every many-to-many is resolved by a junction
-table named `<parent>_<child>` (`role_permissions`, `session_speakers`,
-`discount_redemptions`, `seat_assignments`, `payout_items`) plus the `memberships`
-associative entity and the domain-named `saved_events` bookmark link. In the diagrams a junction sits between its two parents with a
-solid, identifying `||--o{` edge to each; the conceptual M:N is annotated in the
-Relationship matrix as `}o--o{`.
+**The `(no FK)` marker.** Six edges are drawn with `(no FK)` appended to the
+label. Those are real reference columns — a `uuid`/`bigint` holding another
+table's `id`, read and joined by the application — that carry **no foreign-key
+constraint** in the database. The line is drawn because the relationship is real
+in the domain; the marker is there because PostgreSQL is not enforcing it, so
+nothing stops an orphan row. Mermaid has no notation for an unenforced edge, so
+the label carries it. They are tabulated under
+[Unenforced references](#unenforced-references).
 
-**Tenancy edge.** Most tables carry `organization_id` (46 of 53 tables).
+**Junction (associative) tables.** Seven tables resolve a conceptual
+many-to-many. Five are named `<parent>_<child>` — `role_permissions`,
+`session_speakers`, `discount_redemptions`, `seat_assignments`, `payout_items` —
+and two are named for the domain fact they record rather than for their two
+parents: `memberships` (users ⇄ organizations) and `saved_events`
+(users ⇄ events).
+
+`saved_events` **is a junction table, not a domain entity that happens to link two
+things**, and it is counted as one everywhere below. The name is not the test; the
+physical shape is, and the live table meets it on every count: a surrogate `id`,
+exactly two `NOT NULL` foreign-key columns (`user_id`, `event_id`), a composite
+`UNIQUE` over that pair (`uq_saved_events_user_event`), both arms
+`ON DELETE CASCADE`, and no payload of its own beyond the `saved_at`/`created_at`
+timestamps. By that measure it is a *stricter* junction than `memberships`
+(`role`, `status`, `invited_at`, `joined_at`, soft delete, `version`) or
+`discount_redemptions` (`buyer_email`, `amount_satang`), both of which this
+document has always counted as junctions. The absent `organization_id` does not
+disqualify it: `role_permissions` and `session_speakers` carry no tenant column
+either. So it appears as the seventh M:N in the headline above, as row 92
+of the Relationship matrix (physically realized by rows 27 and 82), and in the
+associative-table list under [Normalization](#normalization-3nf).
+
+In the diagrams a junction sits between its two parents with a solid, identifying
+`||--o{` edge to each; the conceptual M:N is annotated in the Relationship matrix
+as `}o--o{`.
+
+**Tenancy edge.** Most tables carry `organization_id` (49 of 56 tables).
 To keep the domain views legible, that shared edge is drawn explicitly only in the
 Master ERD and the *Identity & Access* view; in the other domain views the tenant
 column is listed as an attribute (`bigint organization_id FK`) and its edge to
@@ -80,12 +125,17 @@ column is listed as an attribute (`bigint organization_id FK`) and its edge to
 
 ## Master ERD
 
-The single canonical picture: **all 53 entities** and **all** their foreign-key
+The single canonical picture: **all 56 entities** and **all** their foreign-key
 relationships, including the tenant `organization_id` fan from `ORGANIZATIONS`.
 Attributes are trimmed to the primary key, the salient foreign keys, and one to
 three defining columns per table — the domain views below carry fuller attribute
 lists. This diagram is intentionally large; it is the authoritative wiring
 diagram.
+
+`erd/eventa-full.drawio` is a second rendering of the same schema, generated
+straight from the database rather than hand-maintained. The two now agree: 56
+entities and 124 foreign-key edges in both. Edit the Mermaid here; regenerate the
+`.drawio` from the database rather than editing it by hand.
 
 ![Master ERD](erd/full.png)
 
@@ -104,13 +154,13 @@ erDiagram
         uuid id PK
         bigint organization_id FK
         citext email UK
-        user_persona persona
-        bigint attendee_id FK
+        user_persona persona UK
+        bigint attendee_id
     }
     ROLES {
         bigint id PK
         bigint organization_id FK
-        member_role name
+        text name UK
     }
     PERMISSIONS {
         permission_key key PK
@@ -166,12 +216,25 @@ erDiagram
         uuid user_id FK
         notification_kind category
     }
+    NOTIFICATION_READS {
+        bigint id PK
+        bigint organization_id FK,UK
+        uuid user_id FK,UK
+        timestamptz read_at
+    }
     PAYMENT_SETTINGS {
         bigint id PK
         bigint organization_id FK,UK
         payment_provider provider
         payment_mode mode
         payment_connection_status status
+    }
+    PAYMENT_CREDENTIALS {
+        bigint id PK
+        bigint organization_id FK,UK
+        payment_mode mode UK
+        text publishable_key
+        bytea secret_key_cipher
     }
     PAYMENT_METHOD_SETTINGS {
         bigint id PK
@@ -214,6 +277,14 @@ erDiagram
         uuid event_id FK
         text question
         integer position
+    }
+    EVENT_INVITATIONS {
+        bigint id PK
+        bigint organization_id FK,UK
+        uuid event_id FK,UK
+        citext recipient_email UK
+        uuid invited_by FK
+        timestamptz sent_at
     }
     SPEAKERS {
         uuid id PK
@@ -272,6 +343,8 @@ erDiagram
         bigint attendee_id FK
         uuid discount_code_id FK
         uuid created_by FK
+        uuid decided_by FK
+        uuid offered_by FK
         text reference UK
         order_status status
         bigint total_satang
@@ -317,10 +390,11 @@ erDiagram
         bigint id PK
         bigint organization_id FK
         uuid event_id FK
-        uuid ticket_id FK
-        uuid scanned_by FK
-        uuid other_event_id FK
-        scan_state state
+        uuid ticket_id FK,UK
+        bigint attendee_id FK
+        uuid checked_in_by FK
+        check_in_method method
+        timestamptz checked_in_at
     }
     PAYMENTS {
         uuid id PK
@@ -343,6 +417,7 @@ erDiagram
         bigint organization_id FK
         uuid order_id FK
         uuid event_id FK
+        uuid voided_by FK
         text number UK
         invoice_status status
     }
@@ -372,50 +447,56 @@ erDiagram
         text slug UK
     }
     ANNOUNCEMENTS {
-        uuid id PK
+        bigint id PK
         bigint organization_id FK
-        uuid event_id FK
-        uuid created_by FK
+        uuid event_id
+        text subject
+        uuid sent_by_user_id FK
+        uuid cancelled_by_user_id FK
         announcement_status status
     }
     MESSAGE_DELIVERIES {
-        uuid id PK
+        bigint id PK
         bigint organization_id FK
-        bigint recipient_attendee_id FK
-        uuid order_id FK
-        uuid announcement_id FK
-        bigint message_template_id FK
+        uuid event_id
+        text kind
+        message_channel channel
+        text recipient_email
         delivery_status status
     }
-    NOTIFICATIONS {
-        uuid id PK
+    EVENT_MESSAGE_RUNS {
+        bigint id PK
         bigint organization_id FK
-        uuid user_id FK
-        notification_kind kind
+        uuid event_id UK
+        text kind UK
+        timestamptz requested_at
+        timestamptz completed_at
     }
     SURVEYS {
-        uuid id PK
+        bigint id PK
         bigint organization_id FK
-        uuid event_id FK
+        uuid event_id
         survey_status status
     }
     SURVEY_QUESTIONS {
-        uuid id PK
+        bigint id PK
         bigint organization_id FK
-        uuid survey_id FK
-        question_type type
+        bigint survey_id FK
+        survey_question_type type
+        integer position
     }
     SURVEY_RESPONSES {
-        uuid id PK
+        bigint id PK
         bigint organization_id FK
-        uuid survey_id FK
-        bigint attendee_id FK
+        bigint survey_id FK,UK
+        uuid event_id
+        uuid user_id FK,UK
     }
     SURVEY_ANSWERS {
         bigint id PK
         bigint organization_id FK
-        uuid response_id FK
-        uuid question_id FK
+        bigint response_id FK,UK
+        bigint question_id FK,UK
     }
     MEETINGS {
         uuid id PK
@@ -423,6 +504,7 @@ erDiagram
         uuid event_id FK
         uuid created_by FK
         meeting_type type
+        meeting_status status
     }
     AUDIT_EVENTS {
         bigint id PK
@@ -460,15 +542,18 @@ erDiagram
     ORGANIZATIONS ||--o{ MEMBERSHIPS : "owns"
     ORGANIZATIONS ||--o{ API_KEYS : "owns"
     ORGANIZATIONS ||--o{ NOTIFICATION_PREFERENCES : "owns"
+    ORGANIZATIONS ||--o{ NOTIFICATION_READS : "owns"
     ORGANIZATIONS ||--o{ AUTH_SESSIONS : "owns"
     ORGANIZATIONS ||--o{ SOCIAL_IDENTITIES : "owns"
     ORGANIZATIONS ||--o{ TWO_FACTORS : "owns"
     ORGANIZATIONS ||--o| PAYMENT_SETTINGS : "configures"
+    ORGANIZATIONS ||--o{ PAYMENT_CREDENTIALS : "holds keys for"
     ORGANIZATIONS ||--o{ PAYMENT_METHOD_SETTINGS : "enables"
     ORGANIZATIONS ||--o{ CATEGORIES : "owns"
     ORGANIZATIONS ||--o{ EVENTS : "hosts"
     ORGANIZATIONS ||--o{ EVENT_HIGHLIGHTS : "owns"
     ORGANIZATIONS ||--o{ EVENT_FAQS : "owns"
+    ORGANIZATIONS ||--o{ EVENT_INVITATIONS : "owns"
     ORGANIZATIONS ||--o{ SPEAKERS : "owns"
     ORGANIZATIONS ||--o{ SESSIONS : "owns"
     ORGANIZATIONS ||--o{ TICKET_TYPES : "owns"
@@ -491,7 +576,7 @@ erDiagram
     ORGANIZATIONS ||--o{ MESSAGE_TEMPLATES : "owns"
     ORGANIZATIONS ||--o{ ANNOUNCEMENTS : "owns"
     ORGANIZATIONS ||--o{ MESSAGE_DELIVERIES : "owns"
-    ORGANIZATIONS ||--o{ NOTIFICATIONS : "owns"
+    ORGANIZATIONS ||--o{ EVENT_MESSAGE_RUNS : "owns"
     ORGANIZATIONS ||--o{ SURVEYS : "owns"
     ORGANIZATIONS ||--o{ SURVEY_QUESTIONS : "owns"
     ORGANIZATIONS ||--o{ SURVEY_RESPONSES : "owns"
@@ -502,7 +587,7 @@ erDiagram
     ORGANIZATIONS ||--o{ SEAT_HOLDS : "owns"
     ORGANIZATIONS |o--o{ WEBHOOK_EVENTS : "receives"
 
-    ATTENDEES |o--o| USERS : "portal login"
+    ATTENDEES |o--o| USERS : "portal login (no FK)"
     USERS ||--o{ MEMBERSHIPS : "member via"
     ROLES ||--o{ MEMBERSHIPS : "assigned in"
     ROLES ||--o{ ROLE_PERMISSIONS : "grants"
@@ -511,7 +596,7 @@ erDiagram
     USERS ||--o{ SOCIAL_IDENTITIES : "links"
     USERS ||--o| TWO_FACTORS : "enrolls"
     TWO_FACTORS ||--o{ RECOVERY_CODES : "backs up"
-    USERS ||--o{ NOTIFICATIONS : "receives"
+    USERS ||--o{ NOTIFICATION_READS : "has read up to"
     USERS ||--o{ NOTIFICATION_PREFERENCES : "sets"
     USERS |o--o{ AUDIT_EVENTS : "acts in"
     USERS ||--o{ API_KEYS : "issues"
@@ -526,15 +611,19 @@ erDiagram
     EVENTS ||--o{ SESSIONS : "schedules"
     EVENTS ||--o{ EVENT_HIGHLIGHTS : "highlights"
     EVENTS ||--o{ EVENT_FAQS : "answers"
-    EVENTS ||--o{ SURVEYS : "surveys"
-    EVENTS ||--o{ ANNOUNCEMENTS : "broadcasts"
+    EVENTS ||--o{ EVENT_INVITATIONS : "invites to"
+    EVENTS ||--o{ SURVEYS : "surveys (no FK)"
+    EVENTS ||--o{ SURVEY_RESPONSES : "feedback on (no FK)"
+    EVENTS ||--o{ ANNOUNCEMENTS : "broadcasts (no FK)"
+    EVENTS ||--o{ EVENT_MESSAGE_RUNS : "bulk-messaged by (no FK)"
+    EVENTS |o--o{ MESSAGE_DELIVERIES : "delivered for (no FK)"
     EVENTS |o--o{ MEETINGS : "coordinates"
     EVENTS ||--o| SEAT_MAPS : "seats"
     EVENTS ||--o{ TICKETS : "admits"
     EVENTS ||--o{ PAYMENTS : "reported on"
     EVENTS ||--o{ INVOICES : "billed for"
     EVENTS |o--o{ PAYOUTS : "attributes"
-    EVENTS ||--o{ CHECK_INS : "scanned at"
+    EVENTS ||--o{ CHECK_INS : "checked in at"
     USERS ||--o{ SAVED_EVENTS : "bookmarks"
     EVENTS ||--o{ SAVED_EVENTS : "saved as"
 
@@ -550,37 +639,39 @@ erDiagram
 
     ATTENDEES |o--o{ ORDERS : "books"
     ATTENDEES |o--o{ TICKETS : "holds"
-    ATTENDEES |o--o{ SURVEY_RESPONSES : "answers"
-    ATTENDEES |o--o{ MESSAGE_DELIVERIES : "receives"
+    ATTENDEES |o--o{ CHECK_INS : "checked in as"
 
     ORDERS ||--o{ ORDER_ITEMS : "contains"
     ORDERS ||--o{ TICKETS : "issues"
     ORDERS ||--o{ PAYMENTS : "charged via"
     ORDERS ||--o{ REFUNDS : "refunded via"
     ORDERS ||--o{ INVOICES : "invoiced by"
-    ORDERS |o--o{ MESSAGE_DELIVERIES : "confirmed by"
     ORDER_ITEMS ||--o{ TICKETS : "materializes"
+    USERS |o--o{ ORDERS : "creates"
+    USERS |o--o{ ORDERS : "decides"
+    USERS |o--o{ ORDERS : "offers"
 
     SEAT_MAPS ||--o{ SEATS : "holds"
     SEATS ||--o{ SEAT_ASSIGNMENTS : "assigned in"
     TICKETS ||--o| SEAT_ASSIGNMENTS : "bound to"
-    TICKETS |o--o{ CHECK_INS : "scanned as"
-    USERS |o--o{ CHECK_INS : "scans"
-    EVENTS |o--o{ CHECK_INS : "wrong-event of"
+    TICKETS ||--o| CHECK_INS : "admitted by"
+    USERS |o--o{ CHECK_INS : "checks in"
 
     PAYMENTS ||--o{ REFUNDS : "reversed by"
-    PAYMENTS ||--o{ PAYOUT_ITEMS : "settled in"
+    PAYMENTS ||--o| PAYOUT_ITEMS : "settled in"
     PAYOUTS ||--o{ PAYOUT_ITEMS : "batches"
     USERS ||--o{ REFUNDS : "issues"
+    USERS |o--o{ INVOICES : "voids"
 
     SURVEYS ||--o{ SURVEY_QUESTIONS : "asks"
     SURVEYS ||--o{ SURVEY_RESPONSES : "collects"
+    USERS ||--o{ SURVEY_RESPONSES : "answers"
     SURVEY_RESPONSES ||--o{ SURVEY_ANSWERS : "records"
     SURVEY_QUESTIONS ||--o{ SURVEY_ANSWERS : "answered by"
 
-    MESSAGE_TEMPLATES |o--o{ MESSAGE_DELIVERIES : "sends"
-    ANNOUNCEMENTS |o--o{ MESSAGE_DELIVERIES : "delivers"
-    USERS |o--o{ ANNOUNCEMENTS : "authors"
+    USERS |o--o{ ANNOUNCEMENTS : "sends"
+    USERS |o--o{ ANNOUNCEMENTS : "cancels"
+    USERS |o--o{ EVENT_INVITATIONS : "invites"
     USERS |o--o{ MEETINGS : "organizes"
 
     EVENTS ||--o{ SEAT_HOLDS : "holds"
@@ -596,8 +687,12 @@ erDiagram
 ## Domain views
 
 One `erDiagram` per bounded context, with **fuller attribute lists** for that
-context's tables. Cross-context foreign keys are shown as attributes flagged `FK`
-and noted in prose; the referenced entity lives in the view named in the note.
+context's tables. The **Master ERD above is the exhaustive edge set**; a domain
+view may render a cross-context foreign key as an attribute flagged `FK` plus a
+prose note instead of drawing the line, naming the view the referenced entity
+lives in. Three edges are only ever drawn in the master for that reason:
+`events.created_by → users`, `orders.discount_code_id → discount_codes`, and
+`tickets.event_id → events`.
 
 ### Identity & Access
 
@@ -629,7 +724,7 @@ erDiagram
     }
     USERS {
         uuid id PK
-        bigint organization_id FK
+        bigint organization_id FK,UK
         text name
         citext email UK
         user_persona persona UK
@@ -638,14 +733,14 @@ erDiagram
         text password_hash
         boolean two_factor_enabled
         locale locale
-        bigint attendee_id FK
+        bigint attendee_id
         timestamptz last_active_at
         timestamptz deleted_at
     }
     ROLES {
         bigint id PK
-        bigint organization_id FK
-        member_role name UK
+        bigint organization_id FK,UK
+        text name UK
         text description
         jsonb bullets
         boolean is_system
@@ -663,10 +758,10 @@ erDiagram
     }
     MEMBERSHIPS {
         bigint id PK
-        bigint organization_id FK
-        uuid user_id FK
+        bigint organization_id FK,UK
+        uuid user_id FK,UK
         bigint role_id FK
-        member_role role
+        text role
         member_status status
         timestamptz invited_at
         timestamptz joined_at
@@ -719,7 +814,7 @@ erDiagram
     ORGANIZATIONS ||--o{ AUTH_SESSIONS : "scopes"
     ORGANIZATIONS ||--o{ SOCIAL_IDENTITIES : "scopes"
     ORGANIZATIONS ||--o{ TWO_FACTORS : "scopes"
-    ATTENDEES |o--o| USERS : "portal login (attendee_id)"
+    ATTENDEES |o--o| USERS : "portal login (attendee_id, no FK)"
     USERS ||--o{ MEMBERSHIPS : "member via"
     ROLES ||--o{ MEMBERSHIPS : "assigned in"
     ROLES ||--o{ ROLE_PERMISSIONS : "grants"
@@ -737,11 +832,20 @@ erDiagram
 - `role_permissions` resolves the **roles ⇄ permissions** M:N — the 12 fixed
   `permissions` presets per role (`ROLE_PERMS`). Neither `role_permissions` nor
   `permissions` is tenant-scoped.
+- `roles.name` and `memberships.role` are plain `text`, not the `member_role`
+  enum. The enum type exists and the application validates against it, but the
+  columns were built as `text`, so the database will accept any string.
 - `social_identities` stores non-secret provider subjects for Google, Apple, or
   LinkedIn. Both its tenant and user FKs cascade; `(provider, subject)` and
   `(user_id, provider)` are unique.
 - `attendees` here is a stub; its full definition is in *Registration, Orders &
-  Seating*. `users.attendee_id` is the optional 1:1 portal-persona link.
+  Seating*. `users.attendee_id` is the optional 1:1 portal-persona link — and it
+  carries **no foreign-key constraint**, so a user row can point at an attendee id
+  that was never created or has since been hard-deleted. It is the only unenforced
+  reference in this view; see [Unenforced references](#unenforced-references).
+- Uniqueness on `users` is the triple `(organization_id, email, persona)`, so the
+  same address can exist once as an organizer and once as a portal attendee within
+  one tenant.
 
 ### Organization & Settings
 
@@ -797,11 +901,21 @@ erDiagram
         varchar statement_descriptor
         boolean save_cards
         boolean email_receipts
+        text webhook_token UK
         integer version
+    }
+    PAYMENT_CREDENTIALS {
+        bigint id PK
+        bigint organization_id FK,UK
+        payment_mode mode UK
+        text publishable_key
+        bytea secret_key_cipher
+        bytea webhook_secret_cipher
+        timestamptz saved_at
     }
     PAYMENT_METHOD_SETTINGS {
         bigint id PK
-        bigint organization_id FK
+        bigint organization_id FK,UK
         payment_method method UK
         boolean enabled
     }
@@ -809,6 +923,7 @@ erDiagram
     ORGANIZATIONS ||--o{ API_KEYS : "owns"
     ORGANIZATIONS ||--o{ NOTIFICATION_PREFERENCES : "owns"
     ORGANIZATIONS ||--o| PAYMENT_SETTINGS : "configures"
+    ORGANIZATIONS ||--o{ PAYMENT_CREDENTIALS : "holds keys for (organization_id)"
     ORGANIZATIONS ||--o{ PAYMENT_METHOD_SETTINGS : "enables"
     USERS ||--o{ API_KEYS : "issues (created_by)"
     USERS ||--o{ NOTIFICATION_PREFERENCES : "sets (user_id)"
@@ -820,10 +935,18 @@ erDiagram
   `setIntegrations` and cannot be deleted out from under a live key).
 - `notification_preferences` is unique per `(user_id, category)` and gates whether
   a `message_deliveries` row is generated for that category. `users` is defined in
-  *Identity & Access*.
+  *Identity & Access*. Its companion `notification_reads`, which records how far a
+  member has read the in-app feed, is drawn in *Engagement & Messaging*.
 - `payment_settings` is optional and unique per organization; it stores only
   non-secret provider references. `payment_method_settings` is unique per
   `(organization_id, method)`, with an absent row meaning disabled.
+- **`payment_credentials` holds the secret half** that `payment_settings`
+  deliberately does not: the secret API key and webhook signing secret, both
+  encrypted at rest as `bytea` ciphertext. It is unique per
+  `(organization_id, mode)`, so one tenant keeps a `test` row and a `live` row side
+  by side and can swap modes without re-entering keys. The split is the point —
+  `payment_settings` is safe to read on any screen that shows connection state,
+  while `payment_credentials` is read only by the server-side payment client.
 
 ### Events & Program
 
@@ -1076,6 +1199,12 @@ erDiagram
         bigint vat_amount_satang
         bigint total_satang
         timestamptz registered_at
+        boolean requires_approval
+        timestamptz approval_requested_at
+        uuid decided_by FK
+        timestamptz offered_at
+        uuid offered_by FK
+        timestamptz offer_expires_at
         timestamptz cancelled_at
         timestamptz deleted_at
     }
@@ -1149,6 +1278,9 @@ erDiagram
     EVENTS ||--o{ SAVED_EVENTS : "saved as"
     EVENTS ||--o{ ORDERS : "booked as"
     ATTENDEES |o--o{ ORDERS : "books (attendee_id)"
+    USERS |o--o{ ORDERS : "creates (created_by)"
+    USERS |o--o{ ORDERS : "approves or rejects (decided_by)"
+    USERS |o--o{ ORDERS : "offers a waitlist seat (offered_by)"
     ORDERS ||--o{ ORDER_ITEMS : "contains"
     TICKET_TYPES ||--o{ ORDER_ITEMS : "priced in"
     ORDERS ||--o{ TICKETS : "issues"
@@ -1168,21 +1300,30 @@ erDiagram
   line is a quantity of one `ticket_type`; each `tickets` row is one issued
   admission materialized from a line (`order_item_id`), denormalizing `event_id`
   and `ticket_type_id` for fast door scans.
-- **Saved events.** `saved_events` is unique by `(user_id, event_id)` and cascades
-  from both parents. It has no `organization_id`: access is scoped to the portal
-  user so one personal list can span organizers.
+- **Saved events.** `saved_events` is the junction resolving the
+  **users ⇄ events** M:N ("bookmarks"): unique by `(user_id, event_id)`, cascading
+  from both parents, carrying no payload beyond `saved_at`. It has no
+  `organization_id`: access is scoped to the portal user so one personal list can
+  span organizers.
 - **Reserved seating.** `seat_maps` is 1:1 with an `event` (`UNIQUE (event_id)`),
   present only when `events.seating_mode = reserved`. `seats` belong to a map;
   `seat_assignments` resolves the **seats ⇄ tickets** M:N with a partial unique
   `uq_seat_active (seat_id) WHERE released_at IS NULL` (one live holder per seat)
   and `UNIQUE (ticket_id)` (one seat per ticket).
-- Cross-context: `orders.event_id/discount_code_id/created_by`, `tickets.event_id`
-  live in Events, Ticketing, and Identity views respectively.
+- **Three staff attributions on one order.** Beyond `created_by` (who keyed the
+  booking), `orders` carries `decided_by` for the approve/reject decision on an
+  event with `requires_approval`, and `offered_by` for the organizer who offered a
+  waitlist seat. All three are `uuid → users` with `ON DELETE SET NULL`, so the
+  order survives the staff member leaving. They are drawn as three separate edges
+  because they answer three different questions.
+- Cross-context: `orders.event_id/discount_code_id`, `tickets.event_id` live in
+  the Events and Ticketing views; `users` is defined in *Identity & Access*.
 
 ### Attendance & Check-in
 
-The append-only door-scan log. Every scan attempt — success or failure — is one
-`check_ins` row carrying its `ScanState`.
+The admission record: **one row per admitted ticket**, not per scan attempt.
+`check_ins.ticket_id` is `NOT NULL` and `UNIQUE`, so the table is a set of
+successful admissions rather than a log of everything the door scanner saw.
 
 ![Attendance & Check-in](erd/checkin.png)
 
@@ -1195,13 +1336,13 @@ erDiagram
         bigint id PK
         bigint organization_id FK
         uuid event_id FK
-        uuid ticket_id FK
-        text scanned_qr
-        scan_state state
-        uuid scanned_by FK
-        uuid other_event_id FK
-        text device_label
-        timestamptz scanned_at
+        uuid ticket_id FK,UK
+        bigint attendee_id FK
+        timestamptz checked_in_at
+        check_in_method method
+        uuid checked_in_by FK
+        text station_id
+        timestamptz created_at
     }
     EVENTS {
         uuid id PK
@@ -1213,26 +1354,38 @@ erDiagram
         issued_ticket_status status
         timestamptz checked_in_at
     }
+    ATTENDEES {
+        bigint id PK
+        citext email
+    }
     USERS {
         uuid id PK
         citext email
     }
 
-    EVENTS ||--o{ CHECK_INS : "scanned at (event_id)"
-    TICKETS |o--o{ CHECK_INS : "scanned as (ticket_id)"
-    USERS |o--o{ CHECK_INS : "scans (scanned_by)"
-    EVENTS |o--o{ CHECK_INS : "wrong-event of (other_event_id)"
+    EVENTS ||--o{ CHECK_INS : "checked in at (event_id)"
+    TICKETS ||--o| CHECK_INS : "admitted by (ticket_id, UK)"
+    ATTENDEES |o--o{ CHECK_INS : "checked in as (attendee_id)"
+    USERS |o--o{ CHECK_INS : "checks in (checked_in_by)"
 ```
 
 </details>
 
-- `check_ins.ticket_id` is nullable and `SET NULL` — an `invalid` scan matches no
-  ticket and records only the raw `scanned_qr`.
-- `other_event_id` captures a `wrong`-event scan (the event the ticket actually
-  belongs to). `scanned_by → users` needs `regCheckin`; `SET NULL` on delete.
-- `event_id` is `RESTRICT` (protect attendance history). The first successful
-  (`ok`) scan authoritatively sets `tickets.status = checked_in` and
-  `tickets.checked_in_at`. `tickets`, `events`, `users` are defined elsewhere.
+- **One admission per ticket.** `uq_check_ins_ticket (ticket_id)` plus a `NOT NULL`
+  `ticket_id` makes the relationship `TICKETS ||--o| CHECK_INS`, not one-to-many: a
+  ticket is either admitted (one row) or not (no row). `ON DELETE CASCADE` — the
+  admission is existentially owned by the ticket.
+- `event_id` is `RESTRICT` (protect attendance history). `attendee_id` and
+  `checked_in_by` are both `SET NULL`, so the record survives a deleted attendee
+  CRM row or a departed gate steward; `checked_in_by → users` needs `regCheckin`.
+- `method` is the `check_in_method` enum (`qr`, `manual`, `upload`) — *how* the
+  person was admitted, which is not the same thing as the scan-outcome taxonomy the
+  design called for. The failed-scan half of the design — the raw scanned string,
+  the outcome state, the wrong-event pointer — **was never built**; see
+  [Designed but not built](#designed-but-not-built).
+- `station_id` identifies the door/kiosk. Writing a row authoritatively sets
+  `tickets.status = checked_in` and `tickets.checked_in_at`. `tickets`, `events`,
+  `attendees`, `users` are defined elsewhere.
 
 ### Payments & Finance
 
@@ -1289,11 +1442,12 @@ erDiagram
     }
     INVOICES {
         bigint id PK
-        bigint organization_id FK
+        bigint organization_id FK,UK
         text number UK
         uuid order_id FK
         uuid event_id FK
         text buyer_name
+        citext buyer_email
         date issued_at
         date due_at
         bigint subtotal_satang
@@ -1302,6 +1456,9 @@ erDiagram
         invoice_status status
         payment_method paid_via
         date paid_on
+        timestamptz voided_at
+        text void_reason
+        uuid voided_by FK
     }
     PAYOUTS {
         bigint id PK
@@ -1320,7 +1477,7 @@ erDiagram
         bigint id PK
         bigint organization_id FK
         bigint payout_id FK
-        uuid payment_id FK
+        uuid payment_id FK,UK
         bigint gross_satang
         bigint refund_satang
         bigint fee_satang
@@ -1347,9 +1504,10 @@ erDiagram
     USERS ||--o{ REFUNDS : "issues (issued_by)"
     ORDERS ||--o{ INVOICES : "invoiced by"
     EVENTS ||--o{ INVOICES : "billed for (event_id)"
+    USERS |o--o{ INVOICES : "voids (voided_by)"
     EVENTS |o--o{ PAYOUTS : "attributes (event_id)"
     PAYOUTS ||--o{ PAYOUT_ITEMS : "batches"
-    PAYMENTS ||--o{ PAYOUT_ITEMS : "settled in"
+    PAYMENTS ||--o| PAYOUT_ITEMS : "settled in (payment_id, UK)"
 ```
 
 </details>
@@ -1360,15 +1518,21 @@ erDiagram
   for exactly-once capture. Both are `RESTRICT` to `orders`/`payments` to protect
   financial history. `refunds.issued_by → users` requires `finRefund`.
 - `payout_items` resolves **payments ⇄ payouts** M:N with `UNIQUE (payment_id)` —
-  a payment settles in **at most one** payout (`net = gross − refund − fee`).
+  a payment settles in **at most one** payout (`net = gross − refund − fee`). That
+  uniqueness is why the `payments` end of the edge is drawn `||--o|`.
+- **Invoices are voided, never deleted.** A tax invoice that must be withdrawn gets
+  `voided_at`, `void_reason` and `voided_by → users` (`SET NULL`) rather than a
+  soft-delete flag, and the partial unique `uq_invoices_live_order (order_id) WHERE
+  status <> 'void'` lets the order be re-invoiced exactly once afterwards. Numbering
+  is unique per `(organization_id, number)`.
 - `tax_periods` is unique per `(organization_id, period, year)`. `orders`,
   `events`, `users` are defined in their own views.
 
 ### Engagement & Messaging
 
-Automated templates, one-off event announcements, the per-recipient
-`message_deliveries` ledger (materialized by either a template or an announcement),
-and the in-app `notifications` inbox.
+Automated templates, one-off event announcements, per-event invitation sends, the
+once-per-`(event, kind)` bulk-run guard, the per-recipient `message_deliveries`
+ledger, and the per-member read watermark for the in-app feed.
 
 ![Engagement & Messaging](erd/messaging.png)
 
@@ -1379,7 +1543,7 @@ and the in-app `notifications` inbox.
 erDiagram
     MESSAGE_TEMPLATES {
         bigint id PK
-        bigint organization_id FK
+        bigint organization_id FK,UK
         text slug UK
         text title
         text description
@@ -1396,44 +1560,54 @@ erDiagram
         timestamptz updated_at
     }
     ANNOUNCEMENTS {
-        uuid id PK
+        bigint id PK
         bigint organization_id FK
-        uuid event_id FK
-        text title
+        uuid event_id
+        text subject
         text body
-        announcement_audience audience
-        integer recipients
-        channel channels
+        bigint recipient_count
         announcement_status status
         timestamptz scheduled_for
+        uuid sent_by_user_id FK
         timestamptz sent_at
-        uuid created_by FK
-        timestamptz deleted_at
+        timestamptz cancelled_at
+        uuid cancelled_by_user_id FK
+    }
+    EVENT_INVITATIONS {
+        bigint id PK
+        bigint organization_id FK,UK
+        uuid event_id FK,UK
+        text recipient_name
+        citext recipient_email UK
+        text message
+        uuid invited_by FK
+        timestamptz sent_at
+    }
+    EVENT_MESSAGE_RUNS {
+        bigint id PK
+        bigint organization_id FK
+        uuid event_id UK
+        text kind UK
+        timestamptz requested_at
+        timestamptz completed_at
     }
     MESSAGE_DELIVERIES {
-        uuid id PK
+        bigint id PK
         bigint organization_id FK
+        uuid event_id
+        text kind
+        message_channel channel
+        text recipient_email
         text recipient_name
-        citext recipient_email
-        bigint recipient_attendee_id FK
-        uuid order_id FK
-        uuid announcement_id FK
-        bigint message_template_id FK
-        text type
-        channel channel
         delivery_status status
-        text provider_message_id
+        text error
         timestamptz sent_at
     }
-    NOTIFICATIONS {
-        uuid id PK
-        bigint organization_id FK
-        uuid user_id FK
-        notification_kind kind
-        text icon
-        text title
-        jsonb body
-        boolean unread
+    NOTIFICATION_READS {
+        bigint id PK
+        bigint organization_id FK,UK
+        uuid user_id FK,UK
+        timestamptz read_at
     }
     EVENTS {
         uuid id PK
@@ -1443,40 +1617,55 @@ erDiagram
         uuid id PK
         citext email
     }
-    ORDERS {
-        uuid id PK
-        text reference
-    }
-    ATTENDEES {
-        bigint id PK
-        citext email
-    }
 
-    EVENTS ||--o{ ANNOUNCEMENTS : "broadcasts"
-    USERS |o--o{ ANNOUNCEMENTS : "authors (created_by)"
-    MESSAGE_TEMPLATES |o--o{ MESSAGE_DELIVERIES : "sends (message_template_id)"
-    ANNOUNCEMENTS |o--o{ MESSAGE_DELIVERIES : "delivers (announcement_id)"
-    ORDERS |o--o{ MESSAGE_DELIVERIES : "confirmed by (order_id)"
-    ATTENDEES |o--o{ MESSAGE_DELIVERIES : "receives (recipient_attendee_id)"
-    USERS ||--o{ NOTIFICATIONS : "receives (user_id)"
+    EVENTS ||--o{ ANNOUNCEMENTS : "broadcasts (event_id, no FK)"
+    USERS |o--o{ ANNOUNCEMENTS : "sends (sent_by_user_id)"
+    USERS |o--o{ ANNOUNCEMENTS : "cancels (cancelled_by_user_id)"
+    EVENTS ||--o{ EVENT_INVITATIONS : "invites to (event_id)"
+    USERS |o--o{ EVENT_INVITATIONS : "invites (invited_by)"
+    EVENTS ||--o{ EVENT_MESSAGE_RUNS : "bulk-messaged by (event_id, no FK)"
+    EVENTS |o--o{ MESSAGE_DELIVERIES : "delivered for (event_id, no FK)"
+    USERS ||--o{ NOTIFICATION_READS : "has read up to (user_id)"
 ```
 
 </details>
 
-- `message_deliveries` has a `CHECK` that **exactly one** of `announcement_id` /
-  `message_template_id` is set — every delivery traces to one source. All four of
-  its optional source FKs (`recipient_attendee_id`, `order_id`, `announcement_id`,
-  `message_template_id`) are `SET NULL`, since the ledger outlives its sources.
-- `message_templates.channels` uses the `message_channel[]` enum array and stores
-  separate English/Thai subject and body fields. Announcement/delivery
-  `channels`/`channel` use the `channel` enum (`email`, `sms`).
-  `notifications.body` is JSONB rich segments. `events`, `users`, `orders`, and
-  `attendees` are defined elsewhere.
+- **`message_deliveries` is a flat send log.** It records the channel, the
+  recipient address, the outcome (`sent` / `failed`) and the provider `error`
+  string, keyed to the event by a bare `event_id`. It does **not** link back to the
+  announcement, template, order or attendee that caused the send: those four link
+  columns, and the provider's own message id, were designed and never built, so a
+  delivery cannot currently be traced to its source. See
+  [Designed but not built](#designed-but-not-built).
+- **`event_invitations` is the one properly-constrained send table** in this view:
+  `event_id → events` cascades, `invited_by → users` is `SET NULL`, and
+  `uq_event_invitations_recipient (organization_id, event_id, recipient_email)`
+  makes re-inviting the same address a no-op rather than a duplicate email.
+- **`event_message_runs` is an idempotency guard, not a message.** One row per
+  `(event_id, kind)` — enforced by `uq_event_message_runs` — with `requested_at`
+  stamped when a bulk run starts and `completed_at` when it finishes, so a
+  "message all attendees" action cannot be fired twice for the same event. A row
+  whose `completed_at` is still null is a run in flight.
+- **`notification_reads` is a watermark, not an inbox.** One row per
+  `(organization_id, user_id)` holding a single `read_at` timestamp: everything
+  older than it counts as read. There is **no table of notification rows** — the
+  feed itself is assembled at read time from domain activity, and only the read
+  cursor is persisted. The `notifications` entity this ERD used to draw does not
+  exist; see [Designed but not built](#designed-but-not-built).
+- `message_templates.channels` and `tags` are PostgreSQL arrays
+  (`message_channel[]`, `text[]`) and the template stores separate English/Thai
+  subject and body fields. **Nothing joins to `message_templates`** — it is a
+  standalone catalog the sender reads by `slug`, which is why it has no edge other
+  than the tenant one.
+- `announcements` enforces its lifecycle in the database: `ck_announcements_state`
+  requires `sent_at` and `recipient_count` when `status = sent`, `scheduled_for`
+  when `scheduled`, and `cancelled_at` when `cancelled`. `events` and `users` are
+  defined elsewhere.
 
 ### Feedback & Surveys
 
-Per-event surveys, their ordered questions, submitted responses (optionally
-anonymous), and the normalized per-question answers.
+Per-event surveys, their ordered questions, one response per signed-in portal
+user, and the normalized per-question answers.
 
 ![Feedback & Surveys](erd/surveys.png)
 
@@ -1486,64 +1675,78 @@ anonymous), and the normalized per-question answers.
 ```mermaid
 erDiagram
     SURVEYS {
-        uuid id PK
+        bigint id PK
         bigint organization_id FK
-        uuid event_id FK
+        uuid event_id
         text title
         survey_status status
-        timestamptz deleted_at
+        timestamptz created_at
+        timestamptz updated_at
     }
     SURVEY_QUESTIONS {
-        uuid id PK
+        bigint id PK
         bigint organization_id FK
-        uuid survey_id FK
+        bigint survey_id FK
+        integer position
+        survey_question_type type
         text prompt
-        question_type type
-        integer sort_order
         text options
-        boolean required
     }
     SURVEY_RESPONSES {
-        uuid id PK
+        bigint id PK
         bigint organization_id FK
-        uuid survey_id FK
-        bigint attendee_id FK
-        text respondent_name
+        bigint survey_id FK,UK
+        uuid event_id
+        uuid user_id FK,UK
         timestamptz submitted_at
     }
     SURVEY_ANSWERS {
         bigint id PK
         bigint organization_id FK
-        uuid response_id FK
-        uuid question_id FK
-        smallint rating
-        text text
+        bigint response_id FK,UK
+        bigint question_id FK,UK
+        integer rating
+        text answer_text
         text choice
+        smallint score
     }
     EVENTS {
         uuid id PK
         text name
     }
-    ATTENDEES {
-        bigint id PK
+    USERS {
+        uuid id PK
         citext email
     }
 
-    EVENTS ||--o{ SURVEYS : "surveys"
+    EVENTS ||--o{ SURVEYS : "surveys (event_id, no FK)"
+    EVENTS ||--o{ SURVEY_RESPONSES : "feedback on (event_id, no FK)"
     SURVEYS ||--o{ SURVEY_QUESTIONS : "asks"
     SURVEYS ||--o{ SURVEY_RESPONSES : "collects"
-    ATTENDEES |o--o{ SURVEY_RESPONSES : "answers (attendee_id)"
+    USERS ||--o{ SURVEY_RESPONSES : "answers (user_id)"
     SURVEY_RESPONSES ||--o{ SURVEY_ANSWERS : "records"
     SURVEY_QUESTIONS ||--o{ SURVEY_ANSWERS : "answered by"
 ```
 
 </details>
 
+- **Respondents are users, not attendees.** `survey_responses.user_id → users` is
+  `NOT NULL` and `CASCADE`, and `uq_survey_responses_person (survey_id, user_id)`
+  allows exactly one response per person per survey. The ERD previously drew this
+  as a nullable `attendee_id → attendees` link, which made the response look
+  anonymous-capable; it is not. Answering requires a signed-in portal user, and
+  deleting that user deletes their feedback.
 - `survey_answers` normalizes the prototype's flattened rating/text into one row
-  per `(response_id, question_id)` (unique), with a `CHECK rating BETWEEN 1 AND 5`.
-- `survey_answers.question_id → survey_questions` is `RESTRICT` (an answered
-  question is protected); `response_id` is `CASCADE`. `survey_responses.attendee_id`
-  is `SET NULL` (anonymous). `events` and `attendees` are defined elsewhere.
+  per `(response_id, question_id)` (unique). Both `response_id` and `question_id`
+  are `CASCADE`: editing a published survey by deleting a question removes the
+  answers given to it, so a question is not protected once answered.
+- The whole family keys on `bigint identity`, not `uuid` — `surveys`,
+  `survey_questions`, `survey_responses` and `survey_answers` all do, and this ERD
+  used to draw the first three as `uuid`.
+- `survey_questions.options` is a `text[]` array of choice labels, ordered by
+  `position`. `events` and `users` are defined elsewhere. Both `event_id` columns
+  in this view are **unenforced references** — see
+  [Unenforced references](#unenforced-references).
 
 ### Meetings
 
@@ -1558,19 +1761,27 @@ Operational coordination meetings, optionally tied to an event.
 erDiagram
     MEETINGS {
         uuid id PK
-        bigint organization_id FK
+        bigint organization_id FK,UK
         text title
         date meeting_date
         time start_time
         time end_time
         meeting_type type
-        text role
-        text person
-        uuid event_id FK
         meeting_mode mode
-        meeting_bucket bucket
+        meeting_status status
+        text person
+        text role
+        citext guest_email
+        uuid event_id FK
         text link
         text location
+        text notes
+        text cancellation_reason
+        timestamptz cancelled_at
+        meeting_sync_status sync_status
+        text external_event_id
+        text sync_error
+        text idempotency_key UK
         uuid created_by FK
         timestamptz deleted_at
     }
@@ -1591,6 +1802,15 @@ erDiagram
 
 - `meetings.event_id` is nullable (`SET NULL`) — event-agnostic meetings are
   allowed. `created_by → users` is `SET NULL`. `events`, `users` defined elsewhere.
+- **`status` is the persisted lifecycle, `bucket` was never a column.** The ERD
+  used to draw `meeting_bucket bucket`; the table carries
+  `status meeting_status` (`scheduled`, `cancelled`) with `cancelled_at` and
+  `cancellation_reason` beside it. The upcoming/past "bucket" the organizer UI
+  groups by is derived from `meeting_date` at read time, exactly as
+  [Design notes](#design-notes) says derived values should be.
+- `sync_status`, `external_event_id` and `sync_error` track the one-way push to the
+  organizer's external calendar; `idempotency_key`, unique per organization, keeps
+  a retried create from booking the same slot twice.
 
 ### System & Audit
 
@@ -1732,12 +1952,20 @@ erDiagram
 
 ## Relationship matrix
 
-One row per relationship, mirroring the *Relationship summary* in
-[entities.md](entities.md). Parent→child is the FK direction (for the
-attribution edges `refunds.issued_by` and `meetings.created_by`, the FK owner is
-the child). Cardinality is the crow's-foot pair as drawn in the diagrams.
+One row per **enforced foreign-key constraint**, read back from `pg_constraint`.
+Parent→child is the FK direction (for attribution edges such as
+`refunds.issued_by` or `meetings.created_by`, the FK owner is the child).
+Cardinality is the crow's-foot pair as drawn in the diagrams: the parent end is
+`|o` when the FK column is nullable and `||` when it is `NOT NULL`, and the child
+end is `o|` when a single-column unique index makes the child at-most-one.
 **Identifying?** = existential ownership (composition/junction = Yes; optional or
 merely-referential = No).
+
+Rows 1–10 cover the tenant `organization_id` fan, which is 49 of the 124
+constraints and would otherwise swamp the table; rows 11–85 are the remaining 75
+constraints, one row each; rows 86–92 are the conceptual many-to-many edges that
+junction tables resolve. The six **unenforced** reference columns are not foreign
+keys and are tabulated separately below.
 
 | # | Parent | Child | Cardinality | FK column | On delete | Identifying? |
 |---|---|---|---|---|---|---|
@@ -1745,116 +1973,254 @@ merely-referential = No).
 | 2 | organizations | memberships | `\|\|--o{` | memberships.organization_id | CASCADE | Yes |
 | 3 | organizations | roles | `\|\|--o{` | roles.organization_id | CASCADE | No |
 | 4 | organizations | api_keys | `\|\|--o{` | api_keys.organization_id | CASCADE | No |
-| 5 | organizations | categories | `\|\|--o{` | categories.organization_id | CASCADE | No |
-| 6 | organizations | events | `\|\|--o{` | events.organization_id | CASCADE | No |
-| 7 | organizations | payouts | `\|\|--o{` | payouts.organization_id | CASCADE | No |
-| 8 | organizations | tax_periods | `\|\|--o{` | tax_periods.organization_id | CASCADE | No |
-| 9 | organizations | audit_events | `\|\|--o{` | audit_events.organization_id | RESTRICT | No |
-| 10 | organizations | *(all 46 tenant-scoped tables)* | `\|\|--o{` | `organization_id` | CASCADE (RESTRICT for audit_events, SET NULL for webhook_events) | No |
-| 11 | users | memberships | `\|\|--o{` | memberships.user_id | CASCADE | Yes |
-| 12 | roles | memberships | `\|\|--o{` | memberships.role_id | RESTRICT | No |
-| 13 | roles | role_permissions | `\|\|--o{` | role_permissions.role_id | CASCADE | Yes |
-| 14 | permissions | role_permissions | `\|\|--o{` | role_permissions.permission_key | RESTRICT | Yes |
-| 15 | roles ⇄ permissions | role_permissions | `}o--o{` | junction role_permissions | CASCADE / RESTRICT | Yes |
-| 16 | users ⇄ organizations | memberships | `}o--o{` | junction memberships | CASCADE | Yes |
-| 17 | users | auth_sessions | `\|\|--o{` | auth_sessions.user_id | CASCADE | Yes |
-| 18 | users | two_factors | `\|\|--o\|` | two_factors.user_id (UK) | CASCADE | Yes |
-| 19 | two_factors | recovery_codes | `\|\|--o{` | recovery_codes.two_factor_id | CASCADE | Yes |
-| 20 | users | notifications | `\|\|--o{` | notifications.user_id | CASCADE | Yes |
-| 21 | users | notification_preferences | `\|\|--o{` | notification_preferences.user_id | CASCADE | Yes |
-| 22 | users | audit_events | `\|o--o{` | audit_events.actor_user_id | SET NULL | No |
-| 23 | users | api_keys | `\|\|--o{` | api_keys.created_by | RESTRICT | No |
-| 24 | attendees | users | `\|o--o\|` | users.attendee_id (UK) | SET NULL | No |
-| 25 | categories | events | `\|o--o{` | events.category_id | SET NULL | No |
-| 26 | landing_templates | events | `\|o--o{` | events.landing_template_id | SET NULL | No |
-| 27 | organizations | events | `\|\|--o{` | events.organization_id | CASCADE | No |
-| 28 | events | ticket_types | `\|\|--o{` | ticket_types.event_id | CASCADE | Yes |
-| 29 | events | discount_codes | `\|o--o{` | discount_codes.event_id | CASCADE | No |
-| 30 | events | orders | `\|\|--o{` | orders.event_id | RESTRICT | No |
+| 5 | organizations | events | `\|\|--o{` | events.organization_id | CASCADE | No |
+| 6 | organizations | orders | `\|\|--o{` | orders.organization_id | CASCADE | No |
+| 7 | organizations | payment_credentials | `\|\|--o{` | payment_credentials.organization_id | CASCADE | No |
+| 8 | organizations | audit_events | `\|\|--o{` | audit_events.organization_id | RESTRICT | No |
+| 9 | organizations | webhook_events | `\|o--o{` | webhook_events.organization_id | SET NULL | No |
+| 10 | organizations | *(all 49 tenant-scoped tables)* | `\|\|--o{` — except `\|\|--o\|` for payment_settings (`UNIQUE (organization_id)`) | `organization_id` | CASCADE (RESTRICT for audit_events, SET NULL for webhook_events) | No |
+| 11 | attendees | check_ins | `\|o--o{` | check_ins.attendee_id | SET NULL | No |
+| 12 | attendees | orders | `\|o--o{` | orders.attendee_id | SET NULL | No |
+| 13 | attendees | tickets | `\|o--o{` | tickets.attendee_id | SET NULL | No |
+| 14 | categories | events | `\|o--o{` | events.category_id | SET NULL | No |
+| 15 | discount_codes | discount_redemptions | `\|\|--o{` | discount_redemptions.discount_code_id | RESTRICT | Yes |
+| 16 | discount_codes | orders | `\|o--o{` | orders.discount_code_id | SET NULL | No |
+| 17 | events | check_ins | `\|\|--o{` | check_ins.event_id | RESTRICT | No |
+| 18 | events | discount_codes | `\|o--o{` | discount_codes.event_id | CASCADE | No |
+| 19 | events | event_faqs | `\|\|--o{` | event_faqs.event_id | CASCADE | Yes |
+| 20 | events | event_highlights | `\|\|--o{` | event_highlights.event_id | CASCADE | Yes |
+| 21 | events | event_invitations | `\|\|--o{` | event_invitations.event_id | CASCADE | Yes |
+| 22 | events | invoices | `\|\|--o{` | invoices.event_id | RESTRICT | No |
+| 23 | events | meetings | `\|o--o{` | meetings.event_id | SET NULL | No |
+| 24 | events | orders | `\|\|--o{` | orders.event_id | RESTRICT | No |
+| 25 | events | payments | `\|\|--o{` | payments.event_id | RESTRICT | No |
+| 26 | events | payouts | `\|o--o{` | payouts.event_id | SET NULL | No |
+| 27 | events | saved_events | `\|\|--o{` | saved_events.event_id | CASCADE | Yes |
+| 28 | events | seat_holds | `\|\|--o{` | seat_holds.event_id | CASCADE | Yes |
+| 29 | events | seat_maps | `\|\|--o\|` | seat_maps.event_id (UK) | CASCADE | Yes |
+| 30 | events | sessions | `\|\|--o{` | sessions.event_id | CASCADE | Yes |
 | 31 | events | speakers | `\|\|--o{` | speakers.event_id | CASCADE | Yes |
-| 32 | events | sessions | `\|\|--o{` | sessions.event_id | CASCADE | Yes |
-| 33 | events | surveys | `\|\|--o{` | surveys.event_id | CASCADE | Yes |
-| 34 | events | announcements | `\|\|--o{` | announcements.event_id | CASCADE | Yes |
-| 35 | events | meetings | `\|o--o{` | meetings.event_id | SET NULL | No |
-| 36 | events | seat_maps | `\|\|--o\|` | seat_maps.event_id (UK) | CASCADE | Yes |
-| 37 | events | tickets | `\|\|--o{` | tickets.event_id | RESTRICT | No |
-| 38 | events | payments | `\|\|--o{` | payments.event_id | RESTRICT | No |
-| 39 | events | invoices | `\|\|--o{` | invoices.event_id | RESTRICT | No |
-| 40 | events | payouts | `\|o--o{` | payouts.event_id | SET NULL | No |
-| 41 | events | check_ins | `\|\|--o{` | check_ins.event_id | RESTRICT | No |
-| 42 | sessions ⇄ speakers | session_speakers | `}o--o{` | junction session_speakers | CASCADE | Yes |
-| 43 | ticket_types | order_items | `\|\|--o{` | order_items.ticket_type_id | RESTRICT | No |
-| 44 | ticket_types | tickets | `\|\|--o{` | tickets.ticket_type_id | RESTRICT | No |
-| 45 | ticket_types | seats | `\|o--o{` | seats.ticket_type_id | SET NULL | No |
-| 46 | discount_codes | orders | `\|o--o{` | orders.discount_code_id | SET NULL | No |
-| 47 | discount_codes ⇄ orders | discount_redemptions | `}o--o{` | junction discount_redemptions | RESTRICT / CASCADE | Yes |
-| 48 | attendees | orders | `\|o--o{` | orders.attendee_id | SET NULL | No |
-| 49 | attendees | tickets | `\|o--o{` | tickets.attendee_id | SET NULL | No |
-| 50 | attendees | survey_responses | `\|o--o{` | survey_responses.attendee_id | SET NULL | No |
-| 51 | attendees | message_deliveries | `\|o--o{` | message_deliveries.recipient_attendee_id | SET NULL | No |
-| 52 | orders | order_items | `\|\|--o{` | order_items.order_id | CASCADE | Yes |
-| 53 | orders | tickets | `\|\|--o{` | tickets.order_id | CASCADE | Yes |
-| 54 | orders | payments | `\|\|--o{` | payments.order_id | RESTRICT | No |
-| 55 | orders | refunds | `\|\|--o{` | refunds.order_id | RESTRICT | No |
-| 56 | orders | invoices | `\|\|--o{` | invoices.order_id | RESTRICT | No |
-| 57 | orders | message_deliveries | `\|o--o{` | message_deliveries.order_id | SET NULL | No |
-| 58 | orders | discount_redemptions | `\|\|--o{` | discount_redemptions.order_id | CASCADE | Yes |
-| 59 | order_items | tickets | `\|\|--o{` | tickets.order_item_id | CASCADE | Yes |
-| 60 | seat_maps | seats | `\|\|--o{` | seats.seat_map_id | CASCADE | Yes |
-| 61 | seats ⇄ tickets | seat_assignments | `}o--o{` | junction seat_assignments | RESTRICT / CASCADE | Yes |
-| 62 | tickets | seat_assignments | `\|\|--o\|` | seat_assignments.ticket_id (UK) | CASCADE | Yes |
-| 63 | tickets | check_ins | `\|o--o{` | check_ins.ticket_id | SET NULL | No |
-| 64 | payments | refunds | `\|\|--o{` | refunds.payment_id | RESTRICT | No |
-| 65 | payments ⇄ payouts | payout_items | `}o--o{` | junction payout_items | RESTRICT / CASCADE | Yes |
-| 66 | payouts | payout_items | `\|\|--o{` | payout_items.payout_id | CASCADE | Yes |
-| 67 | users | refunds | `\|\|--o{` | refunds.issued_by | RESTRICT | No |
-| 68 | surveys | survey_questions | `\|\|--o{` | survey_questions.survey_id | CASCADE | Yes |
-| 69 | surveys | survey_responses | `\|\|--o{` | survey_responses.survey_id | CASCADE | Yes |
-| 70 | survey_responses | survey_answers | `\|\|--o{` | survey_answers.response_id | CASCADE | Yes |
-| 71 | survey_questions | survey_answers | `\|\|--o{` | survey_answers.question_id | RESTRICT | No |
-| 72 | message_templates | message_deliveries | `\|o--o{` | message_deliveries.message_template_id | SET NULL | No |
-| 73 | announcements | message_deliveries | `\|o--o{` | message_deliveries.announcement_id | SET NULL | No |
-| 74 | users | check_ins | `\|o--o{` | check_ins.scanned_by | SET NULL | No |
-| 75 | events | check_ins | `\|o--o{` | check_ins.other_event_id | SET NULL | No |
-| 76 | users | meetings | `\|o--o{` | meetings.created_by | SET NULL | No |
-| 77 | organizations | outbox_events | `\|\|--o{` | outbox_events.organization_id | CASCADE | No |
-| 78 | organizations | seat_holds | `\|\|--o{` | seat_holds.organization_id | CASCADE | No |
-| 79 | organizations | webhook_events | `\|o--o{` | webhook_events.organization_id | SET NULL | No |
-| 80 | events | seat_holds | `\|\|--o{` | seat_holds.event_id | CASCADE | Yes |
-| 81 | orders | seat_holds | `\|o--o{` | seat_holds.order_id | SET NULL | No |
-| 82 | ticket_types | seat_holds | `\|o--o{` | seat_holds.ticket_type_id | CASCADE | No |
-| 83 | seats | seat_holds | `\|o--o{` | seat_holds.seat_id | CASCADE | No |
-| 84 | organizations | payment_settings | `\|\|--o\|` | payment_settings.organization_id (UK) | CASCADE | No |
-| 85 | organizations | payment_method_settings | `\|\|--o{` | payment_method_settings.organization_id | CASCADE | No |
-| 86 | users | social_identities | `\|\|--o{` | social_identities.user_id | CASCADE | Yes |
-| 87 | events | event_highlights | `\|\|--o{` | event_highlights.event_id | CASCADE | Yes |
-| 88 | events | event_faqs | `\|\|--o{` | event_faqs.event_id | CASCADE | Yes |
-| 89 | users | saved_events | `\|\|--o{` | saved_events.user_id | CASCADE | Yes |
-| 90 | events | saved_events | `\|\|--o{` | saved_events.event_id | CASCADE | Yes |
+| 32 | events | ticket_types | `\|\|--o{` | ticket_types.event_id | CASCADE | Yes |
+| 33 | events | tickets | `\|\|--o{` | tickets.event_id | RESTRICT | No |
+| 34 | landing_templates | events | `\|o--o{` | events.landing_template_id | SET NULL | No |
+| 35 | order_items | tickets | `\|\|--o{` | tickets.order_item_id | CASCADE | Yes |
+| 36 | orders | discount_redemptions | `\|\|--o{` | discount_redemptions.order_id | CASCADE | Yes |
+| 37 | orders | invoices | `\|\|--o{` | invoices.order_id | RESTRICT | No |
+| 38 | orders | order_items | `\|\|--o{` | order_items.order_id | CASCADE | Yes |
+| 39 | orders | payments | `\|\|--o{` | payments.order_id | RESTRICT | No |
+| 40 | orders | refunds | `\|\|--o{` | refunds.order_id | RESTRICT | No |
+| 41 | orders | seat_holds | `\|o--o{` | seat_holds.order_id | SET NULL | No |
+| 42 | orders | tickets | `\|\|--o{` | tickets.order_id | CASCADE | Yes |
+| 43 | payments | payout_items | `\|\|--o\|` | payout_items.payment_id (UK) | RESTRICT | Yes |
+| 44 | payments | refunds | `\|\|--o{` | refunds.payment_id | RESTRICT | No |
+| 45 | payouts | payout_items | `\|\|--o{` | payout_items.payout_id | CASCADE | Yes |
+| 46 | permissions | role_permissions | `\|\|--o{` | role_permissions.permission_key | RESTRICT | Yes |
+| 47 | roles | memberships | `\|\|--o{` | memberships.role_id | RESTRICT | No |
+| 48 | roles | role_permissions | `\|\|--o{` | role_permissions.role_id | CASCADE | Yes |
+| 49 | seat_maps | seats | `\|\|--o{` | seats.seat_map_id | CASCADE | Yes |
+| 50 | seats | seat_assignments | `\|\|--o{` | seat_assignments.seat_id | RESTRICT | Yes |
+| 51 | seats | seat_holds | `\|o--o{` | seat_holds.seat_id | CASCADE | No |
+| 52 | sessions | session_speakers | `\|\|--o{` | session_speakers.session_id | CASCADE | Yes |
+| 53 | speakers | session_speakers | `\|\|--o{` | session_speakers.speaker_id | CASCADE | Yes |
+| 54 | survey_questions | survey_answers | `\|\|--o{` | survey_answers.question_id | CASCADE | Yes |
+| 55 | survey_responses | survey_answers | `\|\|--o{` | survey_answers.response_id | CASCADE | Yes |
+| 56 | surveys | survey_questions | `\|\|--o{` | survey_questions.survey_id | CASCADE | Yes |
+| 57 | surveys | survey_responses | `\|\|--o{` | survey_responses.survey_id | CASCADE | Yes |
+| 58 | ticket_types | order_items | `\|\|--o{` | order_items.ticket_type_id | RESTRICT | No |
+| 59 | ticket_types | seat_holds | `\|o--o{` | seat_holds.ticket_type_id | CASCADE | No |
+| 60 | ticket_types | seats | `\|o--o{` | seats.ticket_type_id | SET NULL | No |
+| 61 | ticket_types | tickets | `\|\|--o{` | tickets.ticket_type_id | RESTRICT | No |
+| 62 | tickets | check_ins | `\|\|--o\|` | check_ins.ticket_id (UK) | CASCADE | Yes |
+| 63 | tickets | seat_assignments | `\|\|--o\|` | seat_assignments.ticket_id (UK) | CASCADE | Yes |
+| 64 | two_factors | recovery_codes | `\|\|--o{` | recovery_codes.two_factor_id | CASCADE | Yes |
+| 65 | users | announcements | `\|o--o{` | announcements.cancelled_by_user_id | SET NULL | No |
+| 66 | users | announcements | `\|o--o{` | announcements.sent_by_user_id | SET NULL | No |
+| 67 | users | api_keys | `\|\|--o{` | api_keys.created_by | RESTRICT | No |
+| 68 | users | audit_events | `\|o--o{` | audit_events.actor_user_id | SET NULL | No |
+| 69 | users | auth_sessions | `\|\|--o{` | auth_sessions.user_id | CASCADE | Yes |
+| 70 | users | check_ins | `\|o--o{` | check_ins.checked_in_by | SET NULL | No |
+| 71 | users | event_invitations | `\|o--o{` | event_invitations.invited_by | SET NULL | No |
+| 72 | users | events | `\|o--o{` | events.created_by | SET NULL | No |
+| 73 | users | invoices | `\|o--o{` | invoices.voided_by | SET NULL | No |
+| 74 | users | meetings | `\|o--o{` | meetings.created_by | SET NULL | No |
+| 75 | users | memberships | `\|\|--o{` | memberships.user_id | CASCADE | Yes |
+| 76 | users | notification_preferences | `\|\|--o{` | notification_preferences.user_id | CASCADE | Yes |
+| 77 | users | notification_reads | `\|\|--o{` | notification_reads.user_id | CASCADE | Yes |
+| 78 | users | orders | `\|o--o{` | orders.created_by | SET NULL | No |
+| 79 | users | orders | `\|o--o{` | orders.decided_by | SET NULL | No |
+| 80 | users | orders | `\|o--o{` | orders.offered_by | SET NULL | No |
+| 81 | users | refunds | `\|\|--o{` | refunds.issued_by | RESTRICT | No |
+| 82 | users | saved_events | `\|\|--o{` | saved_events.user_id | CASCADE | Yes |
+| 83 | users | social_identities | `\|\|--o{` | social_identities.user_id | CASCADE | Yes |
+| 84 | users | survey_responses | `\|\|--o{` | survey_responses.user_id | CASCADE | Yes |
+| 85 | users | two_factors | `\|\|--o\|` | two_factors.user_id (UK) | CASCADE | Yes |
+| 86 | roles ⇄ permissions | role_permissions | `}o--o{` | junction role_permissions | CASCADE / RESTRICT | Yes |
+| 87 | users ⇄ organizations | memberships | `}o--o{` | junction memberships | CASCADE | Yes |
+| 88 | sessions ⇄ speakers | session_speakers | `}o--o{` | junction session_speakers | CASCADE | Yes |
+| 89 | discount_codes ⇄ orders | discount_redemptions | `}o--o{` | junction discount_redemptions | RESTRICT / CASCADE | Yes |
+| 90 | seats ⇄ tickets | seat_assignments | `}o--o{` | junction seat_assignments | RESTRICT / CASCADE | Yes |
+| 91 | payments ⇄ payouts | payout_items | `}o--o{` | junction payout_items | RESTRICT / CASCADE | Yes |
+| 92 | users ⇄ events | saved_events | `}o--o{` | junction saved_events | CASCADE | Yes |
 
-> **Note on rows 15/16/42/47/61/65.** These are the *conceptual* M:N edges named
-> in the catalog; each is physically realized by its junction table's two
-> constituent `||--o{` foreign keys (which also appear as their own numbered rows,
-> e.g. 13+14 realize 15, 11+row-2/user realize 16). The `On delete` column lists
-> the two junction-arm behaviors.
+> **Note on rows 86–92.** These are the *conceptual* M:N edges; each is physically
+> realized by its junction table's two constituent foreign keys, which also appear
+> as their own numbered rows (e.g. 46+48 realize 86; 82+27 realize 92). The
+> `On delete` column lists the two junction-arm behaviors.
+
+> **Note on row 10 — one cardinality exception.** Row 10 carves out exceptions for
+> `ON DELETE` behaviour, but the tenant fan is not uniform in *cardinality*
+> either. `payment_settings` is the only one of the 49 tenant-scoped tables whose
+> `organization_id` carries a single-column `UNIQUE` index
+> (`uq_payment_settings_org`), so an organization has **at most one**
+> `payment_settings` row: that edge is `||--o|`, a 1:1, not the `||--o{` 1:N every
+> other tenant table gets. The diagrams already draw it that way
+> (`ORGANIZATIONS ||--o| PAYMENT_SETTINGS : "configures"` in the Master ERD and in
+> *Organization & Settings*). Its near-namesakes are genuinely 1:N and are **not**
+> exceptions: `payment_credentials` (row 7) is unique on
+> `(organization_id, mode)`, one credential row per live/test mode, and
+> `payment_method_settings` on `(organization_id, method)`, one row per enabled
+> method. That composite shape is the general case — every other unique index
+> touching an `organization_id` in this schema is composite
+> (`uq_memberships_org_user`, `uq_orders_org_reference`, `uq_invoices_org_number`,
+> `uq_events_org_slug`, …), which constrains a natural key *within* a tenant and
+> leaves the tenant edge 1:N. `uq_payment_settings_org` is the single exception,
+> so `payment_settings` is the schema's only 1:1 with `organizations`.
+
+<a id="unenforced-references"></a>
+### Unenforced references
+
+Six columns hold another table's `id` and are joined on by the application, but
+carry **no foreign-key constraint**. This is a data-integrity gap, not only a
+drawing problem: PostgreSQL will accept an `event_id` that names no event, and
+nothing cascades or nulls these columns when the parent row goes away, so the
+orphans are silent. They are drawn in the diagrams with `(no FK)` on the label.
+
+| Child column | Intended parent | Null? | What is missing |
+|---|---|---|---|
+| `announcements.event_id` | `events.id` | NOT NULL | No constraint; a broadcast can outlive or precede its event |
+| `surveys.event_id` | `events.id` | NOT NULL | No constraint; the survey→event link is application-only |
+| `survey_responses.event_id` | `events.id` | NOT NULL | No constraint; denormalized from `surveys`, and nothing keeps the two agreeing |
+| `message_deliveries.event_id` | `events.id` | nullable | No constraint; the send log's only link to the domain |
+| `event_message_runs.event_id` | `events.id` | NOT NULL | No constraint, although `uq_event_message_runs (event_id, kind)` indexes it |
+| `users.attendee_id` | `attendees.id` | nullable | No constraint; the portal-persona link can dangle |
+
+Five of the six point at `events.id`, and all five sit in the messaging and survey
+tables — the newest areas of the schema. The pattern suggests these tables were
+added without the `REFERENCES` clause their siblings carry rather than for any
+deliberate reason, so adding the constraints (after a one-off orphan sweep) is the
+obvious follow-up. Deciding that is a schema change and therefore out of scope for
+this document; recording it is not.
 
 ---
 
 ## Design notes
 
-**Normalization (3NF).** Every non-key attribute depends on the whole key and
+<a id="which-document-governs"></a>
+### Which document governs the schema
+
+**Unresolved — recorded here, decided elsewhere.** Two documents currently claim
+authority over the same schema, and this ERD is not the right place to pick
+between them.
+
+- The repository guide (`CLAUDE.md`, *Architecture is layered*) names
+  `entities.md` the schema **source of truth (53 tables)** and says `erd.md` is
+  **derived from it**, with an instruction to keep the two consistent and to
+  update their shared counts together.
+- This ERD's own Derivation note says it is read back from
+  `information_schema.columns` and `pg_constraint`, and that **where the catalog
+  and the database disagree, the database wins**.
+
+Both cannot govern. If the catalog is the source of truth, this document may not
+contradict it; if the database is, the catalog is no longer the source of truth
+for the implemented schema and `CLAUDE.md` describes a relationship that has
+stopped holding.
+
+**The count difference is not the contradiction, and 53 is not a mistake.** The
+catalog states deliberately that its 53 tables are the **target physical model**,
+"not a claim that every table has already shipped", and tells the reader to count
+the API's committed `pgTable` definitions separately when reporting delivery. So
+53 is a design target and 56 is an implementation inventory — two different
+claims, both internally honest. The drift between them is **bidirectional**:
+
+| Direction | Tables | Reading |
+|---|---|---|
+| Shipped, never catalogued | `event_invitations`, `event_message_runs`, `notification_reads`, `payment_credentials` | The implementation went past the design without the catalog being told |
+| Catalogued, never shipped | `notifications` | The design target has not been built (see [Designed but not built](#designed-but-not-built)) |
+
+That is 53 − 1 + 4 = 56, so neither number is arithmetically wrong; they are
+measuring different things and have drifted apart in both directions. Reconciling
+them means deciding whether the four shipped tables were intended (so the catalog
+gains them) or were built ahead of the design (so the target moves), and whether
+`notifications` is still a target or is abandoned. **Those are product and design
+decisions, not facts readable out of `pg_catalog`**, which is why no count is
+changed and no document is edited to match another here.
+
+**Owner.** The governance question belongs to whoever owns `entities.md` and
+`CLAUDE.md`. Until it is answered, read this document as the authority on *what
+the database contains today* and the catalog as the authority on *what the schema
+is meant to become* — and treat `CLAUDE.md`'s "derived from it" as describing a
+relationship that is currently in dispute rather than one you can rely on.
+
+<a id="designed-but-not-built"></a>
+### Designed but not built
+
+These are the places where the design catalog describes something the database
+does not have. They are listed rather than deleted because each one is a product
+capability a reader could reasonably assume exists — a reader who sees
+"`announcements.audience`" in a diagram will go looking for audience targeting and
+find nothing. Fourteen columns and one whole entity fall in this class.
+
+| Designed | Status in the database | What the product therefore cannot do |
+|---|---|---|
+| `notifications` entity (`kind`, `icon`, `title`, `body`, `unread`) | **No such table.** Only `notification_reads` (a per-member `read_at` watermark) and `notification_preferences` (per-category channel opt-ins) exist | No stored notification rows, so no per-item read state, no notification history, and no server-side rendering of an inbox — the feed must be re-derived from domain activity on every request |
+| `announcements.audience`, `announcements.channels` | Columns absent; the `announcement_audience` and `channel` enums were never created either | An announcement cannot be targeted at a subset of attendees, and cannot choose SMS — every announcement is email to everyone |
+| `announcements.deleted_at` | Absent; `cancelled_at` + `cancelled_by_user_id` were built instead | No soft delete; withdrawing a scheduled announcement is a cancellation, which is the better model and should be folded back into the catalog |
+| `message_deliveries.recipient_attendee_id`, `.order_id`, `.announcement_id`, `.message_template_id` | All four absent | **A delivery cannot be traced to its cause.** There is no join from a send back to the announcement or template that produced it, the order it confirmed, or the attendee CRM row it went to — only a bare `recipient_email`. The `CHECK` that "exactly one source is set" cannot exist because no source column does |
+| `message_deliveries.provider_message_id` | Absent | No way to reconcile a send against the email provider's own record, so bounces and complaints cannot be matched back |
+| `check_ins.scanned_qr`, `.state` (`scan_state`), `.other_event_id` | Absent. The `scan_outcome` enum (`admitted`, `already_checked_in`, `invalid`, `wrong_event`, `cancelled`) **was created but no column uses it** | **Failed scans are not recorded at all.** `check_ins` holds one row per admitted ticket (`ticket_id` `NOT NULL` and `UNIQUE`), so a bad QR, a duplicate scan or a wrong-event scan leaves no trace. Door-incident reporting is impossible on this schema. The orphan enum is the clearest evidence this was built halfway |
+| `survey_questions.required` | Absent | No question can be made mandatory; completeness must be enforced in the client, where it can be bypassed |
+| `survey_responses.respondent_name` | Absent; `user_id` is `NOT NULL` | Responses are never anonymous and never from a non-user — the catalog's "optionally anonymous" survey does not exist |
+| `surveys.deleted_at` | Absent | Surveys are hard-deleted or not deleted; there is no recoverable archive, and deleting one cascades its questions, responses and answers away |
+
+One further difference is a **remodel**, not a gap: the catalog gives
+`survey_responses` a nullable `attendee_id → attendees`; the table has a
+`NOT NULL` `user_id → users`. The parent changed, so the old edge was removed
+rather than renamed.
+
+### Renames the diagrams had missed
+
+Ten drawn columns existed under a different name. These were corrected in place —
+the relationship and the meaning are unchanged, only the identifier:
+`check_ins.scanned_at` → `checked_in_at`, `check_ins.scanned_by` →
+`checked_in_by`, `check_ins.device_label` → `station_id`, `meetings.bucket` →
+`status`, `survey_questions.sort_order` → `position`, `survey_answers.text` →
+`answer_text`, `announcements.title` → `subject`, `announcements.recipients` →
+`recipient_count`, `announcements.created_by` → `sent_by_user_id`, and
+`message_deliveries.type` → `kind`.
+
+Alongside them, five entities were drawn with the wrong key type: `surveys`,
+`survey_questions`, `survey_responses`, `announcements` and `message_deliveries`
+are all `bigint identity`, not `uuid`.
+
+### Normalization (3NF)
+
+Every non-key attribute depends on the whole key and
 nothing but the key. Repeating groups are extracted into child tables
 (`order_items`, `survey_questions`, `seats`), and every many-to-many is resolved
 by an associative table rather than an array column: `role_permissions`,
 `memberships`, `session_speakers`, `discount_redemptions`, `seat_assignments`,
-`payout_items`. Derived/reporting values named in the catalog
+`payout_items`, `saved_events`. Derived/reporting values named in the catalog
 (`ticket_types.soldout`/`revenue`, `attendees.events_count`, `speakers.rating`,
-survey aggregates, `meetings.bucket`, `events.bucket`) are **computed at read
-time**, not stored as duplicated fact — the few stored counters (`ticket_types.sold`,
-`discount_codes.used`) are guarded atomic denormalizations kept for hot-path
-booking checks, with `CHECK` constraints (`sold BETWEEN 0 AND total`).
+survey aggregates, the meeting upcoming/past bucket, `events.bucket`) are
+**computed at read time**, not stored as duplicated fact — the few stored counters
+(`ticket_types.sold`, `discount_codes.used`) are guarded atomic denormalizations
+kept for hot-path booking checks, with `CHECK` constraints
+(`sold BETWEEN 0 AND total`).
 
-**Multi-tenancy via `organization_id`.** 46 of 53 tables carry
+One documented exception: `events.bucket` *is* a stored `event_bucket` column
+(`active`, `completed`), not a read-time derivation.
+
+**Multi-tenancy via `organization_id`.** 49 of 56 tables carry
 `organization_id … REFERENCES organizations(id)` (NOT NULL except the inbound
 `webhook_events` log, whose tenant is resolved after signature verification), and
 every read/write is filtered by the caller's org (row-level tenant isolation). The
@@ -1895,31 +2261,42 @@ units (1 THB = 100 satang), `>= 0` via `CHECK`, paired with
 discounts are `smallint`. Display strings are derived at render time
 (`format.baht`), never persisted.
 
-**Soft deletes.** Aggregate roots and user-editable entities carry
-`deleted_at timestamptz NULL` and are recovered/filtered logically; a partial
-index like `ix_organizations_deleted_at` supports the "live rows" query. The
+**Soft deletes.** Most aggregate roots and user-editable entities carry
+`deleted_at timestamptz NULL` and are recovered/filtered logically. The
 append-only ledgers — `payments`, `refunds`, `audit_events`, `check_ins`,
 `message_deliveries` — deliberately **omit** `deleted_at`: they are immutable
-history. `version integer` provides optimistic concurrency (stale writes →
-`409 Conflict`).
+history, and `invoices` reaches the same end through `voided_at` instead.
+`surveys` and `announcements` have no `deleted_at` either, which is a gap rather
+than a decision for `surveys` (see
+[Designed but not built](#designed-but-not-built)) and the right model for
+`announcements`, where cancellation replaced deletion. `version integer` provides
+optimistic concurrency on the tables that carry it (stale writes →
+`409 Conflict`); the ledgers and the newer messaging tables do not.
 
-**Indexing strategy.** Beyond every PK and the `organization_id` tenant edge,
-the catalog defines: uniqueness on natural keys (`orders.reference`,
-`invoices.number`, `payments.txn`, `tickets.qr_token`, `api_keys.key_prefix`);
-composite hot-path indexes for tenant-scoped list/filter screens
-(`ix_events_org_status`, `ix_orders_status`, `ix_payments_status`,
-`ix_invoices_status`, `ix_payouts_status`, `ix_tickets_status` on
-`(event_id, status)`); time-range indexes (`ix_events_start_at`,
-`ix_check_ins_scanned_at`, `ix_audit_events_org_time`); FK-target indexes on every
-child (`ix_*_event`, `ix_*_order`, `ix_*_user`); and **partial** indexes for
+**Indexing strategy.** Beyond every PK and the `organization_id` tenant edge, the
+schema carries: uniqueness on natural keys (`uq_orders_org_reference`,
+`uq_invoices_org_number`, `uq_payments_org_txn`, `uq_tickets_qr_token`,
+`api_keys_keyPrefix_unique`); composite hot-path indexes for tenant-scoped
+list/filter screens (`ix_events_org_status`, `ix_orders_status`,
+`ix_payments_status`, `ix_invoices_status`, `ix_payouts_status`, and
+`ix_tickets_status` on `(event_id, status)`); time-range indexes
+(`ix_events_start_at`, `ix_check_ins_feed` on `(event_id, checked_in_at)`,
+`ix_audit_events_org_time`); FK-target indexes on every child (`ix_*_event`,
+`ix_*_order`, `ix_*_user`); expression indexes over a `search_norm()` helper for
+discovery (`ix_events_search_name`/`_city`/`_venue`); and **partial** indexes for
 sparse predicates (`ix_auth_sessions_active WHERE revoked_at IS NULL`,
-`ix_notifications_unread WHERE unread`, `uq_seat_active WHERE released_at IS NULL`).
+`ix_events_discover WHERE deleted_at IS NULL AND visibility = 'public'`,
+`ix_outbox_unpublished WHERE published_at IS NULL`,
+`uq_seat_active WHERE released_at IS NULL`,
+`uq_invoices_live_order WHERE status <> 'void'`).
 
 **Extensibility.** The schema is intentionally forward-compatible: `roles.is_system`
 distinguishes seeded presets from future custom roles; `permissions` is a lookup
 so new permission keys extend the enum and seed rows without schema change;
-`seat_maps.layout` and `notifications.body` are JSONB for evolving structure;
-`message_templates.tags`/`channels` and `announcements.channels` are arrays for new
-merge tags/channels; and `landing_templates` can gain rows for new public themes.
-Native PostgreSQL `ENUM`s make new status/kind tokens an `ALTER TYPE … ADD VALUE`
-rather than a structural migration.
+`seat_maps.layout`, `ticket_types.includes`, `speakers.social_links` and
+`outbox_events.payload` are JSONB for evolving structure;
+`message_templates.channels`/`tags` and `survey_questions.options` are arrays for
+new channels, merge tags and choice sets; and `landing_templates` can gain rows for
+new public themes. Native PostgreSQL `ENUM`s make new status/kind tokens an
+`ALTER TYPE … ADD VALUE` rather than a structural migration — with the caveat that
+an enum can also be created and then never wired up, as `scan_outcome` was.
