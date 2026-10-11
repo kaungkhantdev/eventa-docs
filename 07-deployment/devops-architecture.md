@@ -121,7 +121,7 @@ is its own Deployment + HPA with an independent scaling policy (event-day check-
 | **web** | `web` | React **SSR** + static (portal/admin SPA + public pages) | Rolling | CPU + RPS | Fronted by CDN/WAF |
 | **api** | `api` | NestJS modular monolith (REST) | **Canary** → rolling | CPU + RPS + p95 latency | Synchronous money/inventory; migrations gate its deploy |
 | **worker** | `worker` | NestJS RabbitMQ consumers | Rolling | Queue depth + CPU | Idempotent handlers; competing consumers |
-| **relay** | `relay` | Outbox publisher | Rolling | Outbox lag + CPU | Singleton-safe; publisher confirms |
+| **relay** | `relay` | Outbox publisher | Rolling, stop-then-start (`maxSurge=0`) | **None — does not autoscale** | **Exactly 1 replica**: the outbox reader takes no row lock, so a second publisher duplicates every event — see [devops-infrastructure.md](devops-infrastructure.md) §3.2. Publisher confirms |
 | **check-in pool** | `api` (reused) | Same image, own Deployment/HPA | Rolling | RPS + p95 latency, aggressive min/max | Isolated so check-in load never starves core api |
 
 All five share the **same CI pipeline template** (install → lint + typecheck → unit + integration →
@@ -179,7 +179,7 @@ Lifecycle stage → tool, per the fixed DevOps decisions.
 | Cloud infrastructure | **Terraform** (network, PostgreSQL, Redis, RabbitMQ, object storage, CDN+WAF, K8s, secrets) |
 | App packaging | **Helm** charts |
 | Continuous delivery | **Argo CD** (GitOps, pull-based) |
-| Orchestration | **Kubernetes** (managed) — Deployment + **HPA** per service |
+| Orchestration | **Kubernetes** (managed) — a Deployment per service, with an **HPA** on each except the singleton `relay` ([devops-infrastructure.md](devops-infrastructure.md) §3.2) |
 | Config | 12-factor env / **ConfigMaps**, per-environment values |
 | Secrets | Managed **secrets manager** → K8s via **External Secrets** |
 | Tracing | **OpenTelemetry** (HTTP + RabbitMQ spans, correlation ids) |

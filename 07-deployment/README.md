@@ -11,7 +11,8 @@ documentation set (the operate/monitor half is in [Stage 8 — Maintenance](../0
   preview envs, CI stages & quality gates, **GitOps (Argo CD)** with rolling/**canary** deploys, gated
   zero-downtime **DB migrations**, feature flags, rollback, and versioning.
 - **[devops-infrastructure.md](devops-infrastructure.md)** — Infrastructure as Code: **Terraform +
-  Helm + Argo CD**, the **Kubernetes** topology (Deployments + HPA per service, the check-in pool),
+  Helm + Argo CD**, the **Kubernetes** topology (a Deployment per service, HPAs on all of them
+  except the singleton `relay`, the check-in pool),
   managed PostgreSQL/Redis/RabbitMQ, secrets/config, scaling for on-sale & check-in spikes, and FinOps.
 
 The runtime **observability, SRE, DevSecOps and DR** doc lives in

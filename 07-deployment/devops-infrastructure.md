@@ -79,7 +79,8 @@ infra/
 One umbrella chart per service (**web, api, worker, relay**) plus a **check-in** chart that
 reuses the `api` image with its own Deployment/HPA. Shared templates (probes, PDB,
 NetworkPolicy, ExternalSecret, HPA) live in a common library chart to keep the four
-services consistent.
+services consistent. Each chart opts in to the templates it needs: the `relay` deliberately
+takes no HPA, because it is a singleton (§3.2).
 
 ```
 deploy/charts/
@@ -182,8 +183,9 @@ card data never touches Eventa infra (PCI SAQ-A — Stripe hosted fields).
 
 ## 3. Kubernetes
 
-Managed Kubernetes; **one Deployment + HPA per service**, plus the dedicated **check-in
-pool** as its own Deployment/HPA. Namespaces isolate environments.
+Managed Kubernetes; **one Deployment per service**, each with an HPA except the **`relay`**,
+which is a singleton and has none (§3.2), plus the dedicated **check-in pool** as its own
+Deployment/HPA. Namespaces isolate environments.
 
 ### 3.1 Namespaces
 
@@ -204,11 +206,33 @@ pool** as its own Deployment/HPA. Namespaces isolate environments.
 | `api` | api | Core API (canary-deployed) | 3 | CPU + RPS + p95 latency |
 | `checkin` | api | **Dedicated check-in pool** — QR scan/entry at door | 2 (scales hard for events) | CPU + RPS + custom check-in queue depth |
 | `worker` | worker | RabbitMQ consumers (notifications, calendar, indexing) | 2 | CPU + **RabbitMQ queue depth** |
-| `relay` | relay | Transactional outbox publisher | 2 | CPU + outbox lag |
+| `relay` | relay | Transactional outbox publisher | **exactly 1** — a fixed count, not a minimum | **None** — no HPA (see below) |
 
 The **check-in pool is deliberately separate** so a door-scanning surge during a live event
 (bursty, latency-sensitive) autoscales and fails independently of the main `api` serving
 browse/checkout traffic — one tenant's on-site rush cannot starve another's checkout.
+
+**The `relay` is a singleton and must not be scaled.** Every other row above gives a *minimum*
+that an HPA raises under load; the relay's is a fixed count, and the difference is load-bearing.
+Its outbox reader takes no row lock: `fetchBatch` in
+`eventa-relay/src/relay/outbox-reader.repository.ts` selects pending rows on
+`published_at IS NULL` and issues no `FOR UPDATE SKIP LOCKED`, so two replicas polling
+concurrently return **the same rows**, publish each event twice, and then both mark it published.
+Consumers are idempotent and dedupe on event id, but only *after* the first copy has been
+handled — two copies delivered concurrently are therefore both handled, which for a single
+registration means two confirmation emails to the same buyer. A second replica does not add
+throughput; it duplicates output.
+
+**The condition under which this changes** is specific and checkable, so that a later reader can
+tell whether the constraint still applies rather than treating it as received wisdom: the reader
+must claim the rows it reads. Once `FOR UPDATE SKIP LOCKED` lands in `fetchBatch`, concurrent
+readers take disjoint row sets and the relay becomes an ordinary horizontally scalable consumer —
+at that point this row becomes a minimum, the outbox-lag metric that §6 uses for *alerting* can
+additionally serve as a scaling signal, and the rollout constraint in §3.3 relaxes. Until then
+the constraint holds, and two places record it independently of this document:
+`eventa-relay/src/main.ts` carries the same warning at the service entrypoint, and the `relay`
+Helm chart **fails to render** if the replica count is raised or its HPA enabled, rather than
+trusting this table.
 
 ### 3.3 Resources, probes, disruption, network
 
@@ -228,13 +252,23 @@ browse/checkout traffic — one tenant's on-site rush cannot starve another's ch
   wedged pod. **Startup probe** on api/worker to cover cold NestJS boot before liveness
   applies. Workers/relay use exec/TCP checks (no HTTP server) plus broker-connection health.
 - **PodDisruptionBudget:** `minAvailable: 50%` (or `maxUnavailable: 1`) per service so node
-  drains/upgrades never take a service below quorum. relay uses `maxUnavailable: 0` behavior
-  via `minAvailable: 1` to keep at least one publisher live.
+  drains/upgrades never take a service below quorum. The relay has no quorum to protect — it is
+  one replica (§3.2) — so its `minAvailable: 1` permits **zero** voluntary disruptions, and a
+  `kubectl drain` of its node blocks until an operator removes the pod by hand. That consequence
+  is accepted deliberately: a gap in publishing is recoverable, because an unpublished outbox row
+  survives and goes out after restart ([devops-ci-cd.md](devops-ci-cd.md) §5.3), so the budget's
+  purpose is to make stopping the platform's only publisher an explicit operator action instead
+  of a side effect of a routine drain. It is **not** a guarantee that a publisher is always
+  running, and it must never be satisfied by adding a second replica.
 - **NetworkPolicies:** default-deny per namespace. Explicit allows: ingress → web/api/checkin;
   api/checkin/worker/relay → Postgres/Redis/RabbitMQ; worker/relay → RabbitMQ; egress to
   Stripe/PromptPay/comms via NAT only. No pod-to-pod that isn't declared.
 - **Rolling updates** by default (`maxSurge: 1, maxUnavailable: 0`); **api uses canary**
-  (see [devops-ci-cd.md](devops-ci-cd.md)). **Anti-affinity** spreads replicas across AZs.
+  (see [devops-ci-cd.md](devops-ci-cd.md)). The **relay inverts that default** to
+  `maxSurge: 0, maxUnavailable: 1`, because surging would start the new pod before the old one
+  exits and put two publishers on the same unlocked outbox rows — the duplicate publish described
+  in §3.2. It stops, then starts, and accepts the pause
+  ([devops-ci-cd.md](devops-ci-cd.md) §4.2, §5.3). **Anti-affinity** spreads replicas across AZs.
 - **DB migrations** run as a **gated pre-deploy Job**, never inside app startup, so schema
   changes are ordered and reviewed (details in [devops-ci-cd.md](devops-ci-cd.md)).
 
@@ -289,8 +323,8 @@ and **parallel check-in** at concurrent live events. Autoscaling is layered.
 | Layer | Mechanism | Trigger | Behaviour |
 |---|---|---|---|
 | Edge | CDN cache | cache hit | Absorbs static + SSR read spikes before they reach pods |
-| Pods | **HPA per service** | CPU, RPS, p95 latency (api), **queue depth** (worker/relay), custom check-in metric | Scale out on-sale (`web`,`api`) and door-rush (`checkin`) independently |
-| Consumers | HPA on **RabbitMQ queue depth** | backlog growth | `worker` scales to drain events; `relay` scales with outbox lag |
+| Pods | **HPA per service**, except the singleton `relay` which has none (§3.2) | CPU, RPS, p95 latency (api), **RabbitMQ queue depth** (worker), custom check-in metric | Scale out on-sale (`web`,`api`) and door-rush (`checkin`) independently |
+| Consumers | HPA on **RabbitMQ queue depth** | backlog growth | `worker` scales to drain events; the `relay` **does not scale at all** — see "Outbox lag" below |
 | Nodes | **Cluster autoscaler** | unschedulable pods | Adds/removes nodes; separate node pool can back the burstable check-in pool |
 | Data | Terraform-tuned sizing | seasonal / event calendar | Pre-scale Postgres replica/RabbitMQ nodes ahead of known on-sales |
 
@@ -301,6 +335,21 @@ and **parallel check-in** at concurrent live events. Autoscaling is layered.
   (custom scan-throughput metric), isolated from checkout traffic and per-tenant bursts.
 - **HPA hygiene:** sensible `minReplicas` (never 0 for prod services), `maxReplicas`
   ceilings, stabilization windows to avoid flapping, and PDBs so scale-in respects quorum.
+- **Outbox lag is an alerting signal, not a scaling signal.** The two are easy to conflate, and
+  conflating them is how a lag-driven HPA comes to be specified for a workload that must not be
+  scaled at all (§3.2). Lag is the right thing to **alert** on, because the relay can be running, passing every probe in §3.3, and
+  publishing nothing at all — orders keep succeeding while no notification leaves the platform,
+  and no health check sees it:
+
+  ```sql
+  SELECT count(*) FROM outbox_events WHERE published_at IS NULL;
+  ```
+
+  Alert on that count **growing**. What the same number cannot do is drive an HPA: adding relay
+  replicas does not drain the outbox faster, it publishes every row twice (§3.2). So when lag
+  grows the response is to investigate the one publisher — broker reachability, poll interval and
+  batch size, a row that fails repeatedly — never to raise the replica count. The metric becomes
+  usable for scaling only once the reader claims its rows, under the condition set out in §3.2.
 - **Right-sizing loop:** requests/limits are re-tuned from Prometheus utilisation
   (see [devops-observability-sre.md](../08-maintenance/devops-observability-sre.md)).
 
