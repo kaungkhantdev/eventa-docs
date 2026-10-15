@@ -2058,9 +2058,9 @@ Locale defaults: currency ฿ (THB), VAT 7%, PromptPay, Asia/Bangkok, languages 
 - **Preconditions:** Guest orders made with addresses that have no account: (a) a paid order not yet paid, its hold still live; (b) an order on a require-approval event waiting for the organizer; (c) an order on the waitlist; (d) a paid order whose hold lapsed unpaid; (e) a confirmed paid order since refunded. The tester can read those inboxes.
 - **Steps:**
   1. Open each order's page from its email or payment return.
-  2. For each order, send the account-link request directly with its order id.
+  2. For each order, send the account-link request directly with its order id, and ask directly whether its address has an account.
   3. Pay order (a) and reload its page.
-- **Expected result:** Step 1: no page shows the account offer — no "Create account", no "Sign in" and no "Not now — your ticket is already in your email" — because there is no ticket to keep. Step 2: every request is refused with "This booking isn't confirmed, so there are no tickets to keep in an account yet." and no email is sent. Step 3: once order (a) is confirmed, the offer appears beneath its ticket and "Create account" sends the link as in TC-DISC-29.
+- **Expected result:** Step 1: no page shows the account offer — no "Create account", no "Sign in" and no "Not now — your ticket is already in your email" — because there is no ticket to keep. Step 2: every request — the link and the account question alike — is refused with "This booking isn't confirmed, so there are no tickets to keep in an account yet."; no email is sent, and nothing reveals whether any of those addresses has an account. Step 3: once order (a) is confirmed, the offer appears beneath its ticket and "Create account" sends the link as in TC-DISC-29.
 
 ### TC-DISC-30 — Declining the account leaves the registration untouched
 - **Traces:** US-DISC-15  ·  **Priority:** High  ·  **Type:** Functional
