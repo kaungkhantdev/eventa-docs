@@ -14,11 +14,14 @@ The technical blueprint: the software architecture plus the data model that sati
   boundary; reliable eventing), deployment, cross-cutting concerns (payments/PCI, multi-tenancy,
   concurrency & overselling, PDPA, observability, security), the technology stack, **13 ADRs**, and
   an NFR → mechanism mapping.
-- **[entities.md](entities.md)** — the **target data architecture**: relational data dictionary, 53
+- **[entities.md](entities.md)** — the **target data architecture**: relational data dictionary, 57
   PostgreSQL tables across 12 bounded contexts, with keys, constraints, indexes, enums, junction
   tables. Multi-tenant, money-as-satang, order→ticket commerce model.
 - **[erd.md](erd.md)** — the **Entity Relationship Diagram**: master crow's-foot Mermaid diagram +
   12 domain views + a 90-row relationship matrix, derived from `entities.md`.
+- **[flowcharts/](flowcharts/README.md)** — **26 step-by-step flowcharts**, one per user journey across
+  the attendee portal, the public pages and the organizer console, each drawn from and checked against
+  the code, with what is not built marked rather than drawn as working.
 
 ## Stack (baseline)
 React (SPA + SSR) · **NestJS** API (modular monolith) · **RabbitMQ** eventing + NestJS consumers ·
