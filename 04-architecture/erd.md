@@ -862,9 +862,10 @@ erDiagram
   carries **no foreign-key constraint**, so a user row can point at an attendee id
   that was never created or has since been hard-deleted. It is the only unenforced
   reference in this view; see [Unenforced references](#unenforced-references).
-- Uniqueness on `users` is the triple `(organization_id, email, persona)`, so the
-  same address can exist once as an organizer and once as a portal attendee within
-  one tenant.
+- Uniqueness on `users` is the triple `(organization_id, email, persona)` among
+  live rows (`deleted_at IS NULL`), so the same address can exist once as an
+  organizer and once as a portal attendee within one tenant, and a removed or
+  deleted account frees its address.
 
 ### Organization & Settings
 
@@ -952,8 +953,8 @@ erDiagram
 
 - `api_keys.created_by → users` is `ON DELETE RESTRICT` (the issuer requires
   `setIntegrations` and cannot be deleted out from under a live key).
-- `notification_preferences` is unique per `(user_id, category)` and gates whether
-  a `message_deliveries` row is generated for that category. `users` is defined in
+- `notification_preferences` is unique per `(user_id, category)`; so far only the
+  attendee event reminder reads it, leaving out anyone who switched it off. `users` is defined in
   *Identity & Access*. Its companion `notification_reads`, which records how far a
   member has read the in-app feed, is drawn in *Engagement & Messaging*.
 - `payment_settings` is optional and unique per organization; it stores only

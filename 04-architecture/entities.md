@@ -274,7 +274,7 @@ A login identity. Admin-console and portal personas are distinct rows even at th
 
 - **PRIMARY KEY** (`id`)
 - **FOREIGN KEY** `organization_id`→`organizations(id)` **ON DELETE CASCADE**
-- **UNIQUE** (`organization_id`, `email`, `persona`) — same email may exist once per persona per org
+- **UNIQUE** partial `uq_users_org_email_persona` (`organization_id`, `email`, `persona`) WHERE `deleted_at IS NULL` — same email may exist once per persona per org among *live* accounts. Removing a teammate (US-SET-11) and deleting an attendee account (US-DISC-14) soft-delete the row and keep its email for the record, and the partial clause is what lets that address be re-invited or sign up again (US-DISC-15) (migration `0072`)
 - **INDEXES** `ix_users_org` (`organization_id`), `ix_users_email` (`email`)
 - **`attendee_id` is an unenforced reference.** It holds an `attendees.id` and the application joins on it,
   but no `REFERENCES` clause was ever added, so the portal-persona link can dangle: removing the attendee
@@ -456,7 +456,9 @@ Integration/API credentials (`setIntegrations`; emits `apikey` audit events).
 - **INDEX** `ix_api_keys_org` (`organization_id`)
 
 #### `notification_preferences`
-Per-user email/SMS toggle per notification category (`NotifCategory`); gates whether a `message_deliveries` row is generated.
+Per-user email/SMS toggle per notification category (`NotifCategory`). An absent row means on. One send
+reads it so far: the attendee event reminder leaves out an attendee who switched "Event reminders" off
+(US-DISC-12). No other message consults it yet.
 
 | Column | Type | Null | Key | Default | Notes |
 |---|---|---|---|---|---|
@@ -563,7 +565,9 @@ stored in plain text because it is designed to be public.
   an audited domain record whose stale writes are worth a `409`.
 
 #### `payment_method_settings`
-Per-method on/off for checkout (US-SET-09). An absent row means the method is disabled.
+Per-method on/off for checkout (US-SET-09). An absent row means **on** for Card and PromptPay, the two
+methods checkout can collect, so a workspace that never opened the screen still takes payment, and
+**off** for every other method.
 
 | Column | Type | Null | Key | Default | Notes |
 |---|---|---|---|---|---|
@@ -588,7 +592,7 @@ Event categorization for discover/landing. Org-scoped, seeded then customizable.
 |---|---|---|---|---|---|
 | `id` | bigint identity | no | PK | | |
 | `organization_id` | bigint | no | FK→organizations.id, UK, IX | | |
-| `name` | text | no | UK | | Unique per org. |
+| `name` | text | no | UK | | Unique per org among live categories, ignoring case. |
 | `description` | text | yes | | | `Category.desc`. |
 | `icon` | text | no | | | Hugeicons slug (`CATEGORY_ICONS`). |
 | `color` | `category_color` | no | | | pink/blue/amber/brand/violet/indigo/teal/red. |
@@ -599,7 +603,7 @@ Event categorization for discover/landing. Org-scoped, seeded then customizable.
 
 - **PRIMARY KEY** (`id`)
 - **FOREIGN KEY** `organization_id`→`organizations(id)` **ON DELETE CASCADE**
-- **UNIQUE** (`organization_id`, `name`)
+- **UNIQUE** partial expression `uq_categories_org_name` (`organization_id`, `lower(name)`) WHERE `deleted_at IS NULL` — the service's own duplicate rule, enforced: "Music" and "music" collide, and a deleted category frees its name for re-use (US-EVT-11) (migration `0073`)
 - **INDEXES** `ix_categories_org` (`organization_id`), expression `ix_categories_search_name` (`search_norm(name)`) — `search_norm()` lowercases and strips Latin accents and Thai vowel/tone marks (migration `0023`), so Discover matches a category name however it was typed (US-DISC-02)
 - `count` (events in category) is **derived**, not stored.
 
@@ -1265,11 +1269,15 @@ as they stand and must not be backfilled.
 | `created_at` | timestamptz | no | | `now()` | |
 | `updated_at` | timestamptz | no | | `now()` | |
 | `gateway_account_id` | text | yes | | | Which provider account took the money — see above. Null means the platform account. |
+| `seller_name` | text | yes | | | The workspace's legal name as it stood when the payment settled, printed on the attendee's receipt (US-SET-07). Null while pending. |
+| `seller_address` | text | yes | | | Seller address, stamped with `seller_name`. |
+| `seller_tax_id` | text | yes | | | Seller tax ID, stamped with `seller_name`. |
 
 - **PRIMARY KEY** (`id`)
 - **FOREIGN KEYS** `organization_id`→`organizations(id)` **ON DELETE CASCADE**; `order_id`→`orders(id)` **ON DELETE RESTRICT**; `event_id`→`events(id)` **ON DELETE RESTRICT**
 - **UNIQUE** `uq_payments_org_txn` (`organization_id`, `txn`), `uq_payments_org_idem` (`organization_id`, `idempotency_key`)
 - **INDEXES** `ix_payments_order` (`order_id`), `ix_payments_event` (`event_id`), `ix_payments_status` (`organization_id`, `status`)
+- **The receipt keeps the seller it was issued by.** The three `seller_*` columns are copied from `organizations` in the transaction that settles the payment, so a later edit to the workspace's name, address or tax ID does not rewrite a receipt already issued (US-SET-07). They are copied together: an address or tax ID that was blank at settlement stays blank. A row never stamped (`seller_name` null) falls back to the live organization. Migration `0074` stamped every settled payment that existed with the organization as it stood then.
 
 #### `refunds`
 A full/partial reversal of a payment. Append-only.
@@ -1332,6 +1340,9 @@ A tax invoice for an order.
 | `voided_at` | timestamptz | yes | | | Set when an Admin voids an issued or overdue invoice raised in error (US-FIN-10). |
 | `void_reason` | text | yes | | | The optional reason given with the void (US-FIN-10). |
 | `voided_by` | uuid | yes | FK→users.id | | The Admin who voided it; null once that account is removed. |
+| `seller_name` | text | yes | | | The workspace's legal name as it stood on issue (US-SET-07). |
+| `seller_address` | text | yes | | | Seller address, stamped with `seller_name`. |
+| `seller_tax_id` | text | yes | | | Seller tax ID, stamped with `seller_name`. |
 
 - **PRIMARY KEY** (`id`)
 - **FOREIGN KEYS** `organization_id`→`organizations(id)` **ON DELETE CASCADE**; `order_id`→`orders(id)` **ON DELETE RESTRICT**; `event_id`→`events(id)` **ON DELETE RESTRICT**; `voided_by`→`users(id)` **ON DELETE SET NULL**
@@ -1342,6 +1353,10 @@ A tax invoice for an order.
   invoice itself and `status` moves to `void`; the sequence keeps the number for audit, which is
   why a correction is a new invoice and not an edit (US-FIN-10). Voiding frees the
   `uq_invoices_live_order` slot above so that new invoice can be issued for the same order.
+- **The invoice keeps the seller it was issued by.** The three `seller_*` columns are copied from
+  `organizations` in the issuing transaction, so a later edit to the workspace does not rewrite an
+  invoice already issued (US-SET-07); same rules as on `payments` above. `vat_rate` is still read
+  from the organization.
 
 #### `payouts`
 A settlement of net proceeds to the organizer bank account over a period.
