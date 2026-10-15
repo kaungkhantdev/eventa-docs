@@ -5,7 +5,7 @@
 | **Author** | QA Engineer |
 | **Version** | 1.0 · 2026-07-23 |
 | **Companion** | [test-plan.md](test-plan.md) |
-| **Scope** | 340 test cases across 13 epics, tracing to the 162 user stories in the [product backlog](../01-requirements-and-features/functional-requirements.md) |
+| **Scope** | 345 test cases across 13 epics, tracing to the 162 user stories in the [product backlog](../01-requirements-and-features/functional-requirements.md) |
 
 > Each test case is derived from a user story's Given/When/Then acceptance criteria, and lists its traceability (`US-*`), priority, type, preconditions, test data, steps, and expected result. Priority defaults from MoSCoW (Must→High, Should→Medium, Could→Low). See [test-plan.md](test-plan.md) for strategy, environment, defect process, and closure.
 
@@ -18,7 +18,7 @@
 | 3 | [Create & Manage Events](#tc-e03) | 15 | 35 | 20 | 13 | 2 |
 | 4 | [Public Event Pages](#tc-e04) | 10 | 21 | 11 | 9 | 1 |
 | 5 | [Sell Tickets & Run Promotions](#tc-e05) | 12 | 24 | 9 | 12 | 3 |
-| 6 | [Discover & Register for Events](#tc-e06) | 15 | 35 | 25 | 8 | 2 |
+| 6 | [Discover & Register for Events](#tc-e06) | 15 | 40 | 29 | 9 | 2 |
 | 7 | [Communicate with Attendees](#tc-e07) | 10 | 20 | 3 | 13 | 4 |
 | 8 | [Manage Registrations & Admit Attendees](#tc-e08) | 14 | 30 | 17 | 13 | 0 |
 | 9 | [Get Paid & Manage Finances](#tc-e09) | 14 | 27 | 20 | 7 | 0 |
@@ -26,7 +26,7 @@
 | 11 | [Organizer Home & Dashboard](#tc-e11) | 13 | 25 | 14 | 9 | 2 |
 | 12 | [Coordinate Meetings](#tc-e12) | 9 | 21 | 8 | 11 | 2 |
 | 13 | [Measure Performance (Reports)](#tc-e13) | 12 | 25 | 10 | 13 | 2 |
-| | **Total** | **162** | **340** | **186** | **133** | **21** |
+| | **Total** | **162** | **345** | **190** | **134** | **21** |
 
 ---
 
@@ -1995,58 +1995,123 @@ Locale defaults: currency ฿ (THB), VAT 7%, PromptPay, Asia/Bangkok, languages 
 
 ## US-DISC-15 — Create my account from my confirmation
 
-### TC-DISC-29 — Follow the confirmation link and create the account with a locked email
+### TC-DISC-29 — Create the account from the link emailed to the booking's address
 - **Traces:** US-DISC-15  ·  **Priority:** High  ·  **Type:** Functional
-- **Preconditions:** A guest (no account) has just confirmed a registration and is on the "You're registered!" screen. Their name, email and phone were captured during checkout.
-- **Test data:** Buyer "Anong Pattana" / anong.p@example.com; one confirmed order with one QR ticket.
+- **Preconditions:** A guest (no account) has just confirmed a registration and is on the confirmation screen — the order page that the "You're registered!" recap and the confirmation email both link to. Their name, email and phone were captured during checkout. The tester can read that email inbox.
+- **Test data:** Buyer "Anong Pattana" / anong.p@example.com; one confirmed order with one QR ticket; password `Silom#2026` (8+ characters with a number and a symbol).
 - **Steps:**
-  1. Confirm the ticket and QR are shown on the recap, and that the account offer is a link — the recap itself asks for no credential.
-  2. Follow the "Create account" link.
-  3. Inspect the email field on the sign-up page.
-  4. Set a password and submit.
-- **Expected result:** The sign-up page opens with anong.p@example.com already filled in and the field disabled — it cannot be edited or cleared. Only a password is asked for. On submit the attendee is signed in immediately and lands on My Events, with no email-verification step, because the address was proven by the ticket being sent to it.
+  1. Confirm the order reads Confirmed with its ticket and QR shown, that the account offer ("Keep these tickets") appears beneath them and asks for no credential, and that its dismiss reads "Not now — your ticket is already in your email".
+  2. Choose "Create account".
+  3. Read the on-screen message, then check the anong.p@example.com inbox.
+  4. Open the link in the email.
+  5. Inspect the name and email on the sign-up page.
+  6. Enter the password twice, accept Terms & Privacy, and submit.
+  7. Open the inbox again.
+- **Expected result:** The offer is there because the order is confirmed and holds a live ticket (TC-DISC-29f covers an order that isn't). Choosing "Create account" creates no account and asks for no password; the offer is replaced by "We've sent a link to anong.p@example.com. Open it to choose a password — it proves the address is yours." Exactly one email arrives at that address: it names the event, says the link lets the reader choose a password and see every booking made with this address in one place, gives the link's expiry in Asia/Bangkok time, and says nothing is created unless the link is opened and a password chosen. The link opens the sign-up page with "Anong Pattana" and anong.p@example.com shown and not editable; only the password (twice) and the Terms & Privacy box are asked for. On submit the attendee is signed in immediately and lands on My Events with this booking listed. No "confirm your email" message is sent and no check-your-email page appears — opening the emailed link was the proof of the address.
 
-### TC-DISC-29b — The locked email cannot be substituted before submitting
+### TC-DISC-29b — The address in the link cannot be substituted before submitting
 - **Traces:** US-DISC-15  ·  **Priority:** High  ·  **Type:** Negative
-- **Preconditions:** The sign-up page has been opened from a completed booking.
+- **Preconditions:** The sign-up page has been opened from the link emailed to anong.p@example.com.
 - **Steps:**
-  1. Re-enable or overwrite the disabled email field in the browser, or post the form with a different email than the booking's.
-  2. Submit.
-- **Expected result:** The account is created for the booking's own email regardless, or the request is refused — the submitted email is never trusted. A claimed booking can never be turned into an account for a different address.
+  1. Re-enable or overwrite the locked email field in the browser with another address, then submit.
+  2. From a second copy of the same link, send the account-creation request directly with an extra `email` field (another address) and an extra `name` field.
+- **Expected result:** Step 1: the edited field has no effect — the account is created for anong.p@example.com with the booking's name, and no account exists for the other address. Step 2: the request is refused as invalid because it names an email or a name, and nothing is created. The address only ever comes from the emailed link and the name only from the booking, so a claimed booking can never be turned into an account for a different address.
+
+### TC-DISC-29c — Booking with someone else's address cannot claim their account or choose its password
+- **Traces:** US-DISC-15  ·  **Priority:** High  ·  **Type:** Negative
+- **Preconditions:** A free event that accepts RSVPs. somchai.k@example.com belongs to someone else, has no Eventa account, and has two earlier confirmed bookings with other organizers. The tester ("the booker") cannot read that inbox.
+- **Test data:** Booker's own browser, signed out; buyer email somchai.k@example.com typed at checkout.
+- **Steps:**
+  1. RSVP to the free event as a guest using somchai.k@example.com.
+  2. On the confirmation screen, choose "Create account".
+  3. From the booker's browser, try every route to a password that starts from the booking: reload the order page, choose "Create account" again, and call the account-creation endpoints directly with the order's id and a password (including a single request that sends `POST /auth/register/from-booking` an order id and a password together).
+  4. Try to sign in to the attendee portal as somchai.k@example.com with the password used in step 3.
+  5. Ask the owner of somchai.k@example.com to check the inbox without opening the link.
+- **Expected result:** The booker is never shown a password field for somchai.k@example.com: the only result on screen is "We've sent a link to somchai.k@example.com…". No request made with the order's id creates an account or sets a password — no endpoint accepts an order id and a password together — and asking again only sends the owner another link — at most one a minute and five a day (TC-DISC-29e). Sign-in fails, so the booker sees neither this booking nor the two earlier ones on any My Events page. The owner has received one email explaining that nothing is created unless the link is opened and a password chosen; while it is ignored, no account exists.
+
+### TC-DISC-29d — An expired, altered or already-used link is refused
+- **Traces:** US-DISC-15  ·  **Priority:** High  ·  **Type:** Negative
+- **Preconditions:** Three links emailed for bookings: one more than 7 days old; one with a single character of its token changed; one already used to create an account for anong.p@example.com (password `Silom#2026`).
+- **Steps:**
+  1. Open the expired link.
+  2. Open the altered link.
+  3. Open the used link.
+  4. On a sign-up page that was opened from the used link before the account was created, enter a new password and submit.
+  5. Sign in as anong.p@example.com with `Silom#2026`.
+  6. Delete that account from the portal's Settings tab (US-DISC-14), then open the used link again.
+  7. On the booking's confirmation, choose "Create account" and open the new link that arrives.
+- **Expected result:** Steps 1–2 show "This link has expired or is no longer valid. Ask for a new one from your booking confirmation." with a link to the attendee sign-in; no name or email is shown and no password is asked for. Step 3 opens "You already have an account" — "An account already uses anong.p@example.com. Sign in to see every booking in one place." — with "Sign in instead" and no password field. Step 4 creates nothing: the page checks the link again and switches to that same "You already have an account" screen with "Sign in instead". No second account is created and the existing password is not changed, so step 5 succeeds with the original password. Once the account is deleted (step 6), the used link does not come back to life: it no longer says "Sign in instead" either, but shows the same "This link has expired or is no longer valid…" message with no name, no email and no password field, and nothing is created — a used link never makes the account a second time, whether that account still stands or has since been deleted or moved to another address. Step 7 is the way back: the confirmation offers "Create account" again, and the new link opens the sign-up page with the booking's name and address.
+
+### TC-DISC-29e — Claim links to one address are limited to one a minute and five a day
+- **Traces:** US-DISC-15  ·  **Priority:** High  ·  **Type:** Negative
+- **Preconditions:** Two confirmed guest bookings made with somchai.k@example.com, with different organizers; no attendee account uses that address and no account link has been sent to it in the last 24 hours. The tester can read that inbox.
+- **Steps:**
+  1. On the first booking's confirmation, choose "Create account".
+  2. At once, ask for the link again for the same booking — reload and choose "Create account", or send the request directly — and then for the second booking.
+  3. Ask four more times, a minute apart, alternating the two bookings.
+  4. A minute later, ask a sixth time.
+  5. Count the account emails in the inbox.
+- **Expected result:** Step 1 sends a link. Both requests in step 2 are refused with "A confirmation link was just sent. Give it a minute before asking for another." and send nothing — the wait belongs to the address, not the booking. Each request in step 3 sends a link. Step 4 is refused with "That is as many links as we can email one address for now. You can ask for another in 24 hours. If the emails are not arriving, another link will not help — check the spam folder, and that the address is right." (the wait is counted from the first link and rounded up) and sends nothing. The inbox holds exactly five account emails, so neither the booker nor anyone else holding a booking can use the button to flood the address.
+
+### TC-DISC-29f — No account link for a booking that isn't confirmed
+- **Traces:** US-DISC-15  ·  **Priority:** Medium  ·  **Type:** Negative
+- **Preconditions:** Guest orders made with addresses that have no account: (a) a paid order not yet paid, its hold still live; (b) an order on a require-approval event waiting for the organizer; (c) an order on the waitlist; (d) a paid order whose hold lapsed unpaid; (e) a confirmed paid order since refunded. The tester can read those inboxes.
+- **Steps:**
+  1. Open each order's page from its email or payment return.
+  2. For each order, send the account-link request directly with its order id, and ask directly whether its address has an account.
+  3. Pay order (a) and reload its page.
+- **Expected result:** Step 1: no page shows the account offer — no "Create account", no "Sign in" and no "Not now — your ticket is already in your email" — because there is no ticket to keep. Step 2: every request — the link and the account question alike — is refused with "This booking isn't confirmed, so there are no tickets to keep in an account yet."; no email is sent, and nothing reveals whether any of those addresses has an account. Step 3: once order (a) is confirmed, the offer appears beneath its ticket and "Create account" sends the link as in TC-DISC-29.
 
 ### TC-DISC-30 — Declining the account leaves the registration untouched
 - **Traces:** US-DISC-15  ·  **Priority:** High  ·  **Type:** Functional
 - **Preconditions:** A guest has just confirmed a registration.
 - **Steps:**
-  1. Skip or ignore the account offer.
+  1. Choose "Not now — your ticket is already in your email", or ignore the account offer.
   2. Check the ticket, QR and confirmation email.
   3. Follow the ticket link in the confirmation email while signed out.
-- **Expected result:** The registration, ticket and receipt are entirely unaffected. The emailed ticket link opens without signing in. The offer never blocks the ticket.
+- **Expected result:** The registration, ticket and receipt are entirely unaffected, and no account link is emailed. The emailed ticket link opens without signing in. The offer never blocks the ticket.
 
 ### TC-DISC-31 — Past registrations appear once the account exists
 - **Traces:** US-DISC-15  ·  **Priority:** High  ·  **Type:** Functional
-- **Preconditions:** The same email has TWO earlier confirmed registrations, made as a guest with no account.
+- **Preconditions:** The same email has TWO earlier confirmed registrations, made as a guest with no account, with different organizers.
 - **Steps:**
-  1. Create the account from a third registration's confirmation screen.
-  2. Open My Events.
-- **Expected result:** All three registrations are listed, including the two made before the account existed — registrations are matched to the account by the email the order was placed with.
+  1. From a third registration's confirmation screen, choose "Create account".
+  2. Open the link emailed to that address, set a password and submit.
+  3. Open My Events.
+- **Expected result:** All three registrations are listed, including the two made before the account existed — registrations are matched to the account by the email the order was placed with, which the emailed link has just proven.
 
-### TC-DISC-32 — An email that already has an account is offered sign-in, not a duplicate
+### TC-DISC-32 — An email that already has a confirmed account is offered sign-in, not a duplicate
 - **Traces:** US-DISC-15  ·  **Priority:** Medium  ·  **Type:** Negative
-- **Preconditions:** An attendee account already exists for the email used at checkout.
+- **Preconditions:** A confirmed attendee account (its confirmation email opened, so not Unconfirmed) already exists for the email used at checkout.
 - **Steps:**
   1. Complete a registration with that email as a signed-out guest.
-  2. Follow the "Create account" link from the confirmation.
-- **Expected result:** The page invites signing in instead of offering a second account. No duplicate account is created.
+  2. Look at the account offer on the confirmation.
+  3. Choose "Sign in" and sign in with the existing password.
+  4. Ask for the account link for this order anyway — from a copy of the page that still shows "Create account", or by sending the request directly.
+- **Expected result:** The offer shows only "Sign in" — no "Create account". Signing in returns the attendee to the order they were looking at, where the offer has become "Every booking in one place" with a "See all your bookings" button to My Events — neither "Sign in" nor "Create account" is offered to someone already signed in. Step 4 is refused with "An account already uses this email. Sign in instead." and no link is emailed. No duplicate account is created.
 
-### TC-DISC-32b — The sign-up link cannot be guessed to harvest a buyer's email
+### TC-DISC-32b — The booking identifier cannot be guessed to harvest a buyer's email
 - **Traces:** US-DISC-15  ·  **Priority:** High  ·  **Type:** Negative
 - **Preconditions:** A real confirmed order exists, with reference ORD-GAZJG4J0 printed on its ticket.
 - **Steps:**
-  1. Open the sign-up page using the order's human-readable REFERENCE as the identifier.
-  2. Open it using a plausible neighbouring reference.
-  3. Open it using a random value.
-- **Expected result:** None of these reveal an email address. The page accepts only the order's unguessable id; anything else opens the page in its ordinary mode with an empty, editable email field. The buyer's address is never disclosed to someone who merely guessed an identifier.
+  1. Ask whether the booking has an account, and ask for the account link, using the order's human-readable REFERENCE as the identifier.
+  2. Do the same with a plausible neighbouring reference.
+  3. Do the same with a random value.
+  4. Open the sign-up page with the reference, then a random value, in place of the emailed link's token.
+- **Expected result:** Steps 1–3 are refused — not a valid order id, or no such order — and reveal no email address and no account status, and no email is sent. Only the order's unguessable id is accepted. Step 4 shows the invalid-link message with no name or email. The buyer's address is never disclosed to, and no mail is sent on behalf of, someone who merely guessed an identifier.
+
+### TC-DISC-32c — A stranger's unconfirmed sign-up neither blocks the claim nor survives it
+- **Traces:** US-DISC-15  ·  **Priority:** High  ·  **Type:** Negative
+- **Preconditions:** Someone other than the owner of anong.p@example.com has started an attendee sign-up with that address at `/portal/register`, under the name "Someone Else" and the password `Stranger#1`, and its confirmation email has not been opened, so the account is Unconfirmed. The owner, who can read the inbox, then registers for a free event as a guest with that address under the name "Anong Pattana".
+- **Test data:** Owner's password `Silom#2026`.
+- **Steps:**
+  1. Look at the account offer on the owner's confirmation.
+  2. Choose "Create account", open the link emailed to anong.p@example.com, and look at the page it opens.
+  3. Enter `Silom#2026` twice, accept Terms & Privacy, and submit.
+  4. In another browser, sign in to the attendee portal as anong.p@example.com with `Stranger#1`.
+  5. Open the confirmation link the stranger's sign-up emailed, then try `Stranger#1` again.
+  6. Sign in with `Silom#2026` and open My Events.
+- **Expected result:** The unconfirmed sign-up does not count as an account: step 1 offers "Create account", not "Sign in", and step 2 shows "Anong Pattana" and anong.p@example.com with the password fields rather than "You already have an account". Submitting signs the owner in and lands on My Events. From then on anong.p@example.com has one attendee account, active, named after the booking, and only `Silom#2026` opens it: `Stranger#1` is refused in step 4, and opening the stranger's old confirmation link changes nothing — the account is already active and keeps the owner's password — so `Stranger#1` is refused again in step 5. Step 6 succeeds with the booking listed. A password chosen by someone who never proved the inbox is never left one click away from a live account.
 
 ### TC-DISC-33 — The account can be created later from the attendee sign-in page
 - **Traces:** US-DISC-15  ·  **Priority:** Medium  ·  **Type:** Functional

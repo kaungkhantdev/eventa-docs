@@ -17,13 +17,11 @@ What an attendee can see and keep after booking. It starts at the order page the
 
    The page shows refunded orders incorrectly in two ways. First, the API returns every `tickets` row on the order whatever its `status`, and the page never reads that status, so a `refunded` or `void` ticket's code is printed like a live one. Second, **a refunded order is labelled "Expired"**. A refund sets `orders.status = 'cancelled'` and `payment_status = 'refunded'`, and the API sends `paymentRequired = true` because it computes that flag as `payment_status ≠ 'paid'`. The page therefore treats the order as owed and, because the order is not `pending`, as no longer payable. It then replaces the "Cancelled" banner with "Expired" and a notice that ends "Nothing was charged." No test catches it: the mapper's refunded fixture keeps `status = 'confirmed'` and `paymentRequired: false`, a combination the API never sends after a refund, and it asserts only the mapper's own state, while the swap to "Expired" happens in the page, which has no test.
 
-   Apart from the Pay now panel, the page writes nothing. Its last card, "Keep these tickets", offers **Sign in**, which goes to `/portal/login?from=` this page so the attendee returns here rather than to My Events, and **Create account**, which opens `/portal/register` with the name and email in history state (see [flow 14](14-sign-up-confirm-and-reset-password.md)). Nothing in My Events links back to this page, so this is the only screen where an attendee ever sees a real `qr_token`.
+   Apart from the Pay now panel and the account link below, the page writes nothing. Its last card, "Keep these tickets", is drawn only for a confirmed order holding a ticket that still admits (`issued` or `checked_in`); an order still owed, awaiting approval, on the waitlist, lapsed, cancelled, refunded or turned down gets no card, because there is no ticket to keep and its email carried none. An attendee already signed in gets "Every booking in one place" in its place, with "See all your bookings" to `/portal/my-events`. Otherwise the card first asks whether the booking's address already has a confirmed attendee account — an unconfirmed sign-up does not count. If it has, the card offers only **Sign in**, which goes to `/portal/login?from=` this page so the attendee returns here rather than to My Events. If not, it offers **Create account** and "Not now — your ticket is already in your email". Create account asks for no password and creates nothing here: it has a one-time link emailed to the booking's address, and the account is made only from that link, so whoever made the booking cannot make it for somebody else's address (see [flow 14](14-sign-up-confirm-and-reset-password.md) step 4). Nothing in My Events links back to this page, so this is the only screen where an attendee ever sees a real `qr_token`.
 
 2. **Signing in to My Events.** `/portal/my-events` needs an attendee account; the route manifest's comment calls it the one portal route that does, but `/portal/survey` is wrapped the same way ([Surveys, feedback and NPS](11-surveys-and-feedback.md)). Its loader is wrapped in `attendeeData`, which checks the persona label the browser stored at sign-in before it fetches anything. If the label is not `attendee`, the loader redirects to `/portal/login?from=<this page>`; it never sends the attendee to the organizer sign-in, which would ask for a workspace they do not have. A token the API still refuses after a refresh is redirected the same way. Signing in is `POST /auth/login` with no `orgSlug`, exactly as in [Sign-in, roles and permissions](12-sign-in-roles-and-permissions.md). Afterwards `safeRedirect` honours a same-site `?from=` and otherwise falls back to `/portal/my-events`. An attendee who is already signed in and presses **Sign in** on Discover is sent straight on by `guestOnly('attendee')`.
 
-   Two entry points assume an account the person may not have:
-   - `/portal/login` links only to Discover and to the attendee forgot-password form. **Not built: a sign-up link on the attendee sign-in**, which US-DISC-08 asks for.
-   - eventa-worker's day-before reminder ([Automated messages](22-automated-messages.md)), in a workspace that has switched it on (it is off until then), goes to every confirmed order's `buyer_email`, guests included, and its link is `<PUBLIC_WEB_URL>/portal/my-events`. A guest is therefore sent to a sign-in they cannot pass instead of to their order page.
+   `/portal/login` gives somebody with no account a way in: its footer, "Don't have an account? Create one", opens the attendee sign-up at `/portal/register` ([flow 14](14-sign-up-confirm-and-reset-password.md) step 4), beside the attendee forgot-password link, and the Eventa logo above the card leads to Discover. One entry point still assumes an account the person may not have: eventa-worker's day-before reminder ([Automated messages](22-automated-messages.md)), in a workspace that has switched it on (it is off until then), goes to every confirmed order's `buyer_email`, guests included, and its link is `<PUBLIC_WEB_URL>/portal/my-events`. A guest is therefore sent to a sign-in instead of to their order page.
 
    The loader makes five reads the page cannot render without: `GET /auth/me`, `GET /me/profile`, `GET /me/tickets`, `GET /me/payments` and `GET /me/payments/summary`. If any of them fails, the page fails. Four more reads are optional and each degrades on its own: `/me/notification-preferences`, `/me/two-factor`, `/me/sessions` and `/me/account/deletion`. The four tabs (My Events, Payment history, Profile, Settings) are component state, not part of the URL, so a reload always opens My Events. Profile and Settings are covered in [Profile, preferences and deleting an account](16-profile-preferences-and-account-deletion.md) and [Account security](15-account-security.md).
 
@@ -31,7 +29,7 @@ What an attendee can see and keep after booking. It starts at the order page the
 
 3. **Matching tickets to the account.** `GET /me/tickets` takes no id. The service reads the caller's `users.email` from the token's user (a deleted user gets a 404 "Account not found."). It then selects `orders` where `buyer_email` equals that address, `status = 'confirmed'` and `deleted_at` is null, joined to `events` and, through `order_items`, to `ticket_types.name`. **The query covers every workspace and has no `organization_id` in it**, because an attendee's bookings span every organizer and the account lives in the platform organization rather than in any of them. Both columns are `citext`, so `Anan@Example.com` typed at checkout matches `anan@example.com` on the account.
 
-   The email address is the only link between orders and the account. No `orders` column points at the buyer's `users` row (`attendee_id` is the workspace's CRM record, not the account, and `created_by`, `decided_by` and `offered_by` name staff). This is safe only because an account cannot sign in until its confirmation email has been opened ([flow 14](14-sign-up-confirm-and-reset-password.md)), so whoever sees these orders has proved they own the address the buyer typed. A changed address takes over only once its confirmation link is opened. That link lands on `/confirm-email`, which does not exist in the web app ([flow 16](16-profile-preferences-and-account-deletion.md)), so in practice the match stays on the address the account was created with.
+   The email address is the only link between orders and the account. No `orders` column points at the buyer's `users` row (`attendee_id` is the workspace's CRM record, not the account, and `created_by`, `decided_by` and `offered_by` name staff). This is safe only because an account cannot sign in until its address is proven — by opening its confirmation email or, for an account made from a booking, the claim link emailed to that address ([flow 14](14-sign-up-confirm-and-reset-password.md)) — so whoever sees these orders has proved they own the address the buyer typed. A changed address takes over only once its confirmation link is opened. That link lands on `/confirm-email`, which does not exist in the web app ([flow 16](16-profile-preferences-and-account-deletion.md)), so in practice the match stays on the address the account was created with.
 
    Only `confirmed` orders are listed. An order awaiting payment or approval, on the waitlist, `rejected`, `expired` or `cancelled` never appears. A refund sets the order to `cancelled` ([Refund and cancellation](07-refund-and-cancellation.md)), so it removes the booking from My Events while its payment stays in the history. The query is capped at 200 orders, taken oldest `start_at` first, so for anyone past the cap it is the latest-starting events, the upcoming ones included, that are dropped.
 
@@ -106,14 +104,17 @@ flowchart TD
     A5 -- "Refunded or lapsed" --> A7["Banner reads Expired<br/>Nothing was charged<br/>even after a refund"]
     A5 -- "Not owed" --> A8["Every ticket, any status<br/>qr_token printed as text<br/>no QR drawn"]
     A7 --> A8
-    A6 --> A9["Keep these tickets<br/>Sign in or Create account"]
-    A8 --> A9
+    A8 --> A10{"Confirmed, with a ticket<br/>that still admits?"}
+    A10 -- "No" --> A11["No account offer<br/>no ticket to keep"]
+    A10 -- "Yes" --> A12{"Signed in<br/>as an attendee?"}
+    A12 -- "Yes" --> A13["Every booking in one place<br/>See all your bookings"]
+    A12 -- "No" --> A9["Keep these tickets<br/>Sign in or Create account<br/>see flow 14"]
   end
 
   subgraph TWO["2 · Signing in to My Events"]
     B1["/portal/my-events<br/>attendeeData guard<br/>as on /portal/survey"] --> B2{"Stored persona<br/>is attendee?"}
     B2 -- "No" --> B3["/portal/login?from=this page<br/>POST /auth/login, flow 12"]
-    B3 -- "No account yet" --> B4["Not built: a sign-up link<br/>on the attendee sign-in"]
+    B3 -- "No account yet" --> B4["Create one<br/>/portal/register, flow 14"]
     B3 -- "Signed in" --> B1
     B2 -- "Yes" --> B5["/auth/me, /me/profile, /me/tickets,<br/>/me/payments, /me/payments/summary<br/>plus four panels that fail alone"]
     B5 --> B6{"Refused even<br/>after a refresh?"}
@@ -169,6 +170,7 @@ flowchart TD
   end
 
   A9 -- "Sign in" --> B3
+  A13 --> B1
   B7 --> C1
   C7 --> D1
   D3 --> E1
