@@ -45,3 +45,9 @@ The implemented **React front-end prototype** lives in the sibling folder `../ev
 static HTML kit in `../eventa-ui-kit`. This `sdlc/` folder holds the *documentation* only.
 
 _Last updated: 2026-08-05._
+
+## License
+
+Proprietary — all rights reserved. This repository is public so that it can be
+read; it is not open-source software, and no right to use, copy, modify or run
+it is granted. See [LICENSE](LICENSE).
