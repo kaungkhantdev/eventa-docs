@@ -103,7 +103,7 @@ Service Level Indicators are measured from telemetry, tenant-agnostic in aggrega
 | **Check-in scan latency** | p95 `POST /check-ins` response time | check-in pool histogram | Queue-at-the-door experience |
 | **Outbox lag** | age (seconds) of the oldest unpublished `outbox` row | relay gauge / DB query exporter | Async side-effects freshness; relay health |
 | **RabbitMQ queue depth** | ready + unacked messages per queue | RabbitMQ exporter | Consumer keeping up; backpressure signal |
-| **DLQ depth** | messages parked in `eventa.dlx` dead-letter/parking queues | RabbitMQ exporter | Poison messages / failing handlers |
+| **DLQ depth** | messages parked in `eventa.worker.dlq` (via the `eventa.events.dlx` dead-letter exchange) | RabbitMQ exporter | Poison messages / failing handlers |
 | **Discovery latency** | p95 `GET /discover` and `GET /events/:slug` (cache + replica path) | api / web SSR histogram | First impression; SEO landing speed |
 | **Payment webhook processing** | success rate & p95 latency of signature-verified Stripe/PromptPay webhooks reaching a terminal state | api webhook handler metrics | Payment = source of truth (SAD §7.1); reconciliation |
 | **Notification delivery** | order-confirmed email/SMS dispatched ÷ orders confirmed (within 5 min) | worker metrics + delivery log | Attendee gets ticket/receipt |
@@ -339,7 +339,7 @@ Runbooks live in the ops repo (`/runbooks`), are linked from every alert rule, a
 | **Payment webhook backlog** | Webhook processing SLO breach | Inspect signature failures, replay from Stripe dashboard, scale api |
 | **Failed payout / Stripe Connect issue** | Payout error alert / finance report | Reconcile ledger vs. Stripe, retry payout, escalate to finance + Stripe |
 | **RabbitMQ backlog / queue depth high** | Queue depth > 5× baseline | Scale worker HPA, check consumer errors, inspect slow handler, add temporary consumers |
-| **DLQ / poison messages** | DLQ depth > 0 rising | Inspect parked messages, fix handler, **replay** from parking queue, drop confirmed-bad after review |
+| **DLQ / poison messages** | DLQ depth > 0 rising | Inspect parked messages, fix handler, **replay** from parking queue, drop confirmed-bad after review — drawn in full in §8.1 |
 | **Outbox lag / relay stalled** | Outbox lag > 120 s | Check relay health & DB poll, restart relay, verify publisher confirms, check RabbitMQ reachability |
 | **DB failover / primary unreachable** | Postgres primary down (Sev1) | Trigger/confirm managed failover, verify app reconnect, check replica lag, PITR if corruption |
 | **DB migration failure** | Gated pre-deploy migration job fails | Halt deploy (auto), roll migration back, restore from PITR if partial, re-run after fix |
@@ -349,6 +349,64 @@ Runbooks live in the ops repo (`/runbooks`), are linked from every alert rule, a
 | **Redis outage / cache cold** | Redis unreachable / hit-rate collapse | Fail over managed Redis, protect DB (rate-limit/shed), warm cache, verify sessions |
 | **Elevated 5xx / bad release** | Golden-signal error spike post-deploy | GitOps revert to last-good SHA (automated rollback), confirm canary metrics |
 | **Region / AZ degradation** | Multi-AZ health alarms | Execute DR plan, shift traffic, validate data-tier standby, comms + status page |
+
+### 8.1 Dead-letter handling
+
+The **DLQ / poison messages** row above is the one runbook with no automation behind it — past the
+parking queue every step is a person — so the path is drawn here in full. Queue names come from the
+consumer's own config (`${RABBITMQ_EXCHANGE}.dlx`, `${RABBITMQ_QUEUE}.dlq`), which in every
+environment to date resolve to `eventa.events.dlx` and `eventa.worker.dlq`. The **handling**
+procedure on its own — what a person does once a message has parked — is drawn separately in
+[`dead-letter-handling/`](dead-letter-handling/), as a PNG and an editable tldraw canvas.
+
+```mermaid
+flowchart TD
+    R["relay<br/>publisher confirms"] --> X["eventa.events<br/>topic exchange"]
+    X --> Q["eventa.worker<br/>work queue"]
+    Q --> H{"handler outcome"}
+    H -->|success| ACK["ack<br/>+ record message id completed"]
+    H -->|throws| C{"retryable<br/>and ladder left?"}
+    C -->|"yes, attempts 1-4"| D[("eventa.worker.retry.5000 · .30000<br/>· .120000 · .600000<br/>TTL per rung, no consumer")]
+    D -->|"TTL lapses, dead-letters back"| Q
+    C -->|"no: 5th attempt, or poison"| DLX["eventa.events.dlx<br/>fanout exchange"]
+    DLX --> DLQ[("eventa.worker.dlq<br/>durable · persistent · no TTL · no consumer")]
+    DLQ --> T{"triage, by hand"}
+    T -->|"dependency was down past the ladder"| F1["fix the dependency"]
+    T -->|"poison payload or handler bug"| F2["fix the handler, deploy"]
+    T -->|"unprocessable, referent gone"| F3["drop after review"]
+    F1 --> RP["replay: republish to eventa.worker<br/>stripping x-attempt"]
+    F2 --> RP
+    RP --> Q
+```
+
+**The ladder is the automated half.** Four rungs — 5 s, 30 s, 2 min, 10 min — give a message five
+attempts across roughly twelve and a half minutes. Each rung is a queue with a message TTL and *no
+consumer*, whose own dead-letter settings return the message to the work queue once the TTL lapses;
+that is how the delay happens without a scheduler. The bound is deliberate: it covers the failures that
+fix themselves — a restarting database, a greylisting mail server, a brief partition — and declares
+anything slower a human's problem rather than holding a message so long nobody looks at it.
+
+**Two routes reach the parking queue:** the ladder running out, or a failure classified permanent on
+arrival (a body that will not parse, an SMTP envelope rejection). The second skips the ladder entirely,
+because retrying a message that cannot parse only delays the diagnosis.
+
+**Parking is terminal and durable.** Messages are published persistent and the queue is durable with no
+TTL, no max-length and no consumer, so a parked message survives a broker restart and waits
+indefinitely. That is the design intent — a parking queue, not a buffer — and the operational
+consequence is that nothing drains it on its own.
+
+**Two traps on replay.** A parked message still carries `x-attempt` at its final value, so its next
+failure parks it again at once: strip the header or the replay buys exactly one attempt. And completion
+is recorded only *after* a handler succeeds, while the idempotency record expires
+(`IDEMPOTENCY_TTL_SECONDS`, 24 h by default) — so replaying something parked for longer than that will
+repeat the side effect of a handler that half-succeeded, sending the mail a second time.
+
+**What tells you it happened.** The worker logs the park at error level with a redacted error summary
+(`name`, `code`, `reason`, `at`, plus `correlation_id`, `message_id`, `routing_key`) and counts it as
+`messages_handled_total{outcome="parked"}`. The payload is deliberately *not* in the log, so reading a
+parked body means peeking the queue. Depth itself is not a worker metric — it comes from the RabbitMQ
+exporter against the DLQ-depth SLI in §2, with the `> 0` warn / `> 10` or rising 15 min page thresholds
+from §3.
 
 ---
 

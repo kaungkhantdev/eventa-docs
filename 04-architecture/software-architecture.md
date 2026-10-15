@@ -163,7 +163,7 @@ never on its tables or repository. See the development guide §2 and Appendix A.
   `registration.waitlisted`, `feedback.requested`.
 - **Queues:** one per consumer concern (email, sms, calendar, read-model, search), bound to the keys
   they need — competing consumers scale horizontally.
-- **Reliability:** publisher confirms; manual acks; **dead-letter exchange** `eventa.dlx` with retry
+- **Reliability:** publisher confirms; manual acks; **dead-letter exchange** `eventa.events.dlx` with retry
   (backoff) and a parking queue for poison messages.
 
 ### 6.4 Interfaces & API contracts
