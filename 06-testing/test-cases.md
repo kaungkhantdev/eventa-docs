@@ -2024,10 +2024,10 @@ Locale defaults: currency ฿ (THB), VAT 7%, PromptPay, Asia/Bangkok, languages 
 - **Steps:**
   1. RSVP to the free event as a guest using somchai.k@example.com.
   2. On the confirmation screen, choose "Create account".
-  3. From the booker's browser, try every route to a password that starts from the booking: reload the order page, choose "Create account" again, and call the account-creation endpoints directly with the order's id and a password (including the old single-step request that took an order id and a password).
+  3. From the booker's browser, try every route to a password that starts from the booking: reload the order page, choose "Create account" again, and call the account-creation endpoints directly with the order's id and a password (including a single request that sends `POST /auth/register/from-booking` an order id and a password together).
   4. Try to sign in to the attendee portal as somchai.k@example.com with the password used in step 3.
   5. Ask the owner of somchai.k@example.com to check the inbox without opening the link.
-- **Expected result:** The booker is never shown a password field for somchai.k@example.com: the only result on screen is "We've sent a link to somchai.k@example.com…". No request made with the order's id creates an account or sets a password — the old order-id-and-password request no longer exists — and asking again only sends the owner another link (or is told to give it a minute). Sign-in fails, so the booker sees neither this booking nor the two earlier ones on any My Events page. The owner has received one email explaining that nothing is created unless the link is opened and a password chosen; while it is ignored, no account exists.
+- **Expected result:** The booker is never shown a password field for somchai.k@example.com: the only result on screen is "We've sent a link to somchai.k@example.com…". No request made with the order's id creates an account or sets a password — no endpoint accepts an order id and a password together — and asking again only sends the owner another link (or is told to give it a minute). Sign-in fails, so the booker sees neither this booking nor the two earlier ones on any My Events page. The owner has received one email explaining that nothing is created unless the link is opened and a password chosen; while it is ignored, no account exists.
 
 ### TC-DISC-29d — An expired, altered or already-used link is refused
 - **Traces:** US-DISC-15  ·  **Priority:** High  ·  **Type:** Negative
