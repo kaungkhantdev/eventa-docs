@@ -12,7 +12,7 @@ guide — one folder per stage.
 | 3 | UX / UI Design | [`03-ux-ui-design/`](03-ux-ui-design/) | Wireframes, mockups, design system, user flows | ✅ Documented (prototype = `../eventa-web`) |
 | 4 | Architecture | [`04-architecture/`](04-architecture/) | System & data architecture, ERD, API design | ✅ Architecture + data model |
 | 5 | Development | [`05-development/`](05-development/) | Coding standards, module breakdown, build notes | ✅ Dev guide (prototype in `../eventa-web`) |
-| 6 | Testing | [`06-testing/`](06-testing/) | Test plan, test cases, QA, traceability to FR-IDs | ✅ Plan + 342 cases designed |
+| 6 | Testing | [`06-testing/`](06-testing/) | Test plan, test cases, QA, traceability to FR-IDs | ✅ Plan + 345 cases designed |
 | 7 | Deployment | [`07-deployment/`](07-deployment/) | Release plan, environments, CI/CD, infra | ✅ DevOps: CI/CD + IaC + overview |
 | 8 | Maintenance | [`08-maintenance/`](08-maintenance/) | Monitoring, support, iteration, changelog | ✅ Observability / SRE / DevSecOps |
 
@@ -22,7 +22,7 @@ guide — one folder per stage.
 - **Stage 3** — `design-reference.md` (screen inventory, user flows & design-system index pointing at the `../eventa-web` prototype + `../eventa-ui-kit`).
 - **Stage 4** — `software-architecture.md` (baseline SAD: NestJS modular monolith + RabbitMQ event-driven consumers + transactional outbox, synchronous checkout, C4 views, 13 ADRs), `entities.md` (relational data dictionary, 57 tables), `erd.md` (crow's-foot ERD), `flowcharts/` (26 step-by-step user-journey flowcharts, checked against the code).
 - **Stage 5** — `development-guide.md` (monorepo layout, local setup, coding standards, build-a-feature playbook, Git workflow, DoD).
-- **Stage 6** — `test-plan.md` (7-step cycle: strategy, environment, defect process, closure), `test-cases.md` (342 test cases across 13 epics, traced to all 162 user stories).
+- **Stage 6** — `test-plan.md` (7-step cycle: strategy, environment, defect process, closure), `test-cases.md` (345 test cases across 13 epics, traced to all 162 user stories).
 - **Stage 7** — `devops-architecture.md` (DevOps overview: CALMS/Three Ways/DORA), `devops-ci-cd.md` (CI/CD & release, GitOps + canary), `devops-infrastructure.md` (Terraform/Helm/Argo CD, Kubernetes).
 - **Stage 8** — `devops-observability-sre.md` (observability, SLOs, incident mgmt, DevSecOps, DR).
 
