@@ -2000,7 +2000,7 @@ Locale defaults: currency ฿ (THB), VAT 7%, PromptPay, Asia/Bangkok, languages 
 - **Preconditions:** A guest (no account) has just confirmed a registration and is on the confirmation screen — the order page that the "You're registered!" recap and the confirmation email both link to. Their name, email and phone were captured during checkout. The tester can read that email inbox.
 - **Test data:** Buyer "Anong Pattana" / anong.p@example.com; one confirmed order with one QR ticket; password `Silom#2026` (8+ characters with a number and a symbol).
 - **Steps:**
-  1. Confirm the ticket and QR are shown on the recap, that the account offer is a link — the recap itself asks for no credential — and that the dismiss reads "Not now — your ticket is already in your email".
+  1. Confirm the ticket and QR are shown on the confirmation screen, that the account offer beside them asks for no credential, and that its dismiss reads "Not now — your ticket is already in your email".
   2. Choose "Create account".
   3. Read the on-screen message, then check the anong.p@example.com inbox.
   4. Open the link in the email.
