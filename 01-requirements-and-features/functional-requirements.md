@@ -903,7 +903,7 @@ _Notes: Card details are entered by the attendee into the secure payment provide
 
 **Acceptance criteria**
 - Given a valid selection and (for paid events) an approved payment, when I confirm, then my registration is placed once, I get one QR ticket per seat/ticket, and I see a "You're registered!" recap with links to view my tickets.
-- Given the recap, when it is shown, then I am also offered — but never required — to set a password and keep the ticket in an account (US-DISC-15).
+- Given the recap, when I follow it to my tickets, then I am also offered — but never required — to keep them in an account, through a one-time link emailed to the address I booked with; no password is asked for until that link is opened (US-DISC-15).
 - Given I never create an account, when I follow the link in my confirmation email, then I can still open and download my ticket: the link works without signing in.
 - Given my registration is confirmed, when it completes, then I receive a confirmation email containing my QR ticket(s), an order summary, a VAT receipt for paid orders, and a calendar invite; online events also include a join link.
 - Given I provided a mobile number and SMS is applicable, when I register, then I also get a confirmation text.
