@@ -170,7 +170,7 @@ From a backlog story to shipped, every time:
 - **Migration workflow** — the schema lives in TS (`src/db/schema`); `drizzle-kit` diffs it into **plain
   SQL** migration files (reviewed in the PR):
   - `pnpm drizzle-kit generate --name <change>` → emits `NNNN_<change>.sql` + a `meta/` snapshot.
-  - `pnpm drizzle-kit migrate` → applies pending migrations (tracked in `__drizzle_migrations`).
+  - `pnpm migrate` → applies pending migrations, each in its own transaction (tracked in drizzle's `__drizzle_migrations`). Not `drizzle-kit migrate`, which applies them all in one transaction and so cannot build a fresh database once a migration uses an enum value an earlier one added.
   - Non-diffable SQL (RLS **policies**, functions) goes in a **custom** migration:
     `drizzle-kit generate --custom --name enable_rls`, then hand-write `CREATE POLICY …`.
 - **Expand/contract** for zero-downtime: add columns/tables (expand) → deploy code that writes both →
