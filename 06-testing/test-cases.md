@@ -2038,7 +2038,7 @@ Locale defaults: currency ฿ (THB), VAT 7%, PromptPay, Asia/Bangkok, languages 
   3. Open the used link.
   4. On a sign-up page that was opened from the used link before the account was created, enter a new password and submit.
   5. Sign in as anong.p@example.com with `Silom#2026`.
-- **Expected result:** Steps 1–2 show "This link has expired or is no longer valid. Ask for a new one from your booking confirmation." with a link to the attendee sign-in; no name or email is shown and no password is asked for. Step 3 says the account already exists and offers "Sign in instead", with no password field. Step 4 is refused with "An account already uses this email. Sign in instead." — no second account is created and the existing password is not changed, so step 5 succeeds with the original password.
+- **Expected result:** Steps 1–2 show "This link has expired or is no longer valid. Ask for a new one from your booking confirmation." with a link to the attendee sign-in; no name or email is shown and no password is asked for. Step 3 opens "You already have an account" — "An account already uses anong.p@example.com. Sign in to see every booking in one place." — with "Sign in instead" and no password field. Step 4 creates nothing: the page checks the link again and switches to that same "You already have an account" screen with "Sign in instead". No second account is created and the existing password is not changed, so step 5 succeeds with the original password.
 
 ### TC-DISC-30 — Declining the account leaves the registration untouched
 - **Traces:** US-DISC-15  ·  **Priority:** High  ·  **Type:** Functional
