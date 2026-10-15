@@ -2080,7 +2080,7 @@ Locale defaults: currency ฿ (THB), VAT 7%, PromptPay, Asia/Bangkok, languages 
   3. Open My Events.
 - **Expected result:** All three registrations are listed, including the two made before the account existed — registrations are matched to the account by the email the order was placed with, which the emailed link has just proven.
 
-### TC-DISC-32 — An email that already has an account is offered sign-in, not a duplicate
+### TC-DISC-32 — An email that already has a confirmed account is offered sign-in, not a duplicate
 - **Traces:** US-DISC-15  ·  **Priority:** Medium  ·  **Type:** Negative
 - **Preconditions:** A confirmed attendee account (its confirmation email opened, so not Unconfirmed) already exists for the email used at checkout.
 - **Steps:**
