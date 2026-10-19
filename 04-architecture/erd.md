@@ -1340,8 +1340,8 @@ erDiagram
   written a whole row at a time, so every seat sharing a `row_label` on the map
   carries the same type; it is null on a row not yet typed. A seat sells only
   under its own row's type. On a map where any seat has a type, an untyped seat is
-  not on sale; a map with no typed seat at all (one laid out before rows had
-  types) still sells any seat under any of the event's types. On a seat-typed
+  not on sale; a map with no typed seat at all (on an event published before rows
+  had types) still sells any seat under any of the event's types. On a seat-typed
   event (reserved, with at least one typed seat) each type's `ticket_types.total`
   is the count of its seats, not a number the organizer types. The checkout hold
   that reserves a seat is drawn in *Platform & Infrastructure* (`seat_holds`,
@@ -2483,10 +2483,12 @@ labels and none of the columns it draws changed, so it needed nothing.
   `seat_holds.ticket_type_id`, as a GA quantity hold always did. Placing the
   order checks that the held seats are the priced seats and that each sells under
   the order's type, and answers 409 otherwise.
-- **Legacy untyped maps.** A map with no typed seat — laid out before rows had
-  types, or copied onto a duplicated event, which starts with untyped rows — still
-  sells any seat under any of the event's types, and its quantities stay typed by
-  hand. Once any seat on a map has a type, an untyped seat is not on sale.
+- **Legacy untyped maps.** A map with no typed seat on an event published before
+  rows had types still sells any seat under any of the event's types, and its
+  quantities stay typed by hand. A map copied onto a duplicated event also starts
+  with untyped rows and hand-typed quantities, but the copy is a draft that cannot
+  publish until every row has a type, so it never sells untyped. Once any seat on
+  a map has a type, an untyped seat is not on sale.
 - **Publishing and removal.** A reserved event publishes only when every row has a
   type and every live ticket type has at least one row. A published map whose rows
   are typed cannot have a row left untyped. A ticket type that still has rows
