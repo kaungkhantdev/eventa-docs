@@ -649,7 +649,7 @@ erDiagram
 
     TICKET_TYPES ||--o{ ORDER_ITEMS : "priced in"
     TICKET_TYPES ||--o{ TICKETS : "issued as"
-    TICKET_TYPES |o--o{ SEATS : "tiers"
+    TICKET_TYPES |o--o{ SEATS : "sells (row's ticket type)"
     DISCOUNT_CODES |o--o{ ORDERS : "applied to"
     DISCOUNT_CODES ||--o{ DISCOUNT_REDEMPTIONS : "redeemed as"
     ORDERS ||--o{ DISCOUNT_REDEMPTIONS : "redeems"
@@ -695,7 +695,7 @@ erDiagram
 
     EVENTS ||--o{ SEAT_HOLDS : "holds"
     ORDERS |o--o{ SEAT_HOLDS : "reserves"
-    TICKET_TYPES |o--o{ SEAT_HOLDS : "held for"
+    TICKET_TYPES |o--o{ SEAT_HOLDS : "held under"
     SEATS |o--o{ SEAT_HOLDS : "held as"
 ```
 
@@ -1167,13 +1167,19 @@ erDiagram
   same order a no-op, and drives the `used` counter. `discount_code_id` is
   `RESTRICT`, `order_id` is `CASCADE`. `events` and `orders` are defined in their
   own views.
+- `ticket_types.total` is the quantity the organizer sets, except on a reserved
+  event whose seat rows have ticket types: there it is the count of seats in the
+  type's rows, written by the seating save and not editable here (US-EVT-05). The
+  `seats` it counts are drawn in *Registration, Orders & Seating*; see
+  [Design notes → Seat rows sell one ticket type](#seat-row-ticket-types).
 
 ### Registration, Orders & Seating
 
 The commerce core: cross-organizer `saved_events`, the attendee CRM, the `orders`
 booking header, its `order_items` lines, the issued `tickets` (one per admitted
 seat, carrying the QR token), and the reserved-seating model (`seat_maps` →
-`seats` → `seat_assignments`).
+`seats` → `seat_assignments`), in which each whole seat row is sold under one of
+the event's ticket types.
 
 ![Registration, Orders & Seating](erd/orders.png)
 
@@ -1309,7 +1315,7 @@ erDiagram
     ATTENDEES |o--o{ TICKETS : "holds (attendee_id)"
     EVENTS ||--o| SEAT_MAPS : "seats"
     SEAT_MAPS ||--o{ SEATS : "holds"
-    TICKET_TYPES |o--o{ SEATS : "tiers (ticket_type_id)"
+    TICKET_TYPES |o--o{ SEATS : "sells whole rows (ticket_type_id)"
     SEATS ||--o{ SEAT_ASSIGNMENTS : "assigned in"
     TICKETS ||--o| SEAT_ASSIGNMENTS : "bound to"
 ```
@@ -1330,6 +1336,17 @@ erDiagram
   `seat_assignments` resolves the **seats ⇄ tickets** M:N with a partial unique
   `uq_seat_active (seat_id) WHERE released_at IS NULL` (one live holder per seat)
   and `UNIQUE (ticket_id)` (one seat per ticket).
+- **Each seat row sells one ticket type** (US-EVT-05). `seats.ticket_type_id` is
+  written a whole row at a time, so every seat sharing a `row_label` on the map
+  carries the same type; it is null on a row not yet typed. A seat sells only
+  under its own row's type. On a map where any seat has a type, an untyped seat is
+  not on sale; a map with no typed seat at all (one laid out before rows had
+  types) still sells any seat under any of the event's types. On a seat-typed
+  event (reserved, with at least one typed seat) each type's `ticket_types.total`
+  is the count of its seats, not a number the organizer types. The checkout hold
+  that reserves a seat is drawn in *Platform & Infrastructure* (`seat_holds`,
+  which records the type being bought). None of this needed a schema change; see
+  [Design notes → Seat rows sell one ticket type](#seat-row-ticket-types).
 - **Three staff attributions on one order.** Beyond `created_by` (who keyed the
   booking), `orders` carries `decided_by` for the approve/reject decision on an
   event with `requires_approval`, and `offered_by` for the organizer who offered a
@@ -2014,7 +2031,7 @@ erDiagram
     ORGANIZATIONS |o--o{ WEBHOOK_EVENTS : "receives"
     EVENTS ||--o{ SEAT_HOLDS : "holds"
     ORDERS |o--o{ SEAT_HOLDS : "reserves"
-    TICKET_TYPES |o--o{ SEAT_HOLDS : "held for"
+    TICKET_TYPES |o--o{ SEAT_HOLDS : "held under (ticket_type_id)"
     SEATS |o--o{ SEAT_HOLDS : "held as"
 ```
 
@@ -2030,6 +2047,15 @@ erDiagram
   `event_id`/`ticket_type_id`/`seat_id` are `CASCADE`; `order_id` is `SET NULL`
   (a hold may be cart-only). `events`, `orders`, `ticket_types`, `seats` are defined
   in their own views.
+- `seat_holds.ticket_type_id` is the ticket type the hold was taken under
+  (US-DISC-04). A GA quantity hold always carried it; a reserved-seat hold
+  (`seat_id` set, `quantity` 1) now writes it too, so the column is nullable in
+  the schema but filled by every hold the application writes today. Placing the
+  order is refused (409) unless the held seats are exactly the seats that were
+  priced and each one's row type (`seats.ticket_type_id`) is the order's type —
+  or, on a map with no typed seat, is null — so a buyer cannot hold a VIP seat and
+  pay the Normal price. See
+  [Design notes → Seat rows sell one ticket type](#seat-row-ticket-types).
 - `webhook_events` gives exactly-once processing via
   `UNIQUE (provider, provider_event_id)`; its nullable `organization_id` is the
   resolved tenant (`SET NULL`).
@@ -2156,6 +2182,21 @@ keys and are tabulated separately below.
 > realized by its junction table's two constituent foreign keys, which also appear
 > as their own numbered rows (e.g. 48+50 realize 90; 85+27 realize 96). The
 > `On delete` column lists the two junction-arm behaviors.
+
+> **Note on rows 61–62 — the seat row's ticket type.** Both foreign keys are
+> nullable, hence `|o--o{`, and neither row changed when seat rows gained ticket
+> types (US-EVT-05, US-DISC-04): the columns, their nullability and their
+> `ON DELETE` rules were already in the schema, and no migration was written.
+> What changed is what writes them. **Row 62** (`seats.ticket_type_id`, drawn
+> "sells (row's ticket type)") is written a whole row at a time by the reserved
+> seating save, so every seat of a row shares one type; null means an untyped
+> row. Its `SET NULL` is a backstop, not a path the product takes: removing a
+> ticket type that still has seat rows is refused (US-TKT-05), because letting the
+> foreign key fire would quietly untype a row of a published map. **Row 61**
+> (`seat_holds.ticket_type_id`, drawn "held under") records the type a hold was
+> taken under, now on reserved-seat holds as well as GA quantity holds. Its
+> `CASCADE` is unchanged: a hold is a short-lived reservation, not history. See
+> [Design notes → Seat rows sell one ticket type](#seat-row-ticket-types).
 
 > **Note on row 10 — one cardinality exception.** Row 10 carves out exceptions for
 > `ON DELETE` behaviour, but the tenant fan is not uniform in *cardinality*
@@ -2400,6 +2441,67 @@ the schema rather than a second copy of this diagram. It needs regenerating; tha
 is recorded in the [Master ERD](#master-erd) preamble so a reader comparing the two
 is not misled in the meantime.
 
+<a id="seat-row-ticket-types"></a>
+### Seat rows sell one ticket type
+
+On a reserved event the organizer gives each seat row one of the event's ticket
+types (Free, Normal, VIP, …), and a seat sells only as its row's type
+(US-EVT-05, US-DISC-04). **It needed no migration.** Every column it uses was
+already in the schema, re-read on 2026-10-19 from `information_schema.columns`
+and `pg_constraint`: `seats.ticket_type_id` (nullable, `SET NULL`, indexed by
+`ix_seats_ticket_type`), `seat_holds.ticket_type_id` (nullable, `CASCADE`) and
+`ticket_types.total` (`NOT NULL DEFAULT 0`, `CHECK sold BETWEEN 0 AND total`).
+The counts did not move: 57 tables, 129 enforced foreign keys. The diagrams
+changed only in what two edges say — `TICKET_TYPES |o--o{ SEATS` is now "sells
+(row's ticket type)" where it used to say "tiers", and
+`TICKET_TYPES |o--o{ SEAT_HOLDS` is "held under" where it said "held for" — plus
+the notes under the *Registration, Orders & Seating* and *Platform &
+Infrastructure* views and under rows 61–62 of the
+[Relationship matrix](#relationship-matrix). The three diagrams that draw those
+edges were re-rendered (`erd/full.png`, `erd/orders.png`, `erd/platform.png`).
+In `erd.tldr` the same labels were edited in place on the *Master ERD*,
+*Registration, Orders & Seating* and *Platform & Infrastructure* pages rather
+than regenerated, so the canvas still lacks the four entities recorded
+[above](#what-this-pass-changed). `erd/eventa-full.drawio` draws its edges without
+labels and none of the columns it draws changed, so it needed nothing.
+
+- **Whole rows.** The seating save (`PUT /events/:eventId/seating/reserved`)
+  takes `rowTicketTypes`, one ticket type id or `null` per row, and writes it to
+  every seat of that row. A row is not an entity: it is the seats of one map that
+  share a `row_label`. "One type per row" is therefore enforced by the only
+  writer, which writes whole rows, not by a constraint. A row with a booked or
+  held seat cannot change type.
+- **The quantity follows the seats.** On a *seat-typed* event — reserved, with at
+  least one typed seat — each type's `ticket_types.total` is the number of seats
+  carrying it, `0` for a type with no row. The seating save writes it in the same
+  transaction as the seats, and refuses a layout that would leave a type with
+  fewer seats than it has sold. Sending a different quantity for such a type is
+  refused (409). The locks are taken map, then ticket types, then seats, the same
+  ticket-types-before-seats order checkout uses, so a save and a sale do not
+  deadlock.
+- **Holds carry the type.** A reserved-seat hold now writes
+  `seat_holds.ticket_type_id`, as a GA quantity hold always did. Placing the
+  order checks that the held seats are the priced seats and that each sells under
+  the order's type, and answers 409 otherwise.
+- **Legacy untyped maps.** A map with no typed seat — laid out before rows had
+  types, or copied onto a duplicated event, which starts with untyped rows — still
+  sells any seat under any of the event's types, and its quantities stay typed by
+  hand. Once any seat on a map has a type, an untyped seat is not on sale.
+- **Publishing and removal.** A reserved event publishes only when every row has a
+  type and every live ticket type has at least one row. A published map whose rows
+  are typed cannot have a row left untyped. A ticket type that still has rows
+  cannot be removed, checked under the type's lock (US-TKT-05). That is why the
+  `SET NULL` on `seats.ticket_type_id` is a backstop rather than a path the product
+  takes.
+- **Read side.** The public event page's read-only seat map (each row and the
+  type it sells, on `GET /public/events/:slug`), now being added, reads the same
+  columns and adds no table.
+
+Two consequences belong to the data model rather than the flow, and are recorded
+under [Normalization (3NF)](#normalization-3nf): `ticket_types.total` is now a
+stored derived value on seat-typed events, and `seats.ticket_type_id` describes the
+row, not the seat.
+
 ### Renames the diagrams had missed
 
 Ten drawn columns existed under a different name. These were corrected in place —
@@ -2433,6 +2535,16 @@ kept for hot-path booking checks, with `CHECK` constraints
 One documented exception: `events.bucket` *is* a stored `event_bucket` column
 (`active`, `completed`), not a read-time derivation.
 
+Two more follow from seat rows selling one ticket type (see
+[Seat rows sell one ticket type](#seat-row-ticket-types)). On a seat-typed event
+`ticket_types.total` is a stored derived value — the count of `seats` carrying
+the type — kept, like `sold`, because the booking check reads it on the hot path;
+it is written in the same transaction as the seats it counts, so the two cannot
+disagree. And `seats.ticket_type_id` depends on the seat's row
+(`seat_map_id`, `row_label`), not on the seat, so the row's type is repeated on
+each of its seats. There is no row table to hold it once, and the only writer
+writes a whole row at a time, which keeps the copies equal.
+
 **Multi-tenancy via `organization_id`.** 50 of 57 tables carry
 `organization_id … REFERENCES organizations(id)` (NOT NULL except the inbound
 `webhook_events` log, whose tenant is resolved after signature verification), and
@@ -2459,7 +2571,8 @@ monthly `tax_periods`.
 **Reserved-seating model.** When `events.seating_mode = reserved`, a single
 `seat_maps` row (1:1, `UNIQUE (event_id)`) holds the geometry; individual `seats`
 carry a `seat_status` lifecycle (`available → held → reserved → sold`/`blocked`)
-and an optional tier (`ticket_type_id`). Binding an issued ticket to a physical
+and the ticket type their row sells (`ticket_type_id`, the same on every seat of a
+row, null on an untyped row). Binding an issued ticket to a physical
 seat is the `seat_assignments` junction, whose partial unique index
 `uq_seat_active (seat_id) WHERE released_at IS NULL` guarantees at most one *live*
 holder per seat while preserving historical assignments (a released seat can be
