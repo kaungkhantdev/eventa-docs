@@ -5,7 +5,7 @@
 | **Author** | QA Engineer |
 | **Version** | 1.0 · 2026-07-23 |
 | **Companion** | [test-plan.md](test-plan.md) |
-| **Scope** | 351 test cases across 13 epics, tracing to the 162 user stories in the [product backlog](../01-requirements-and-features/functional-requirements.md) |
+| **Scope** | 352 test cases across 13 epics, tracing to the 162 user stories in the [product backlog](../01-requirements-and-features/functional-requirements.md) |
 
 > Each test case is derived from a user story's Given/When/Then acceptance criteria, and lists its traceability (`US-*`), priority, type, preconditions, test data, steps, and expected result. Priority defaults from MoSCoW (Must→High, Should→Medium, Could→Low). See [test-plan.md](test-plan.md) for strategy, environment, defect process, and closure.
 
@@ -16,7 +16,7 @@
 | 1 | [Accounts & Sign-in](#tc-e01) | 12 | 24 | 19 | 5 | 0 |
 | 2 | [Configure the Workspace & Team](#tc-e02) | 13 | 29 | 16 | 11 | 2 |
 | 3 | [Create & Manage Events](#tc-e03) | 15 | 38 | 23 | 13 | 2 |
-| 4 | [Public Event Pages](#tc-e04) | 10 | 21 | 11 | 9 | 1 |
+| 4 | [Public Event Pages](#tc-e04) | 10 | 22 | 12 | 9 | 1 |
 | 5 | [Sell Tickets & Run Promotions](#tc-e05) | 12 | 25 | 9 | 13 | 3 |
 | 6 | [Discover & Register for Events](#tc-e06) | 15 | 42 | 31 | 9 | 2 |
 | 7 | [Communicate with Attendees](#tc-e07) | 10 | 20 | 3 | 13 | 4 |
@@ -26,7 +26,7 @@
 | 11 | [Organizer Home & Dashboard](#tc-e11) | 13 | 25 | 14 | 9 | 2 |
 | 12 | [Coordinate Meetings](#tc-e12) | 9 | 21 | 8 | 11 | 2 |
 | 13 | [Measure Performance (Reports)](#tc-e13) | 12 | 25 | 10 | 13 | 2 |
-| | **Total** | **162** | **351** | **195** | **135** | **21** |
+| | **Total** | **162** | **352** | **196** | **135** | **21** |
 
 ---
 
@@ -1253,6 +1253,20 @@ Epic E4 — Public Event Pages. Area code: PAGE. Locale context: Thai market, �
   1. Open event (A) and inspect every tier's Register button and any page-level message.
   2. Open event (B) and inspect the low-seat tier for an urgency line.
 - **Expected result:** For (A), all tier buttons are disabled and a "registration is closed" message is shown. For (B), an urgency line such as "Going fast — only 3 left" is displayed on the low-seat tier. (AC: registration closed → all buttons disabled + closed message; very few seats → urgency line.)
+
+### TC-PAGE-11b — A reserved event's page shows which rows each ticket sells; other events show no seat map
+- **Traces:** US-PAGE-05  ·  **Priority:** High  ·  **Type:** Functional
+- **Preconditions:** (A) A published in-person event with Reserved seating, 7 rows × 16 seats, whose rows were given ticket types in Seating; no seat in row 6 is booked or held. (B) A published general-admission event. (C) A published online event. (D) A reserved event published before rows carried ticket types (no seat has one). Tester is a guest; the organizer of (A) is signed in on a second browser.
+- **Test data:** (A) "Bangkok Symphony Night" — rows 1–2 VIP ฿2,500, rows 3–6 Normal ฿890, row 7 Free; then row 6 moved from Normal to VIP.
+- **Steps:**
+  1. Open (A) at `/e/<slug>` and scroll to the Tickets section; read each ticket card, the seat map below the cards and its legend.
+  2. Check the seat map's accessible name with a screen reader or the accessibility inspector.
+  3. Narrow the window to phone width (375 px) and look at the seat map again.
+  4. Open (A) in each of the four designs from the template preview (`/landing/<template>?event=<slug>`).
+  5. As the organizer, give row 6 to VIP in Seating and save; as the guest, reload (A).
+  6. Open (B), (C) and (D) and look for a seat map and for a rows line on each ticket.
+  7. Read the `GET /public/events/:slug` response for (A) and for (B).
+- **Expected result:** Step 1: the cards run cheapest first — Free says "Row 7", Normal "Rows 3–6" and VIP "Rows 1–2". The seat map shows a stage labelled "Stage" and seven rows of 16 seats numbered 1–7, each row in its ticket type's colour (the same palette as the organizer's Seating preview); the legend lists the types in the same order as the ticket cards, cheapest first — "Free · Row 7 · 16 seats", "Normal · Rows 3–6 · 64 seats", "VIP · Rows 1–2 · 32 seats". No seat is shown as sold, held or available — the map shows the split, not availability. Step 2: the accessible name summarises the split (e.g. "Seat map: Free row 7, Normal rows 3–6, VIP rows 1–2"). Step 3: the seat map stays readable inside its own block — seats shrink or the block scrolls sideways — and the page itself never scrolls sideways. Step 4: every design shows the same rows lines, seat map and legend in its own styling. Step 5: with no re-publish, the reload shows Normal "Rows 3–5" and VIP "Rows 1–2, 6", the legend reading "Normal · Rows 3–5 · 48 seats" and "VIP · Rows 1–2, 6 · 48 seats", with row 6 now in VIP's colour. Step 6: (B), (C) and (D) show no seat map, and none of their tickets names any rows. Step 7: (A)'s response carries `seatMap` with `seatsPerRow` 16 and seven `rows` in order, labels "1"–"7", each `ticketTypeId` matching that ticket's `tickets[].id`, and nothing else about seats — no status, holds or sold counts; (B)'s `seatMap` is `null`. (AC: seat rows with ticket types → seat map coloured by type, legend with rows and seat count, rows line on each ticket; GA, online or untyped reserved → no seat map.)
 
 ---
 
