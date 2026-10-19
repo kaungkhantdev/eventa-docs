@@ -5,7 +5,7 @@
 | **Author** | QA Engineer |
 | **Version** | 1.0 · 2026-07-23 |
 | **Companion** | [test-plan.md](test-plan.md) |
-| **Scope** | 345 test cases across 13 epics, tracing to the 162 user stories in the [product backlog](../01-requirements-and-features/functional-requirements.md) |
+| **Scope** | 351 test cases across 13 epics, tracing to the 162 user stories in the [product backlog](../01-requirements-and-features/functional-requirements.md) |
 
 > Each test case is derived from a user story's Given/When/Then acceptance criteria, and lists its traceability (`US-*`), priority, type, preconditions, test data, steps, and expected result. Priority defaults from MoSCoW (Must→High, Should→Medium, Could→Low). See [test-plan.md](test-plan.md) for strategy, environment, defect process, and closure.
 
@@ -15,10 +15,10 @@
 |---|------|:---:|:---:|:---:|:---:|:---:|
 | 1 | [Accounts & Sign-in](#tc-e01) | 12 | 24 | 19 | 5 | 0 |
 | 2 | [Configure the Workspace & Team](#tc-e02) | 13 | 29 | 16 | 11 | 2 |
-| 3 | [Create & Manage Events](#tc-e03) | 15 | 35 | 20 | 13 | 2 |
+| 3 | [Create & Manage Events](#tc-e03) | 15 | 38 | 23 | 13 | 2 |
 | 4 | [Public Event Pages](#tc-e04) | 10 | 21 | 11 | 9 | 1 |
-| 5 | [Sell Tickets & Run Promotions](#tc-e05) | 12 | 24 | 9 | 12 | 3 |
-| 6 | [Discover & Register for Events](#tc-e06) | 15 | 40 | 29 | 9 | 2 |
+| 5 | [Sell Tickets & Run Promotions](#tc-e05) | 12 | 25 | 9 | 13 | 3 |
+| 6 | [Discover & Register for Events](#tc-e06) | 15 | 42 | 31 | 9 | 2 |
 | 7 | [Communicate with Attendees](#tc-e07) | 10 | 20 | 3 | 13 | 4 |
 | 8 | [Manage Registrations & Admit Attendees](#tc-e08) | 14 | 30 | 17 | 13 | 0 |
 | 9 | [Get Paid & Manage Finances](#tc-e09) | 14 | 27 | 20 | 7 | 0 |
@@ -26,7 +26,7 @@
 | 11 | [Organizer Home & Dashboard](#tc-e11) | 13 | 25 | 14 | 9 | 2 |
 | 12 | [Coordinate Meetings](#tc-e12) | 9 | 21 | 8 | 11 | 2 |
 | 13 | [Measure Performance (Reports)](#tc-e13) | 12 | 25 | 10 | 13 | 2 |
-| | **Total** | **162** | **345** | **190** | **134** | **21** |
+| | **Total** | **162** | **351** | **195** | **135** | **21** |
 
 ---
 
@@ -816,14 +816,39 @@ Epic E3 · Area code: EVT · Locale: Thai market (฿, VAT 7%, PromptPay, Asia/B
   3. Switch to General admission and set headcount 150.
 - **Expected result:** Reserved shows a live seat-map preview with total = 200 (rows × seats/row). General admission simply captures a headcount (150) with no specific seat assignment.
 
-### TC-EVT-13 — Seat map smaller than ticket quantities warns on publish; Online offers no seating
-- **Traces:** US-EVT-05  ·  **Priority:** Medium  ·  **Type:** Edge
-- **Preconditions:** Two events available: (a) in-person Reserved with 100 seats but total ticket quantities of 150; (b) an Online event.
-- **Test data:** (a) Reserved 5×20 = 100 seats, tickets summing to 150; (b) Online event.
+### TC-EVT-12b — Whole rows are given ticket types and each type's quantity is its seat count
+- **Traces:** US-EVT-05  ·  **Priority:** High  ·  **Type:** Functional
+- **Preconditions:** In-person draft event with Reserved seating; ticket types VIP ฿2,500, Normal ฿890 and Free ฿0 already added on the Tickets step; nothing sold.
+- **Test data:** 7 rows × 16 seats/row (112 seats); rows 1–2 VIP, rows 3–6 Normal, row 7 Free; then row 6 moved from Normal to VIP.
 - **Steps:**
-  1. On event (a) proceed to publish.
-  2. On event (b) open the Seating step.
-- **Expected result:** Event (a) shows a warning that the seat map (100) is smaller than the ticket quantities (150). Event (b) offers no seating options and tells the user a join link is emailed after registration.
+  1. Open the Seating step and check the "Ticket types by row" list: one select per row, labelled Row 1 … Row 7, each offering VIP, Normal, Free and "No ticket type".
+  2. Give rows 1–2 VIP, rows 3–6 Normal and row 7 Free; save.
+  3. Read the preview and its legend, then open the Tickets step.
+  4. Back on Seating, change row 6 to VIP; save; reopen the Tickets step.
+  5. Send `PATCH /events/:eventId/tickets/:ticketId` for Normal with `total` 100; then send it again with Normal's current quantity and a new description.
+- **Expected result:** The preview numbers its rows 1–7 (no letters) and colours each row by its ticket type; the legend reads VIP 32 · Normal 64 · Free 16 seats. The Tickets step shows quantities 32, 64 and 16, read-only and marked "Set by the seat map". After row 6 moves, VIP shows 48, Normal 48 and Free 16 — always adding up to the 112 seats. The `PATCH` with 100 is refused (409) with "This event's ticket quantities come from its seat map. Give rows to a ticket type instead." and Normal stays at 48; the `PATCH` that repeats 48 is accepted and saves the new description.
+
+### TC-EVT-13 — Rows without a ticket type stay neutral; no ticket types yet points to Tickets; Online offers no seating
+- **Traces:** US-EVT-05  ·  **Priority:** Medium  ·  **Type:** Edge
+- **Preconditions:** Two events available: (a) a new in-person draft being built in the wizard, with Reserved seating and no ticket types yet; (b) an Online event.
+- **Test data:** (a) Reserved 5 rows × 20 seats (100 seats); ticket types VIP and Normal added later; rows 1–2 VIP, rows 3–4 Normal, row 5 left on "No ticket type"; (b) Online event.
+- **Steps:**
+  1. On event (a) open the Seating step before any ticket type exists.
+  2. Add VIP and Normal on the Tickets step, return to Seating, give rows 1–2 VIP and rows 3–4 Normal, leave row 5 on "No ticket type", and save.
+  3. Read the preview and legend; open the Tickets step, then the Review & publish checklist.
+  4. On event (b) open the Seating step.
+- **Expected result:** Step 1: the rows have no ticket types to choose and the step says "Add your ticket types in the Tickets step, then come back here to give each row a type." Step 3: rows 1–2 and 3–4 take their types' colours and row 5 stays a neutral colour; the legend reads VIP 40 · Normal 40 seats, and the Tickets step shows 40 and 40, read-only. No warning compares the seat map with ticket quantities anywhere — the two can no longer disagree; the only thing flagged is row 5, through the checklist's "Every seat row has a ticket type" (publishing itself is TC-EVT-13b). Event (b) offers no seating options and tells the user a join link is emailed after registration.
+
+### TC-EVT-13b — Publishing waits until every row has a ticket type and every ticket type has a row
+- **Traces:** US-EVT-05  ·  **Priority:** High  ·  **Type:** Negative
+- **Preconditions:** A complete in-person draft (title, description, venue) with Reserved seating 7 rows × 16 and ticket types VIP, Normal and Free; user has publish rights. A second draft whose reserved map was laid out before rows carried ticket types (no seat has one).
+- **Test data:** Run A: rows 1–2 VIP, rows 3–6 Normal, row 7 "No ticket type". Run B: rows 1–2 VIP, rows 3–7 Normal, so Free has no rows. Run C: rows 1–2 VIP, rows 3–6 Normal, row 7 Free.
+- **Steps:**
+  1. Save Run A's rows, open Review & publish, read the checklist and click Publish.
+  2. Save Run B's rows and click Publish.
+  3. Save Run C's rows and click Publish.
+  4. Click Publish on the second draft without opening its Seating step.
+- **Expected result:** Run A: the checklist shows "Every seat row has a ticket type" as not done, and publishing is refused (422) with "Give every seat row a ticket type before publishing."; the event stays a draft. Run B: refused with "Free has no seat rows. Give it a row or remove it."; still a draft. Run C: the event publishes. The second draft is refused like Run A — a map laid out before rows had types counts as rows without a type — and publishes only once every row has been given one.
 
 ### TC-EVT-14 — Reducing rows/seats on a published reserved event never removes sold seats
 - **Traces:** US-EVT-05  ·  **Priority:** High  ·  **Type:** Negative
@@ -833,6 +858,17 @@ Epic E3 · Area code: EVT · Locale: Thai market (฿, VAT 7%, PromptPay, Asia/B
   1. Edit seating and reduce rows from 6 to 4 (which would drop row 5).
   2. Save.
 - **Expected result:** Seats already sold are never removed; the reduction cannot strip out sold seats (either blocked or those seats retained).
+
+### TC-EVT-14b — A row with booked or held seats keeps its ticket type
+- **Traces:** US-EVT-05  ·  **Priority:** High  ·  **Type:** Negative
+- **Preconditions:** Published reserved event 7 rows × 16 with rows 1–2 VIP, rows 3–6 Normal, row 7 Free. In row 3, seats 1 and 2 are booked on a confirmed order; in row 4, seat 8 is held in an attendee's checkout that has not expired; rows 5 and 6 have no bookings or holds.
+- **Test data:** Change row 3 to VIP; change row 4 to VIP; change row 5 to VIP.
+- **Steps:**
+  1. In Seating, change row 3 to VIP and save.
+  2. Change row 4 to VIP and save.
+  3. Change row 5 to VIP and save.
+  4. Let the row-4 hold expire, then change row 4 to VIP again and save.
+- **Expected result:** Step 1 is refused (409) with "Row 3 has booked or held seats, so its ticket type can't change."; nothing is saved and every quantity is unchanged. Step 2 is refused the same way, naming row 4. Step 3 is accepted: VIP becomes 48 and Normal 48. Step 4 is accepted once no seat in row 4 is booked or held: VIP becomes 64 and Normal 32. The booked seats in row 3 still belong to Normal throughout.
 
 ---
 
@@ -1490,6 +1526,17 @@ Locale: Thai market — ฿ (whole baht), 7% VAT recalculated at checkout, Promp
   1. Attempt to delete the ticket while a checkout is in progress.
 - **Expected result:** Deletion is blocked with a message to pause it and try again shortly.
 
+### TC-TKT-13b — A ticket type that still has seat rows can't be deleted or retired
+- **Traces:** US-TKT-05  ·  **Priority:** Medium  ·  **Type:** Negative
+- **Preconditions:** Published reserved event 7 rows × 16 with rows 1–2 VIP, rows 3–6 Normal, row 7 Free. Free has never sold; VIP has sold 10 seats; no checkout is in progress.
+- **Test data:** Delete Free; delete VIP; move row 7 to Normal; delete Free again.
+- **Steps:**
+  1. On the Tickets screen, delete Free and confirm.
+  2. Delete VIP and confirm.
+  3. In Seating, give row 7 to Normal and save.
+  4. Delete Free again and confirm.
+- **Expected result:** Step 1 is refused (409) with "Free still has seat rows. Give them to another ticket type first."; Free stays on sale with its 16 seats. Step 2 is refused the same way for VIP — it is neither deleted nor retired, and its 10 holders are untouched. Step 3 leaves Free with no rows: Free shows 0 and Normal 80. Step 4 removes Free completely, because it never sold.
+
 ---
 
 ## US-TKT-06 — Share a ticket's registration link and QR
@@ -1731,6 +1778,18 @@ Locale defaults: currency ฿ (THB), VAT 7%, PromptPay, Asia/Bangkok, languages 
   5. Enter guest name, email, and mobile number; place the order without opting into an account.
 - **Expected result:** Checkout shows the event summary and a single-choice ticket type in ฿. Chosen seats are held for the attendee during checkout; already-taken seats cannot be selected. The order summary and sticky action bar update live with subtotal (฿1,780), service fee (฿100), and total (฿1,880). Guest fields are captured, and after placing the order no account is silently created for the guest.
 
+### TC-DISC-07b — Other ticket types' seats are greyed out and dropped on a type switch
+- **Traces:** US-DISC-04  ·  **Priority:** High  ·  **Type:** Functional
+- **Preconditions:** Published reserved event, 12 rows × 10 seats, with rows 1–2 VIP ฿2,500 and rows 3–12 Normal ฿890; nothing sold or held. Attendee is a guest.
+- **Test data:** VIP seats row 1 seats 5 and 6; Normal seats row 3 seats 5 and 6.
+- **Steps:**
+  1. Open checkout and choose VIP.
+  2. Read the seat map's row order and legend; try to select a seat in row 3 and one in row 12.
+  3. Select row 1 seats 5 and 6.
+  4. Switch the ticket type to Normal.
+  5. Select row 3 seats 5 and 6.
+- **Expected result:** Rows are listed 1, 2, 3 … 9, 10, 11, 12 (numeric, never 1, 10, 11, 12, 2). With VIP chosen, rows 3–12 are shown but disabled and styled as "Other ticket type", which the legend lists; clicking them selects nothing. Row 1 seats 5 and 6 are picked and the summary shows a ฿5,000 subtotal. Switching to Normal drops both VIP seats from the pick and the summary; rows 1–2 become "Other ticket type" and rows 3–12 selectable. Row 3 seats 5 and 6 are picked with a ฿1,780 subtotal.
+
 ### TC-DISC-08 — Quantity boundaries (1–8) and free-event fee/payment skip
 - **Traces:** US-DISC-04  ·  **Priority:** High  ·  **Type:** Edge
 - **Preconditions:** A general-admission or online event for quantity selection; a separate free event.
@@ -1751,6 +1810,17 @@ Locale defaults: currency ฿ (THB), VAT 7%, PromptPay, Asia/Bangkok, languages 
   2. Wait until the seat hold expires (or have another buyer take A14) before confirming.
   3. Attempt to continue/confirm.
 - **Expected result:** The attendee is told the seat/hold is no longer available and is asked to re-select. No charge is made for the lapsed selection, and the released seat becomes available again.
+
+### TC-DISC-09b — A held seat of another ticket type can't be paid for at this type's price
+- **Traces:** US-DISC-04  ·  **Priority:** High  ·  **Type:** Negative
+- **Preconditions:** The event from TC-DISC-07b (rows 1–2 VIP ฿2,500, rows 3–12 Normal ฿890); an API client that can send the public checkout requests directly.
+- **Test data:** VIP seat row 1 seat 5; Normal seat row 3 seat 5; buyer email anong.p@example.com.
+- **Steps:**
+  1. Send `POST /public/checkout/hold` for Normal naming the VIP seat (row 1 seat 5).
+  2. Hold row 1 seat 5 for VIP through `POST /public/checkout/hold`; note the hold id.
+  3. Send `POST /public/checkout/confirm` for Normal, naming the Normal seat (row 3 seat 5) but carrying the VIP hold id from step 2.
+  4. Look for an order, a payment and a ticket for this buyer, and check row 1 seat 5 on the seat map once the hold has lapsed.
+- **Expected result:** Step 1 is refused (422) with "Those seats belong to a different ticket type. Please choose again."; nothing is held. Step 3 is refused (409) with "Your seats changed. Please choose again." No order, payment or ticket exists for the buyer, row 1 seat 5 is never sold at the Normal price, and it is free again once its hold lapses.
 
 ---
 
