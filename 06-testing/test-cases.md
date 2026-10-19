@@ -713,13 +713,14 @@ Epic E3 · Area code: EVT · Locale: Thai market (฿, VAT 7%, PromptPay, Asia/B
 ### TC-EVT-04 — Wizard progress, live summary, and Save as draft resume
 - **Traces:** US-EVT-02  ·  **Priority:** High  ·  **Type:** Functional
 - **Preconditions:** Signed in as Event Organizer with create rights.
-- **Test data:** Name "TechConf BKK 2026"; one ticket type "Early Bird ฿890 × 100"; General admission capacity 100.
+- **Test data:** Name "TechConf BKK 2026", in person; one ticket type "Early Bird ฿890 × 100"; General admission capacity 100.
 - **Steps:**
-  1. Start a new event; confirm the wizard shows a progress indicator and step rail (Basics, Date & location, Seating, Tickets, Review & publish).
-  2. Enter the name and a ticket type; watch the live summary panel.
-  3. On any step, click "Save as draft".
-  4. Leave the wizard, then open the events list and reopen the event.
-- **Expected result:** Wizard shows progress + step rail and a live summary reflecting name, ticket types, capacity and seating as entered. "Save as draft" stores the event as a Draft that appears in the events list; reopening restores the entered data so work resumes.
+  1. Start a new in-person event; confirm the wizard shows a progress indicator and a step rail, and read the steps on the rail.
+  2. On the Seating step choose Reserved and read the rail and the progress again; then choose General admission and read them once more.
+  3. Enter the name and a ticket type; watch the live summary panel.
+  4. On any step, click "Save as draft".
+  5. Leave the wizard, then open the events list and reopen the event.
+- **Expected result:** Wizard shows progress + step rail and a live summary reflecting name, ticket types, capacity and seating as entered. With General admission (or an online event) the rail has five steps — Basics, Date & location, Seating, Tickets, Review & publish; choosing Reserved on the in-person event adds Assign seats between Tickets and Review & publish, making six, and the progress is measured against the six; switching back to General admission removes Assign seats again. "Save as draft" stores the event as a Draft that appears in the events list; reopening restores the entered data so work resumes.
 
 ### TC-EVT-05 — Leaving with unsaved changes prompts to save as draft; autosave preserves interrupted work
 - **Traces:** US-EVT-02  ·  **Priority:** Medium  ·  **Type:** Negative
@@ -818,26 +819,26 @@ Epic E3 · Area code: EVT · Locale: Thai market (฿, VAT 7%, PromptPay, Asia/B
 
 ### TC-EVT-12b — Whole rows are given ticket types and each type's quantity is its seat count
 - **Traces:** US-EVT-05  ·  **Priority:** High  ·  **Type:** Functional
-- **Preconditions:** In-person draft event with Reserved seating; ticket types VIP ฿2,500, Normal ฿890 and Free ฿0 already added on the Tickets step; nothing sold.
+- **Preconditions:** In-person draft event with Reserved seating; ticket types VIP ฿2,500, Normal ฿890 and Free ฿0 already added and saved on the Tickets step; nothing sold.
 - **Test data:** 7 rows × 16 seats/row (112 seats); rows 1–2 VIP, rows 3–6 Normal, row 7 Free; then row 6 moved from Normal to VIP.
 - **Steps:**
-  1. Open the Seating step and check the "Ticket types by row" list: one select per row, labelled Row 1 … Row 7, each offering VIP, Normal, Free and "No ticket type".
+  1. Open the Assign seats step and check the "Ticket types by row" list: one select per row, labelled Row 1 … Row 7, each offering VIP, Normal, Free and "No ticket type".
   2. Give rows 1–2 VIP, rows 3–6 Normal and row 7 Free; save.
-  3. Read the preview and its legend, then open the Tickets step.
-  4. Back on Seating, change row 6 to VIP; save; reopen the Tickets step.
+  3. Read the preview and its legend, then go back to the Tickets step, try to type in a Quantity box, and save the step.
+  4. Go on to Assign seats and change row 6 to VIP; press Back to the Tickets step without saving and read the quantities; then return to Assign seats, save, and reopen the Tickets step.
   5. Send `PATCH /events/:eventId/tickets/:ticketId` for Normal with `total` 100; then send it again with Normal's current quantity and a per-order limit of 6.
-- **Expected result:** The preview numbers its rows 1–7 (no letters) and colours each row by its ticket type; the legend reads "VIP · 32 seats", "Normal · 64 seats" and "Free · 16 seats". The Tickets step shows quantities 32, 64 and 16, read-only and marked "Set by the seat map". After row 6 moves, VIP shows 48, Normal 48 and Free 16 — always adding up to the 112 seats. The `PATCH` with 100 is refused (409) with "This event's ticket quantities come from its seat map. Give rows to a ticket type instead." and Normal stays at 48; the `PATCH` that repeats 48 is accepted and saves the new per-order limit.
+- **Expected result:** The preview numbers its rows 1–7 (no letters) and colours each row by its ticket type; the legend reads "VIP · 32 seats", "Normal · 64 seats" and "Free · 16 seats". The Tickets step shows quantities 32, 64 and 16, read-only and marked "Set by the seat map" — no number can be typed — with "Each type's quantity is the seats in its rows — give rows a type in the next step, Assign seats." below the list; saving the step sends no `total` for any ticket type and leaves all three quantities as they were. Once row 6 moves, the Tickets step shows VIP 48, Normal 48 and Free 16 straight away, before the row is saved, and the same after the save — always adding up to the 112 seats. The `PATCH` with 100 is refused (409) with "This event's ticket quantities come from its seat map. Give rows to a ticket type instead." and Normal stays at 48; the `PATCH` that repeats 48 is accepted and saves the new per-order limit.
 
 ### TC-EVT-13 — Rows without a ticket type stay neutral; no ticket types yet points to Tickets; Online offers no seating
 - **Traces:** US-EVT-05  ·  **Priority:** Medium  ·  **Type:** Edge
 - **Preconditions:** Two events available: (a) a new in-person draft being built in the wizard, with Reserved seating and no ticket types yet; (b) an Online event.
 - **Test data:** (a) Reserved 5 rows × 20 seats (100 seats); ticket types VIP and Normal added later; rows 1–2 VIP, rows 3–4 Normal, row 5 left on "No ticket type"; (b) Online event.
 - **Steps:**
-  1. On event (a) open the Seating step before any ticket type exists.
-  2. Add VIP and Normal on the Tickets step, return to Seating, give rows 1–2 VIP and rows 3–4 Normal, leave row 5 on "No ticket type", and save.
-  3. Read the preview and legend; open the Tickets step, then the Review & publish checklist.
-  4. On event (b) open the Seating step.
-- **Expected result:** Step 1: the rows have no ticket types to choose and the step says "Add your ticket types in the Tickets step, then come back here to give each row a type." Step 3: rows 1–2 and 3–4 take their types' colours and row 5 stays a neutral colour; the legend reads "VIP · 40 seats", "Normal · 40 seats" and "No ticket type · 20 seats", and the Tickets step shows 40 and 40, read-only. No warning compares the seat map with ticket quantities anywhere — the two can no longer disagree; the only thing flagged is row 5, through the checklist's "Every seat row has a ticket type" (publishing itself is TC-EVT-13b). Event (b) offers no seating options and tells the user a join link is emailed after registration.
+  1. On event (a), before any ticket type exists, read the Seating step; then open Assign seats from the step rail and press "Go to Tickets".
+  2. Add VIP and Normal on the Tickets step and read their Quantity before and after saving the step; go on to Assign seats, give rows 1–2 VIP and rows 3–4 Normal, leave row 5 on "No ticket type", and save.
+  3. Read the preview and legend; go back to the Tickets step, then open the Review & publish checklist.
+  4. On event (b) open the Seating step and read the step rail.
+- **Expected result:** Step 1: the Seating step shows the rows, seats per row, total and preview but no row selects, and says "After Tickets, give each row a ticket type in Assign seats." under the preview; Assign seats has no rows to give a type and says "Add your ticket types in the Tickets step first, then give each row one here.", and "Go to Tickets" opens the Tickets step. Step 2: VIP's and Normal's quantities are read-only, marked "Set by the seat map", and show 0 both before and after the save, since no row has a type yet. Step 3: rows 1–2 and 3–4 take their types' colours and row 5 stays a neutral colour; the legend reads "VIP · 40 seats", "Normal · 40 seats" and "No ticket type · 20 seats", and the Tickets step shows 40 and 40, read-only. No warning compares the seat map with ticket quantities anywhere — the two can no longer disagree; the only thing flagged is row 5, through the checklist's "Every seat row has a ticket type" (publishing itself is TC-EVT-13b). Event (b) offers no seating options, tells the user a join link is emailed after registration, and has no Assign seats step on its rail.
 
 ### TC-EVT-13b — Publishing waits until every row has a ticket type and every ticket type has a row
 - **Traces:** US-EVT-05  ·  **Priority:** High  ·  **Type:** Negative
@@ -847,7 +848,7 @@ Epic E3 · Area code: EVT · Locale: Thai market (฿, VAT 7%, PromptPay, Asia/B
   1. Save Run A's rows, open Review & publish and read the checklist and the Publish button; then send `POST /events/:id/publish` for the draft directly.
   2. Save Run B's rows and click Publish.
   3. Save Run C's rows and click Publish.
-  4. Open the second draft's Review & publish step without opening its Seating step; then send `POST /events/:id/publish` for it directly.
+  4. Open the second draft's Review & publish step without opening its Assign seats step; then send `POST /events/:id/publish` for it directly.
 - **Expected result:** Run A: the checklist shows "Every seat row has a ticket type" as not done and the Publish button stays disabled; the direct request is refused (422) with "Give every seat row a ticket type before publishing." and the event stays a draft. Run B: the checklist has nothing left to flag, so Publish can be clicked, and the refusal (422) "Free has no seat rows. Give it a row or remove it." shows in the page's error banner; still a draft. Run C: the event publishes. The second draft is treated like Run A — its checklist flags the rows, Publish stays disabled and the direct request is refused with the same sentence, because a map laid out before rows had types counts as rows without a type — and it publishes only once every row has been given one.
 
 ### TC-EVT-14 — Reducing rows/seats on a published reserved event never removes sold seats
@@ -864,7 +865,7 @@ Epic E3 · Area code: EVT · Locale: Thai market (฿, VAT 7%, PromptPay, Asia/B
 - **Preconditions:** Published reserved event 7 rows × 16 with rows 1–2 VIP, rows 3–6 Normal, row 7 Free. In row 3, seats 1 and 2 are booked on a confirmed order; in row 4, seat 8 is held in an attendee's checkout that has not expired; rows 5 and 6 have no bookings or holds.
 - **Test data:** Change row 3 to VIP; change row 4 to VIP; change row 5 to VIP.
 - **Steps:**
-  1. In Seating, change row 3 to VIP and save.
+  1. On the Assign seats step, change row 3 to VIP and save.
   2. Put row 3 back to Normal, change row 4 to VIP and save.
   3. Put row 4 back to Normal, change row 5 to VIP and save.
   4. Let the row-4 hold expire, then change row 4 to VIP again and save.
@@ -876,7 +877,7 @@ Epic E3 · Area code: EVT · Locale: Thai market (฿, VAT 7%, PromptPay, Asia/B
 
 ### TC-EVT-15 — Ticket rows require unique name, ฿ price (0 allowed) and quantity; at least one type, last row locked
 - **Traces:** US-EVT-06  ·  **Priority:** High  ·  **Type:** Functional
-- **Preconditions:** Organizer on the Tickets step.
+- **Preconditions:** Organizer on the Tickets step of a general-admission event (a reserved event's quantities come from its seat map — TC-EVT-12b).
 - **Test data:** Ticket "General ฿890 × 100"; a free ticket "Student ฿0 × 50"; attempt a duplicate name "General"; then attempt to remove the only remaining row.
 - **Steps:**
   1. Add ticket "General" at ฿890 × 100.
@@ -896,7 +897,7 @@ Epic E3 · Area code: EVT · Locale: Thai market (฿, VAT 7%, PromptPay, Asia/B
 
 ### TC-EVT-17 — Quantity/capacity below sold is rejected; out-of-window registration closes; approval and waitlist behave
 - **Traces:** US-EVT-06  ·  **Priority:** High  ·  **Type:** Negative
-- **Preconditions:** Published event with 60 tickets already sold on a type of quantity 100; registration window and toggles configurable.
+- **Preconditions:** Published general-admission event with 60 tickets already sold on a type of quantity 100; registration window and toggles configurable.
 - **Test data:** Try to set that ticket's quantity to 50 (below 60 sold); try event capacity below total registered; registration window 2026-08-01 to 2026-08-10 with current date 2026-07-27 (before window); Require approval ON; Waitlist ON then OFF.
 - **Steps:**
   1. Set the ticket quantity to 50 and save.
@@ -1533,7 +1534,7 @@ Locale: Thai market — ฿ (whole baht), 7% VAT recalculated at checkout, Promp
 - **Steps:**
   1. On the Tickets screen, delete Free and confirm.
   2. Delete VIP and confirm.
-  3. In Seating, give row 7 to Normal and save.
+  3. On the event's Assign seats step in the wizard, give row 7 to Normal and save.
   4. Delete Free again and confirm.
 - **Expected result:** Step 1 is refused (409) with "Free still has seat rows. Give them to another ticket type first."; Free stays on sale with its 16 seats. Step 2 is refused the same way for VIP — it is neither deleted nor retired, and its 10 holders are untouched. Step 3 leaves Free with no rows: Free shows 0 and Normal 80. Step 4 removes Free completely, because it never sold.
 
