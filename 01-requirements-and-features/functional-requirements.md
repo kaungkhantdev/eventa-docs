@@ -597,10 +597,10 @@ _Notes: The public page is anonymous and read-only — it starts registration bu
 - Given a tier is sold out, when I view it, then its button reads "Sold out" and cannot be clicked through to registration.
 - Given very few seats remain, when the tier renders, then an urgency line (e.g. "Going fast — only N left") is shown.
 - Given registration for the event has closed, when the tickets render, then all tier buttons are disabled with a "registration is closed" message.
-- Given an in-person event with reserved seating whose seat rows have ticket types, when I open its public page, then the Tickets section shows a seat map with each row coloured by its ticket type and a legend naming each type with its rows and seat count (e.g. "VIP · Rows 1–2 · 32 seats"), and each ticket says which rows it sells (e.g. "Rows 1–2").
+- Given an in-person event with reserved seating whose seat rows have ticket types, when I open its public page, then the Tickets section shows a seat map with each row coloured by its ticket type and a legend naming each type with its rows and seat count (e.g. "VIP · Rows 1–2 · 32 seats"), and each ticket says which rows it sells (e.g. "Rows 1–2"); each type has the colour the organizer's seat-map preview gives it, because colours follow the order the ticket types were created, not their price.
 - Given a general-admission or online event, or a reserved event whose rows have no ticket types, when the page renders, then no seat map is shown and no ticket names any rows.
 
-_Notes: Choosing quantity happens later in registration — the page just carries the chosen tier through. The rows each ticket sells are the ones the organizer gave it in Seating (US-EVT-05); the seat map shows only that split, never which seats are already taken — individual seats are chosen at checkout._
+_Notes: Choosing quantity happens later in registration — the page just carries the chosen tier through. The rows each ticket sells are the ones the organizer gave it on the wizard's Assign seats step (US-EVT-05); the seat map shows only that split, never which seats are already taken — individual seats are chosen at checkout._
 
 ### US-PAGE-06 — Frequently asked questions  ·  **Could**
 **As a** guest Attendee, **I want** an FAQ I can expand, **so that** I can clear up doubts about the event before committing to register.

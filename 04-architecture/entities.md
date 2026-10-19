@@ -819,7 +819,7 @@ A sellable ticket tier for an event.
 - **CHECK** `sold >= 0 AND sold <= total`, `price_satang >= 0`, `NOT is_free OR price_satang = 0`
 - **INDEXES** `ix_ticket_types_event` (`event_id`), `ix_ticket_types_org` (`organization_id`)
 - `soldout`, `revenue`, `featured` are derived. `sold` is an atomic counter guarded on booking.
-- **Seat rows (US-EVT-05).** On a reserved event each seat row sells one tier (`seats.ticket_type_id`). A tier's `total` is then set by the seating save, and an edit that sends a different quantity is refused (409). A reserved event publishes only when every live tier has at least one row, and a tier that still has seat rows cannot be removed (US-TKT-05). See `erd.md` → [Seat rows sell one ticket type](erd.md#seat-row-ticket-types).
+- **Seat rows (US-EVT-05).** On a reserved event each seat row sells one tier (`seats.ticket_type_id`). A tier's `total` is then set by the seating save, and an edit that sends a different quantity is refused (409). A reserved event publishes only when every live tier has at least one row, and a tier that still has seat rows cannot be removed (US-TKT-05). The public event page shows the split read-only (US-PAGE-05): `GET /public/events/:slug` lists the tiers in creation order (`created_at`, then `id`) and returns `seatMap` as `{ seatsPerRow, rows: [{ label, ticketTypeId }] }` — each row's `row_label` and its seats' tier, null for an untyped row — or `null` unless the event is in person, reserved and has a typed row. A tier's seat-map colour is its place in that creation order, on the page and in the wizard's preview alike. See `erd.md` → [Seat rows sell one ticket type](erd.md#seat-row-ticket-types).
 
 #### `discount_codes`
 A redeemable discount for an event (or org-wide).

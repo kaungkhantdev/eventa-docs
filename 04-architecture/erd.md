@@ -2495,9 +2495,16 @@ labels and none of the columns it draws changed, so it needed nothing.
   cannot be removed, checked under the type's lock (US-TKT-05). That is why the
   `SET NULL` on `seats.ticket_type_id` is a backstop rather than a path the product
   takes.
-- **Read side.** The public event page's read-only seat map (each row and the
-  type it sells, on `GET /public/events/:slug`), now being added, reads the same
-  columns and adds no table.
+- **Read side.** The public event page's read-only seat map reads the same
+  columns and adds no table (US-PAGE-05). `GET /public/events/:slug` returns it
+  as `seatMap`, `{ seatsPerRow, rows: [{ label, ticketTypeId }] }`: every row in
+  row-number order, `label` the row's `row_label` and `ticketTypeId` the type its
+  seats carry — one of the page's `tickets[].id`, or null for an untyped row. It
+  is sent for an in-person reserved event with at least one typed row and is
+  `null` otherwise, and it carries no seat status, holds or sales. The page lists
+  `tickets` in creation order (`created_at`, then `id`), and a type's colour on
+  the map is its place in that order, the same rule the wizard's preview uses, so
+  a type is one colour in both and keeps it when its price or rows change.
 
 Two consequences belong to the data model rather than the flow, and are recorded
 under [Normalization (3NF)](#normalization-3nf): `ticket_types.total` is now a
