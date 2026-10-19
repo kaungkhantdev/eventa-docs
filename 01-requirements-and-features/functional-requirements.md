@@ -422,14 +422,17 @@ _(Notes: This is an organizer/admin surface; Staff and Attendees do not see it. 
 _(Notes: Switching to Online removes the seating requirement; switching back to In-person re-enables seating.)_
 
 ### US-EVT-05 — Choose seating (general admission or reserved)  ·  **Must**
-**As an** Event Organizer, **I want** in-person events to use either general admission or a reserved seat map I lay out by rows and seats-per-row, **so that** I can sell the right kind of ticket and, for reserved events, hold a specific seat for each attendee.
+**As an** Event Organizer, **I want** in-person events to use either general admission or a reserved seat map I lay out by rows and seats-per-row and split between my ticket types row by row, **so that** I can sell the right kind of ticket and, for reserved events, hold a specific seat for each attendee.
 **Acceptance criteria**
 - Given an in-person event, when I choose Reserved and set rows and seats-per-row, then I see a live seat-map preview and a total-seat count (rows × seats/row).
 - Given I choose General admission, then I simply set a headcount with no specific seat assignment.
 - Given an online event, when I view the Seating step, then no seating options are offered and I'm told a join link is emailed after registration.
-- Given my seat map holds fewer seats than the total ticket quantities I've set, when I go to publish, then I'm warned that the seat map is smaller than my ticket quantities.
+- Given a reserved seat map, when I give each whole row one of my event's ticket types (for example rows 1–2 VIP, rows 3–6 Normal, row 7 Free), then the preview colours every row by its ticket type, with a legend of each type's name and seat count, and any row I leave on "No ticket type" stays a neutral colour; if the event has no ticket types yet, I'm told to add them in the Tickets step and come back to give each row a type.
+- Given rows have ticket types, then each ticket type's quantity is the number of seats in its rows (0 for a type with no rows), shown read-only as "Set by the seat map" wherever quantities appear; a seating change that would leave a ticket type with fewer seats than it has already sold is refused.
+- Given a reserved event where a row has no ticket type, or a ticket type has no row, when I publish, then publishing is blocked with "Give every seat row a ticket type before publishing." or "{Type} has no seat rows. Give it a row or remove it."
+- Given a row where any seat is booked or held in someone's checkout, when I try to give it a different ticket type, then the change is refused with "Row {n} has booked or held seats, so its ticket type can't change." and the row keeps its type.
 - Given a published reserved event, when I reduce rows or seats, then seats already sold are never removed.
-_(Notes: The per-booking seat limit for attendees is enforced during registration, not here — see the Attendee epic.)_
+_(Notes: The per-booking seat limit for attendees is enforced during registration, not here — see the Attendee epic. Reserved events published before rows carried ticket types keep selling any seat under any of their ticket types, with quantities still typed, until their seating is next saved with ticket types on its rows; they are not re-checked for publishing. A draft laid out that way must give every row a type before it publishes.)_
 
 ### US-EVT-06 — Set up tickets, capacity and registration rules  ·  **Must**
 **As an** Event Organizer, **I want** to define ticket types (name, price, quantity), overall capacity, the registration open/close window, and approval and waitlist options, **so that** the right tickets go on sale at the right time and price.
@@ -684,6 +687,7 @@ _Notes: Per-order limit is capped at 8 seats to match the platform booking cap. 
 - Given a ticket type has sold 640 seats, when I try to lower the quantity to 500, then the change is refused with a message that quantity cannot go below the seats already sold.
 - Given tickets have already sold, when I try to change the price, the paid/free setting, or the event, then I am told these can't change after sales began and am advised to create a new ticket type instead.
 - Given no tickets have sold yet, when I change the price or switch paid/free, then the change is accepted.
+- Given a reserved-seating event whose seat rows have ticket types, when I edit a ticket type, then its quantity is shown as "Set by the seat map" and can't be typed — a different number is refused with "This event's ticket quantities come from its seat map. Give rows to a ticket type instead." — while its other details stay editable.
 - Given a colleague edited the same ticket type while I had it open, when I save, then I am told it changed since I opened it and asked to reload, so neither of us silently overwrites the other.
 
 _Notes: Description and the "transferable" setting can be changed at any time. If capacity is raised on a sold-out ticket that has a waitlist, waitlisted attendees are offered the freed seats._
@@ -723,6 +727,7 @@ _Notes: Sold and total counts are read-only here; they reflect confirmed registr
 - Given a ticket type has sold 210 seats, when I confirm delete, then it is retired instead of removed: it disappears from my active list and can't be bought anymore, but existing holders keep valid tickets.
 - Given I retire a ticket type, when the action completes, then no attendee is refunded or cancelled automatically — those are handled separately as finance actions.
 - Given a ticket type has checkouts in progress, when I try to delete it, then I am told to pause it and try again shortly.
+- Given a reserved-seating event where a ticket type still has seat rows, when I try to delete or retire it, then I am told "{Type} still has seat rows. Give them to another ticket type first." and it stays as it is.
 
 ---
 
@@ -874,7 +879,7 @@ _Notes: Saved events can trigger a reminder only if the attendee has event remin
 
 **Acceptance criteria**
 - Given I click "Register"/"Get tickets" on an event, when checkout opens, then I see the event summary and can choose exactly one ticket type, with prices shown in Baht (or "Free").
-- Given the event has reserved seating, when I reach seat selection, then I can pick up to 8 available seats from a seat map, already-taken seats are not selectable, and my chosen seats are held for me while I check out.
+- Given the event has reserved seating, when I reach seat selection, then I can pick up to 8 available seats of the ticket type I chose from a seat map: rows of other ticket types are shown but can't be selected, already-taken seats are not selectable, switching ticket type drops any seats of another type I had picked, no seat can be booked at another type's price, and my chosen seats are held for me while I check out.
 - Given the event is general-admission or online, when I reach quantity, then I choose a quantity between 1 and 8; online events tell me a join link will be emailed, general-admission events note seating is first-come.
 - Given I make any selection, when it changes, then the order summary updates live with subtotal, service fee, and total, mirrored in a sticky action bar.
 - Given I am signed in, when checkout opens, then my contact details are pre-filled from my profile and remain editable for this order; given I am a guest, then I enter name, email, and (when needed for PromptPay) a mobile number.
