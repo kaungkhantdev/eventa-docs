@@ -851,14 +851,16 @@ Epic E3 · Area code: EVT · Locale: Thai market (฿, VAT 7%, PromptPay, Asia/B
   4. Open the second draft's Review & publish step without opening its Assign seats step; then send `POST /events/:id/publish` for it directly.
 - **Expected result:** Run A: the checklist shows "Every seat row has a ticket type" as not done and the Publish button stays disabled; the direct request is refused (422) with "Give every seat row a ticket type before publishing." and the event stays a draft. Run B: the checklist has nothing left to flag, so Publish can be clicked, and the refusal (422) "Free has no seat rows. Give it a row or remove it." shows in the page's error banner; still a draft. Run C: the event publishes. The second draft is treated like Run A — its checklist flags the rows, Publish stays disabled and the direct request is refused with the same sentence, because a map laid out before rows had types counts as rows without a type — and it publishes only once every row has been given one.
 
-### TC-EVT-14 — Reducing rows/seats on a published reserved event never removes sold seats
+### TC-EVT-14 — Resizing a published reserved event never removes sold seats, and its new rows wait for a ticket type
 - **Traces:** US-EVT-05  ·  **Priority:** High  ·  **Type:** Negative
-- **Preconditions:** Published reserved event with some seats already sold (e.g. seats in row 5 sold).
-- **Test data:** Reserved map 6 rows × 20; sold seats include row 5; attempt to reduce to 4 rows.
+- **Preconditions:** Published reserved event whose rows have ticket types, with some seats already sold (e.g. seats in row 5 sold); the organizer edits it in the wizard.
+- **Test data:** Reserved map 6 rows × 20, rows 1–3 VIP and rows 4–6 Normal (60 seats each); sold seats include row 5; attempt to reduce to 4 rows, then grow to 7.
 - **Steps:**
-  1. Edit seating and reduce rows from 6 to 4 (which would drop row 5).
-  2. Save.
-- **Expected result:** Seats already sold are never removed; the reduction cannot strip out sold seats (either blocked or those seats retained).
+  1. On the Seating step reduce rows from 6 to 4 (which would drop row 5) and save.
+  2. Reload the wizard, set rows to 7 on the Seating step, read the step, and press the header Save; then reload and reopen the Seating step.
+  3. Set rows to 7 again and press Next through Tickets to Assign seats; leave row 7 on "No ticket type" and save.
+  4. Give row 7 Normal and save; reopen the Seating and Tickets steps.
+- **Expected result:** Step 1: seats already sold are never removed; the reduction cannot strip out sold seats (either blocked or those seats retained). Step 2: under "After Tickets, give each row a ticket type in Assign seats." the step says "New rows need a ticket type. The seat map is saved when you give them one in Assign seats."; Save shows "Saved. Give the new rows a ticket type in Assign seats to save the seat map." — not "Changes saved." — and sends no seating request, so after the reload the map still has 6 rows. Step 3: Next moves on with no message and still sends no seating request; Assign seats lists Row 7 on "No ticket type", and its save is refused (422) with "Give row 7 a ticket type. Every row of a published event needs one."; the map keeps 6 rows. Step 4: the map saves with 7 rows, Normal's quantity becomes 80 and VIP's stays 60, and the Seating step no longer shows the note.
 
 ### TC-EVT-14b — A row with booked or held seats keeps its ticket type
 - **Traces:** US-EVT-05  ·  **Priority:** High  ·  **Type:** Negative
