@@ -675,7 +675,7 @@ _Notes: The recommended design follows the event category, but any of the four c
 - Given I try to reuse a ticket name that already exists on the same event, when I save, then I am told a ticket with that name already exists and it is not created.
 - Given I set a per-order limit above the quantity available, or a sales end date before the start, when I save, then I am shown a plain-language error and can correct it before saving.
 
-_Notes: Per-order limit is capped at 8 seats to match the platform booking cap. Prices are whole baht; the attendee-facing total adds 7% VAT at checkout._
+_Notes: Per-order limit is capped at 8 seats to match the platform booking cap. On a reserved event whose seat rows have ticket types, a ticket type's quantity comes from the seat map (US-EVT-05), so its per-order limit is held only to that 8-seat cap, not to the quantity. Prices are whole baht; the attendee-facing total adds 7% VAT at checkout._
 
 ---
 
