@@ -52,7 +52,7 @@ flowchart TD
     W["A later edit"] --> X{"Anything<br/>sold yet?"}
     X -- "Yes" --> Y["Price and free/paid frozen;<br/>total cannot fall below sold"]
     X -- "No" --> Z["Anything may change"]
-    Q -- "Seat-typed event" --> QS["Quantity read-only, Set by the seat map<br/>PATCH another total: 409<br/>a new tier starts at 0<br/>a tier with rows can't be deleted"]
+    Q -- "Seat-typed event" --> QS["Tickets screen: quantity<br/>read-only, marked<br/>Set by the seat map<br/>wizard: only if switched<br/>away from reserved<br/>in person, unsaved<br/>PATCH another total: 409<br/>a new tier starts at 0<br/>a tier with rows can't be deleted"]
     Q -- "Wizard, reserved in person" --> QW["No Quantity column<br/>note: seats in its rows,<br/>set on Assign seats<br/>no total sent"]
     QW --> AS["Step 5 — Assign seats<br/>reserved and in person only<br/>a ticket type per whole row"]
     AS --> AS1{"Any ticket type<br/>stored yet?"}
