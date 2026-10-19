@@ -819,6 +819,7 @@ A sellable ticket tier for an event.
 - **CHECK** `sold >= 0 AND sold <= total`, `price_satang >= 0`, `NOT is_free OR price_satang = 0`
 - **INDEXES** `ix_ticket_types_event` (`event_id`), `ix_ticket_types_org` (`organization_id`)
 - `soldout`, `revenue`, `featured` are derived. `sold` is an atomic counter guarded on booking.
+- **Seat rows (US-EVT-05).** On a reserved event each seat row sells one tier (`seats.ticket_type_id`). A tier's `total` is then set by the seating save, and an edit that sends a different quantity is refused (409). A reserved event publishes only when every live tier has at least one row, and a tier that still has seat rows cannot be removed (US-TKT-05). See `erd.md` → [Seat rows sell one ticket type](erd.md#seat-row-ticket-types).
 
 #### `discount_codes`
 A redeemable discount for an event (or org-wide).
@@ -1105,7 +1106,7 @@ An individual addressable seat within a seat map.
 | `section` | text | yes | | | Section/zone label. |
 | `row_label` | text | yes | | | Row. |
 | `seat_number` | text | no | UK | | Seat within row. |
-| `ticket_type_id` | uuid | yes | FK→ticket_types.id, IX | | Tier this seat sells as. Written a whole row at a time by `PUT /events/:eventId/seating/reserved` (`rowTicketTypes`, US-EVT-05); a row with booked or held seats keeps its tier. Null on a row with no type yet, and on every seat of a map laid out before rows carried tiers — such a seat sells under any of the event's tiers. Every row needs one before a reserved draft publishes (app-enforced, no constraint). |
+| `ticket_type_id` | uuid | yes | FK→ticket_types.id, IX | | Tier this seat sells as. Written a whole row at a time by `PUT /events/:eventId/seating/reserved` (`rowTicketTypes`, US-EVT-05); a row with booked or held seats keeps its tier. A seat sells only under its row's tier. Null on a row with no type yet, and on every seat of a map laid out before rows carried tiers (or copied onto a duplicated event). Only on a map with no typed seat at all does an untyped seat sell under any of the event's tiers; once any seat on the map has a tier, an untyped seat is not on sale (US-DISC-04). Every row needs one before a reserved draft publishes, and a published map whose rows are typed cannot leave a row untyped (app-enforced, no constraint). |
 | `status` | `seat_status` | no | | `'available'` | available/held/reserved/sold/blocked. |
 | `created_at` | timestamptz | no | | `now()` | |
 | `updated_at` | timestamptz | no | | `now()` | |
@@ -1919,7 +1920,7 @@ Short-lived checkout reservation that expires and releases inventory if the buye
 | `organization_id` | bigint | no | FK→organizations.id | | Tenant. |
 | `event_id` | uuid | no | FK→events.id | | |
 | `order_id` | uuid | yes | FK→orders.id, IX | | Pending order this hold backs; null while cart-only. |
-| `ticket_type_id` | uuid | yes | FK→ticket_types.id | | The tier being bought: set on GA quantity holds and on reserved-seat checkout holds (`POST /public/checkout/hold`). |
+| `ticket_type_id` | uuid | yes | FK→ticket_types.id | | The tier being bought: set on GA quantity holds and on reserved-seat checkout holds (`POST /public/checkout/hold`). Placing the order is refused (409) unless the held seats are exactly the priced seats and each sells under the order's tier (US-DISC-04). |
 | `seat_id` | bigint | yes | FK→seats.id, UK | | For reserved-seat holds; one row per seat. |
 | `quantity` | integer | no | | `1` | Seats/units held. |
 | `status` | `hold_status` | no | | `'active'` | active/converted/expired/released. |
