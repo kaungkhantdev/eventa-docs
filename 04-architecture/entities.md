@@ -800,7 +800,7 @@ A sellable ticket tier for an event.
 | `status` | `ticket_status` | no | | `'scheduled'` | onsale/scheduled/paused/soldout. |
 | `admission_type` | `admission_type` | no | | `'general_admission'` | reserved_seat ties to seat_maps. |
 | `sold` | integer | no | | `0` | Derived counter; ≥0, ≤`total`. |
-| `total` | integer | no | | `0` | Allocation/quota, ≥0. |
+| `total` | integer | no | | `0` | Allocation/quota, ≥0. On a seat-typed event (reserved, and at least one seat carries a tier) it is derived, never typed: the count of `seats` carrying this tier, `0` for a tier with no rows, written by the seating save (`PUT /events/:eventId/seating/reserved`) in the same transaction and never below `sold`. |
 | `sales_start_at` | timestamptz | yes | | | scheduled→onsale. |
 | `sales_end_at` | timestamptz | yes | | | After → paused. |
 | `min_per_order` | integer | no | | `1` | |
@@ -1105,7 +1105,7 @@ An individual addressable seat within a seat map.
 | `section` | text | yes | | | Section/zone label. |
 | `row_label` | text | yes | | | Row. |
 | `seat_number` | text | no | UK | | Seat within row. |
-| `ticket_type_id` | uuid | yes | FK→ticket_types.id, IX | | Tier this seat belongs to. |
+| `ticket_type_id` | uuid | yes | FK→ticket_types.id, IX | | Tier this seat sells as. Written a whole row at a time by `PUT /events/:eventId/seating/reserved` (`rowTicketTypes`, US-EVT-05); a row with booked or held seats keeps its tier. Null on a row with no type yet, and on every seat of a map laid out before rows carried tiers — such a seat sells under any of the event's tiers. Every row needs one before a reserved draft publishes (app-enforced, no constraint). |
 | `status` | `seat_status` | no | | `'available'` | available/held/reserved/sold/blocked. |
 | `created_at` | timestamptz | no | | `now()` | |
 | `updated_at` | timestamptz | no | | `now()` | |
@@ -1919,7 +1919,7 @@ Short-lived checkout reservation that expires and releases inventory if the buye
 | `organization_id` | bigint | no | FK→organizations.id | | Tenant. |
 | `event_id` | uuid | no | FK→events.id | | |
 | `order_id` | uuid | yes | FK→orders.id, IX | | Pending order this hold backs; null while cart-only. |
-| `ticket_type_id` | uuid | yes | FK→ticket_types.id | | For GA quantity holds. |
+| `ticket_type_id` | uuid | yes | FK→ticket_types.id | | The tier being bought: set on GA quantity holds and on reserved-seat checkout holds (`POST /public/checkout/hold`). |
 | `seat_id` | bigint | yes | FK→seats.id, UK | | For reserved-seat holds; one row per seat. |
 | `quantity` | integer | no | | `1` | Seats/units held. |
 | `status` | `hold_status` | no | | `'active'` | active/converted/expired/released. |
@@ -2031,7 +2031,7 @@ marker is there because the constraint is missing. `erd.md` →
 | sessions ⇄ speakers | session_speakers | M:N | junction session_speakers | A speaker owns many sessions. |
 | ticket_types | order_items | 1:N | order_items.ticket_type_id | RESTRICT. |
 | ticket_types | tickets | 1:N | tickets.ticket_type_id | RESTRICT. |
-| ticket_types | seats | 1:N | seats.ticket_type_id | Tier per seat; SET NULL. |
+| ticket_types | seats | 1:N | seats.ticket_type_id | Tier per seat, set a whole row at a time (US-EVT-05); SET NULL — a tier that still has seat rows can't be deleted (US-TKT-05). |
 | discount_codes | orders | 1:N | orders.discount_code_id | Applied code; SET NULL. |
 | discount_codes ⇄ orders | discount_redemptions | M:N | junction discount_redemptions | Idempotent per order. |
 | attendees | orders | 1:N | orders.attendee_id | Null for guests; SET NULL. |
@@ -2073,6 +2073,6 @@ marker is there because the constraint is missing. `erd.md` →
 | organizations | seat_holds | 1:N | seat_holds.organization_id | CASCADE. |
 | events | seat_holds | 1:N | seat_holds.event_id | CASCADE. |
 | orders | seat_holds | 1:N | seat_holds.order_id | Null while cart-only; SET NULL. |
-| ticket_types | seat_holds | 1:N | seat_holds.ticket_type_id | GA quantity holds; CASCADE. |
+| ticket_types | seat_holds | 1:N | seat_holds.ticket_type_id | The tier being bought, GA and reserved holds; CASCADE. |
 | seats | seat_holds | 1:N | seat_holds.seat_id | Reserved-seat holds; CASCADE. |
 | organizations | webhook_events | 1:N | webhook_events.organization_id | Resolved tenant; SET NULL. |
