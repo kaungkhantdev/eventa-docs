@@ -506,6 +506,7 @@ _(Notes: Agenda editing is the core (Must) capability; speaker management is a l
 - Given the duplicate, when it's created, then it gets its own unique public link and any past registration open/close dates are cleared so I re-set the sales window.
 - Given the new draft, when the list refreshes, then it appears next to the original and the Active/Completed counts update.
 - Given I accidentally trigger the duplicate twice, then only one copy is created.
+_(Notes: A reserved seat map is copied without its rows' ticket types, so the copy's ticket quantities stay as copied and editable until its rows are given types again in Seating, which publishing the copy requires — see US-EVT-05.)_
 
 ### US-EVT-14 — Monitor an event's performance from its workspace  ·  **Should**
 **As an** Event Organizer, **I want** a single event workspace showing live headline numbers, its registrations, and its confirmed attendees, **so that** I can track how the event is doing and reach attendees.
