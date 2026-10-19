@@ -25,9 +25,9 @@ flowchart TD
     C -- "No · waitlist on, GA" --> D["POST /public/checkout/waitlist<br/>orders.status = waitlisted<br/>no hold, nothing charged"]
     C -- "No · otherwise" --> D2["Shown sold out<br/>nothing to buy"]
     C -- "Yes" --> E["One booking button<br/>POST /public/checkout/hold"]
-    E --> E1{"A seat that carries<br/>another tier?"}
-    E1 -- "Yes" --> E2["422 — those seats belong<br/>to a different ticket type"]
-    E1 -- "No, or untyped" --> F["seat_holds rows<br/>status = active, expires_at set<br/>GA: tier row FOR UPDATE<br/>reserved: tier FOR KEY SHARE,<br/>then seats FOR UPDATE<br/>ticket_type_id on every hold"]
+    E --> E1{"A seat that carries<br/>another tier, or an untyped<br/>seat on a typed map?"}
+    E1 -- "Yes" --> E2["422 — those seats belong to a<br/>different ticket type / aren't on sale"]
+    E1 -- "No, or untyped on an<br/>untyped map" --> F["seat_holds rows<br/>status = active, expires_at set<br/>GA: tier row FOR UPDATE<br/>reserved: tier FOR KEY SHARE,<br/>then seats FOR UPDATE<br/>ticket_type_id on every hold"]
   end
 
   subgraph PLACE["2 · Placing the order"]
