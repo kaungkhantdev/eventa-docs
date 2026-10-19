@@ -713,16 +713,17 @@ Epic E3 · Area code: EVT · Locale: Thai market (฿, VAT 7%, PromptPay, Asia/B
 ### TC-EVT-04 — Wizard progress, live summary, and Save as draft resume
 - **Traces:** US-EVT-02  ·  **Priority:** High  ·  **Type:** Functional
 - **Preconditions:** Signed in as Event Organizer with create rights; an existing online draft to edit.
-- **Test data:** Name "TechConf BKK 2026", in person; one ticket type "Early Bird ฿890 × 100"; General admission capacity 100.
+- **Test data:** Name "TechConf BKK 2026", in person; start 2026-08-15 09:00 (Asia/Bangkok); one ticket type "Early Bird ฿890 × 100"; General admission capacity 100.
 - **Steps:**
   1. Start a new in-person event; confirm the wizard shows a progress indicator and a step rail, and read the steps on the rail.
   2. On the Seating step choose Reserved and read the rail and the progress again; then choose General admission and read them once more.
-  3. With General admission chosen, open Assign seats from the rail, read it and press "Go to Seating"; then return to Assign seats and press Save.
-  4. Enter the name and a ticket type; watch the live summary panel.
+  3. With General admission chosen, open Assign seats from the rail, read it and press "Go to Seating".
+  4. Enter the name, the start date and a ticket type; watch the live summary panel.
   5. On any step, click "Save as draft".
   6. Leave the wizard, then open the events list and reopen the event.
-  7. Open the existing online draft in the wizard, read its rail, and open Assign seats.
-- **Expected result:** Wizard shows progress + step rail and a live summary reflecting name, ticket types, capacity and seating as entered. The rail always has the same six steps — Basics, Date & location, Seating, Tickets, Assign seats, Review & publish — and the progress is measured against the six: choosing Reserved or General admission adds or removes nothing. With General admission, Assign seats says "General admission has no seats to assign. To sell seats by ticket type, choose Reserved seating on the Seating step." and "Go to Seating" opens the Seating step; its Save saves the event and sends no seating request. "Save as draft" stores the event as a Draft that appears in the events list; reopening restores the entered data so work resumes. The online draft, edited, shows the same six steps, and its Assign seats says "Online events have no seats to assign."
+  7. In the reopened general-admission draft, open Assign seats and press "Save changes" in the header, watching the network requests.
+  8. Open the existing online draft in the wizard, read its rail, and open Assign seats.
+- **Expected result:** Wizard shows progress + step rail and a live summary reflecting name, ticket types, capacity and seating as entered. The rail always has the same six steps — Basics, Date & location, Seating, Tickets, Assign seats, Review & publish — and the progress is measured against the six: choosing Reserved or General admission adds or removes nothing. With General admission, Assign seats says "General admission has no seats to assign. To sell seats by ticket type, choose Reserved seating on the Seating step." and "Go to Seating" opens the Seating step. "Save as draft" stores the event as a Draft that appears in the events list; reopening restores the entered data, General admission included, so work resumes. On the reopened draft the header button reads "Save changes"; pressed on Assign seats it sends PATCH /events/:id and PUT /events/:id/highlights, sends no request to /seating, and confirms "Changes saved." The online draft, edited, shows the same six steps, and its Assign seats says "Online events have no seats to assign."
 ### TC-EVT-05 — Leaving with unsaved changes prompts to save as draft; autosave preserves interrupted work
 - **Traces:** US-EVT-02  ·  **Priority:** Medium  ·  **Type:** Negative
 - **Preconditions:** Organizer partway through the wizard with unsaved edits on the current step.
