@@ -62,7 +62,7 @@ Change one link and the others should follow. Some specifics that require readin
   six E12 Must stories→R2) — change one, change the other.
 - **Architecture is layered:** `software-architecture.md` is the baseline SAD (NestJS modular monolith +
   RabbitMQ consumers + **transactional outbox**, synchronous checkout; C4 views + **ADRs**). **The live
-  PostgreSQL schema is the reference for the data model (57 tables); `entities.md` and `erd.md` describe
+  PostgreSQL schema is the reference for the data model (58 tables); `entities.md` and `erd.md` describe
   it** — **both** are now **read back from** `information_schema.columns` and `pg_constraint`
   (`entities.md` says so in its own *Schema status* header), so where a document and the database
   disagree the database wins and the *document* is what gets corrected. That
@@ -97,7 +97,7 @@ Change one link and the others should follow. Some specifics that require readin
 ## Conventions that matter when editing
 
 - **Counts are repeated** in doc headers, the stage `README.md`s and the root `README.md` (162 stories ·
-  354 test cases · 57 tables · 13 epics/ADRs · MoSCoW splits). When a count changes, update every place —
+  354 test cases · 58 tables · 13 epics/ADRs · MoSCoW splits). When a count changes, update every place —
   `README.md` is the index to keep current. The table count is **measured from the database**, never
   copied from another document (see *Architecture is layered* above).
 - **Crow's-foot notation in ERDs:** nullable FKs use `|o--o{`, non-null FKs use `||--o{` — stay consistent

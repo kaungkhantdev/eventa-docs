@@ -15,7 +15,7 @@
 > stored as **integer minor units (satang)**, never floating point.
 >
 > **Schema status.** The **live PostgreSQL schema is the reference**, and this
-> catalog describes it. All **57 tables** below exist in `public` today; every
+> catalog describes it. All **58 tables** below exist in `public` today; every
 > column, type, key and `ON DELETE` rule is read back from
 > `information_schema.columns` and `pg_constraint`, never copied from another
 > document. Where the catalog and the database disagree, the database wins and
@@ -62,7 +62,7 @@
   Human-facing references (`orders.reference` = `REG-YYYY-NNNNNN`,
   `invoices.number`, `payments.txn`, `payouts.reference`) are separate **UNIQUE**
   natural keys, never the PK.
-- **Multi-tenancy.** 50 of the 57 physical tables carry
+- **Multi-tenancy.** 51 of the 58 physical tables carry
   `organization_id bigint REFERENCES organizations(id)` (NOT NULL except the
   inbound `webhook_events` log while its tenant is unresolved). Every tenant
   read/write is filtered by the caller's organization (row-level isolation).
@@ -145,7 +145,8 @@ One PostgreSQL `ENUM` type per row. Values are listed in wire form (as stored).
 | `meeting_type` | `Venue`, `Sponsor`, `Vendor`, `Speaker`, `Internal` | `meetings.type` | `meetings.ts` |
 | `meeting_mode` | `Video`, `In person`, `Phone` | `meetings.mode` | `meetings.ts` |
 | `meeting_status` | `scheduled`, `cancelled` | `meetings.status` | production — a meeting is held or called off; the today/upcoming/past bucket it replaced is computed from `meeting_date` |
-| `meeting_sync_status` | `pending`, `synced`, `failed`, `not_connected` | `meetings.sync_status` | production (external calendar push) |
+| `meeting_sync_status` | `pending`, `synced`, `failed`, `not_connected` | `meetings.sync_status` | production — eventa-api writes `pending` on every meeting write; eventa-worker writes `synced`, `failed` and `not_connected` once Google Calendar answers (ADR-15) |
+| `calendar_connection_status` | `disconnected`, `connected`, `expired` | `calendar_connections.status` | `calendar-connections.ts` |
 | `template_id` | `aurora`, `noir`, `minimal`, `atlas` | `landing_templates.id`, `events.landing_template_id` | `landingTemplates.ts` |
 | `message_channel` | `email`, `sms` | `message_templates.channels`, `message_deliveries.channel` | `messagingTemplates.ts`, `deliveryLog.ts` |
 | `announcement_status` | `scheduled`, `sent`, `cancelled` | `announcements.status` | `announcements.ts`; `cancelled` added with scheduled sends (migration `0065`) |
@@ -207,7 +208,9 @@ partial or functional — they are named in the `UNIQUE` bullet where they apply
 **Null** = *is the column nullable?* (`no` = NOT NULL, `yes` = nullable). A column
 that holds another table's `id` without a foreign-key constraint behind it carries
 no `FK` marker and says so in its Notes — there are six such columns, tabulated in
-`erd.md` → [Unenforced references](erd.md#unenforced-references). Every table also
+`erd.md` → [Unenforced references](erd.md#unenforced-references), plus one that is
+unconstrained on purpose, `calendar_connections.oauth_state_user_id`, explained on its
+table. Every table also
 carries the common audit columns from *Conventions* (`created_at`, `updated_at`,
 `version`, and `deleted_at`/`created_by` where noted); they are shown per table for
 completeness.
@@ -1839,14 +1842,14 @@ because the booking was never conditional on it.
 | `role` | text | yes | | | Counterparty role label. |
 | `guest_email` | citext | no | | | Where the invite goes; `citext` so a differently-cased address is the same guest. |
 | `event_id` | uuid | yes | FK→events.id, IX | | Null means the meeting is general rather than about one event, which the story allows explicitly. |
-| `link` | text | yes | | | The conference link, once the calendar sync has produced one (US-MTG-04). |
+| `link` | text | yes | | | The Google Meet link for a Video meeting, written by eventa-worker once Google Calendar has produced one (US-MTG-04); eventa-api only ever clears it, when a meeting stops being Video (US-MTG-05). |
 | `location` | text | yes | | | The venue for In person, "Phone call" for Phone, null for Video. |
 | `notes` | text | yes | | | Organizer's own notes. |
 | `cancellation_reason` | text | yes | | | Why it was called off; shown to the guest (US-MTG-06). |
 | `cancelled_at` | timestamptz | yes | | | Set when called off. |
 | `sync_status` | `meeting_sync_status` | no | IX | `'pending'` | `pending` \| `synced` \| `failed` \| `not_connected`. |
-| `external_event_id` | text | yes | | | The calendar's own id, held so a reschedule **updates** the guest's existing invite instead of sending a second one (US-MTG-05). |
-| `sync_error` | text | yes | | | The calendar's reason, when `sync_status = failed`. |
+| `external_event_id` | text | yes | | | The Google Calendar event id, held so a reschedule **updates** the guest's existing invite instead of sending a second one (US-MTG-05). It is always the meeting's `id` without its hyphens — 32 lowercase hex characters, a valid Google event id — so a retry, or a cancel that overtakes a create, addresses the same event. Written by eventa-worker only. |
+| `sync_error` | text | yes | | | Why the invite has not gone out: one of eventa-worker's fixed sentences ("Google Calendar is unavailable right now.", "Google Calendar refused the request (HTTP n).", "The Google Calendar connection has expired.", "The Google Calendar connection could not be read."). Never Google's own text, an email or a token, and never in a response. |
 | `idempotency_key` | text | yes | UK | | The organizer's key for this booking. |
 | `created_by` | uuid | yes | FK→users.id | | |
 | `created_at` | timestamptz | no | | `now()` | |
@@ -1864,12 +1867,84 @@ because the booking was never conditional on it.
   conversation that happened, and it outlives the event row.
 - **`cancelled_at` and `deleted_at` are both present and mean different things** — called off (the guest is
   told, the reason is kept) versus removed from the organizer's list.
+- **WRITERS — eventa-api owns this table, with one agreed exception.** eventa-api writes every column and sets
+  `sync_status = 'pending'` (clearing `sync_error`) and `updated_at` on every write, including the resync that
+  runs when a workspace connects Google Calendar. **eventa-worker** (`modules/meetings`, consuming
+  `meeting.sync_requested`) writes `sync_status`, `sync_error` and `link` **conditional on `updated_at`** — only
+  while the row still carries the `updated_at` it read, so an outcome for a superseded version is dropped
+  rather than written over a newer edit — and `external_event_id` **unconditionally**, because eventa-api never
+  writes that column and a create superseded mid-flight must still record the event it made. The worker never
+  writes `version` or `updated_at` (ADR-15). **Consequence:** the worker's `meetings` schema file is a *write*
+  mirror — `meeting_mode`, `meeting_status` and `meeting_sync_status` must match here exactly, and its
+  `updated_at` has no default and no on-update hook, since the value is compared, not set.
 
 > **Designed, not built.** There is no `bucket` column. The catalog listed a stored
 > `meeting_bucket` (`today`/`upcoming`/`past`) marked "derived", and a stored one is wrong from the moment
 > the Bangkok day turns — it would need a nightly job to stay true. It is computed per request instead,
 > the same call this schema makes for invoice ageing and session colour, and the enum was never created.
 > The `status` column that occupies that name is a different thing: whether the meeting is going ahead.
+
+#### `calendar_connections`
+The workspace's Google Calendar connection (US-MTG-08) — at most one row per organization. It is what lets
+eventa-worker send each meeting's invite, Meet link and 15-minute reminder (US-MTG-04 to US-MTG-07) from the
+Google account an Admin connected on Settings → Integrations. **No row means disconnected**; the row is
+created by the first connect attempt.
+
+**The two secrets are write-only.** `refresh_token_cipher` and `oauth_verifier_cipher` are AES-256-GCM
+ciphertext (`iv | authTag | ciphertext`) under `SECRET_ENCRYPTION_KEY`, the same cipher that protects
+`payment_credentials` and `two_factors.secret_encrypted` — and the **same key value in eventa-api and
+eventa-worker**, because the worker decrypts the refresh token to sync. Nothing decrypts either into a
+response: the refresh token only into a Google token request (the worker's access-token refresh, eventa-api's
+revoke on disconnect), the verifier only into the code exchange. Access tokens are never stored. Rotating the
+key orphans the stored refresh token, and the Admin has to reconnect.
+
+| Column | Type | Null | Key | Default | Notes |
+|---|---|---|---|---|---|
+| `id` | bigint identity | no | PK | | |
+| `organization_id` | bigint | no | FK→organizations.id, UK | | One row per workspace. |
+| `status` | `calendar_connection_status` | no | | `'disconnected'` | `connected` once a callback succeeds; `expired` when Google stops accepting the token; `disconnected` after Disconnect. |
+| `account_email` | citext | yes | | | The Google account that granted access. Returned only to callers holding `setIntegrations` (NFR-PDPA-04). |
+| `refresh_token_cipher` | bytea | yes | | | Google OAuth refresh token, encrypted at rest. Never read back to a caller. |
+| `connected_by` | uuid | yes | FK→users.id | | The Admin whose connect succeeded. |
+| `connected_at` | timestamptz | yes | | | |
+| `disconnected_at` | timestamptz | yes | | | |
+| `oauth_state_hash` | text | yes | | | sha256 hex of the pending connect's nonce — never the nonce itself, which only the browser's round trip through Google carries. |
+| `oauth_state_user_id` | uuid | yes | | | Who started the pending connect. Deliberately **not** a foreign key — see below. |
+| `oauth_verifier_cipher` | bytea | yes | | | The pending PKCE `code_verifier`, encrypted at rest; never sent to the browser. |
+| `oauth_state_expires_at` | timestamptz | yes | | | Start time plus 10 minutes, on the database clock. |
+| `created_at` | timestamptz | no | | `now()` | |
+| `updated_at` | timestamptz | no | | `now()` | |
+
+- **PRIMARY KEY** (`id`)
+- **FOREIGN KEYS** `organization_id`→`organizations(id)` **ON DELETE CASCADE**; `connected_by`→`users(id)` **ON DELETE SET NULL**
+- **UNIQUE** `uq_calendar_connections_org` (`organization_id`) — one connection per workspace, which makes this
+  the schema's second 1:1 with `organizations`, after `payment_settings`
+- **CHECK** `ck_calendar_connections_token` — `status <> 'connected' OR refresh_token_cipher IS NOT NULL`: a
+  workspace is never marked connected without a token to sync with
+- **RLS** tenant isolation on `organization_id`
+- No `version` and no index beyond the unique key: like `payment_credentials`, this is credential storage
+  keyed by the workspace and overwritten in place, not an audited domain record whose stale writes are worth
+  a `409`.
+- **`oauth_state_user_id` is unconstrained on purpose**, and is not one of the six gaps in `erd.md` →
+  *Unenforced references*. It lives at most ten minutes, is cleared on its first matching use, and the
+  callback re-checks that user's `setIntegrations` in the workspace before connecting — a removed member
+  simply fails there — so a constraint would add nothing. On success its value is copied into `connected_by`,
+  which is enforced. It adds no foreign key to the ERD counts.
+- **Row lifecycle.** *Start connect* upserts on `organization_id`, writing the four `oauth_state_*` and
+  verifier columns (a second start overwrites the first: the last one wins) and touching `updated_at`; on
+  insert `status` keeps its default. *A callback whose nonce matches* clears those four columns in the same
+  transaction as the read, so a state is single-use; a non-matching one leaves them untouched, so nobody who
+  guesses a workspace id can cancel an Admin's connect in progress. *Success* sets `status = 'connected'`,
+  `account_email`, `refresh_token_cipher`, `connected_by` (the user who started it), `connected_at = now()`
+  and clears `disconnected_at`. *Disconnect* sets `status = 'disconnected'`, `disconnected_at = now()` and
+  clears the cipher, the account and every pending-state column, after revoking the token at Google on a
+  best-effort basis; it creates no row when there is none.
+- **WRITERS — eventa-api owns it; eventa-worker writes `status` → `expired` (and `updated_at`) only,
+  conditional on the cipher it used (ADR-15).** When Google answers `invalid_grant` or
+  `insufficientPermissions`, the worker runs `UPDATE … SET status = 'expired' WHERE status = 'connected' AND
+  refresh_token_cipher = <the cipher it decrypted>`, so a reconnect that landed mid-sync is never marked
+  expired by a stale token. The cipher is left in place, unused, until the Admin reconnects or disconnects.
+  The worker's schema file is a write mirror: `calendar_connection_status` must match here exactly.
 
 ### System & Audit
 
@@ -2064,6 +2139,8 @@ marker is there because the constraint is missing. `erd.md` →
 | users | check_ins | 1:N | check_ins.checked_in_by | Staff who admitted them; SET NULL. |
 | attendees | check_ins | 1:N | check_ins.attendee_id | The CRM row admitted; SET NULL. |
 | meetings | users | N:1 | meetings.created_by | Organizer. |
+| organizations | calendar_connections | 1:1 | calendar_connections.organization_id (UK) | Optional singleton per workspace; no row means disconnected; CASCADE. |
+| users | calendar_connections | 1:N | calendar_connections.connected_by | The Admin whose connect succeeded; SET NULL. |
 | organizations | payment_credentials | 1:N | payment_credentials.organization_id | One key pair per mode; CASCADE. |
 | users | announcements | 1:N | announcements.sent_by_user_id | Who sent the broadcast; SET NULL. |
 | users | announcements | 1:N | announcements.cancelled_by_user_id | Who called it off; SET NULL. |

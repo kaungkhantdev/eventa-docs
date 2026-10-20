@@ -14,7 +14,7 @@ The technical blueprint: the software architecture plus the data model that sati
   boundary; reliable eventing), deployment, cross-cutting concerns (payments/PCI, multi-tenancy,
   concurrency & overselling, PDPA, observability, security), the technology stack, **13 ADRs**, and
   an NFR → mechanism mapping.
-- **[entities.md](entities.md)** — the **target data architecture**: relational data dictionary, 57
+- **[entities.md](entities.md)** — the **target data architecture**: relational data dictionary, 58
   PostgreSQL tables across 12 bounded contexts, with keys, constraints, indexes, enums, junction
   tables. Multi-tenant, money-as-satang, order→ticket commerce model.
 - **[erd.md](erd.md)** — the **Entity Relationship Diagram**: master crow's-foot Mermaid diagram +
