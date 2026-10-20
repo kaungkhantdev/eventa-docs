@@ -20,7 +20,7 @@
 > reference for the data model, and both this ERD and the design catalog
 > [entities.md](entities.md) **describe** it (`CLAUDE.md`, *Architecture is
 > layered*) — so the catalog is not a rival inventory to be out-counted but the
-> data dictionary a reader goes to for a table's purpose. The 57 here is the
+> data dictionary a reader goes to for a table's purpose. The 58 here is the
 > implementation inventory, and a shipped table needs an entry in both documents;
 > where either lags the schema, the document is what gets corrected. See
 > [Design notes → Which document describes the schema](#which-document-governs).
@@ -34,7 +34,7 @@
 > `ENUM` types, integer-satang money, `timestamptz` in UTC, 3NF normalization,
 > row-level tenant isolation via `organization_id`.
 >
-> **Measured scale.** 57 tables · 129 enforced foreign-key constraints (50 of them
+> **Measured scale.** 58 tables · 131 enforced foreign-key constraints (51 of them
 > the shared tenant `organization_id` edge) · 7 conceptual many-to-many edges
 > resolved by junction tables · **6 reference columns carried with no foreign-key
 > constraint behind them** (see
@@ -103,15 +103,15 @@ timestamps. By that measure it is a *stricter* junction than `memberships`
 `discount_redemptions` (`buyer_email`, `amount_satang`), both of which this
 document has always counted as junctions. The absent `organization_id` does not
 disqualify it: `role_permissions` and `session_speakers` carry no tenant column
-either. So it appears as the seventh M:N in the headline above, as row 96
-of the Relationship matrix (physically realized by rows 27 and 85), and in the
+either. So it appears as the seventh M:N in the headline above, as row 97
+of the Relationship matrix (physically realized by rows 27 and 86), and in the
 associative-table list under [Normalization](#normalization-3nf).
 
 In the diagrams a junction sits between its two parents with a solid, identifying
 `||--o{` edge to each; the conceptual M:N is annotated in the Relationship matrix
 as `}o--o{`.
 
-**Tenancy edge.** Most tables carry `organization_id` (50 of 57 tables).
+**Tenancy edge.** Most tables carry `organization_id` (51 of 58 tables).
 To keep the domain views legible, that shared edge is drawn explicitly only in the
 Master ERD and the *Identity & Access* view; in the other domain views the tenant
 column is listed as an attribute (`bigint organization_id FK`) and its edge to
@@ -125,7 +125,7 @@ column is listed as an attribute (`bigint organization_id FK`) and its edge to
 
 ## Master ERD
 
-The single canonical picture: **all 57 entities** and **all** their foreign-key
+The single canonical picture: **all 58 entities** and **all** their foreign-key
 relationships, including the tenant `organization_id` fan from `ORGANIZATIONS`.
 Attributes are trimmed to the primary key, the salient foreign keys, and one to
 three defining columns per table — the domain views below carry fuller attribute
@@ -133,10 +133,10 @@ lists. This diagram is intentionally large; it is the authoritative wiring
 diagram.
 
 `erd/eventa-full.drawio` is a second rendering of the same schema, generated
-straight from the database rather than hand-maintained. **It is one table behind
+straight from the database rather than hand-maintained. **It is two tables behind
 this one.** It was generated before migration `0068` and so draws 56 entities and
-124 foreign-key edges, missing `scan_attempts` and its five FKs; the Mermaid below
-draws all 57 and 129. Edit the Mermaid here; the `.drawio` is a generated artifact
+124 foreign-key edges, missing `scan_attempts` and its five FKs and, since `0075`,
+`calendar_connections` and its two; the Mermaid below draws all 58 and 131. Edit the Mermaid here; the `.drawio` is a generated artifact
 and must be **regenerated from the database**, never hand-reconciled — patching one
 table into it by hand is how it would stop being a second, independent reading of
 the schema and become a copy of this diagram's mistakes.
@@ -520,6 +520,13 @@ erDiagram
         meeting_type type
         meeting_status status
     }
+    CALENDAR_CONNECTIONS {
+        bigint id PK
+        bigint organization_id FK,UK
+        uuid connected_by FK
+        calendar_connection_status status
+        bytea refresh_token_cipher
+    }
     AUDIT_EVENTS {
         bigint id PK
         bigint organization_id FK
@@ -597,6 +604,7 @@ erDiagram
     ORGANIZATIONS ||--o{ SURVEY_RESPONSES : "owns"
     ORGANIZATIONS ||--o{ SURVEY_ANSWERS : "owns"
     ORGANIZATIONS ||--o{ MEETINGS : "owns"
+    ORGANIZATIONS ||--o| CALENDAR_CONNECTIONS : "connects"
     ORGANIZATIONS ||--o{ AUDIT_EVENTS : "records"
     ORGANIZATIONS ||--o{ OUTBOX_EVENTS : "owns"
     ORGANIZATIONS ||--o{ SEAT_HOLDS : "owns"
@@ -692,6 +700,7 @@ erDiagram
     USERS |o--o{ ANNOUNCEMENTS : "cancels"
     USERS |o--o{ EVENT_INVITATIONS : "invites"
     USERS |o--o{ MEETINGS : "organizes"
+    USERS |o--o{ CALENDAR_CONNECTIONS : "connected"
 
     EVENTS ||--o{ SEAT_HOLDS : "holds"
     ORDERS |o--o{ SEAT_HOLDS : "reserves"
@@ -1854,7 +1863,8 @@ erDiagram
 
 ### Meetings
 
-Operational coordination meetings, optionally tied to an event.
+Operational coordination meetings, optionally tied to an event, and the
+workspace's Google Calendar connection that sends their invites.
 
 ![Meetings](erd/meetings.png)
 
@@ -1897,9 +1907,29 @@ erDiagram
         uuid id PK
         citext email
     }
+    ORGANIZATIONS {
+        bigint id PK
+        text name
+    }
+    CALENDAR_CONNECTIONS {
+        bigint id PK
+        bigint organization_id FK,UK
+        calendar_connection_status status
+        citext account_email
+        bytea refresh_token_cipher
+        uuid connected_by FK
+        timestamptz connected_at
+        timestamptz disconnected_at
+        text oauth_state_hash
+        uuid oauth_state_user_id
+        bytea oauth_verifier_cipher
+        timestamptz oauth_state_expires_at
+    }
 
     EVENTS |o--o{ MEETINGS : "coordinates (event_id)"
     USERS |o--o{ MEETINGS : "organizes (created_by)"
+    ORGANIZATIONS ||--o| CALENDAR_CONNECTIONS : "connects (organization_id)"
+    USERS |o--o{ CALENDAR_CONNECTIONS : "connected (connected_by)"
 ```
 
 </details>
@@ -1913,8 +1943,23 @@ erDiagram
   groups by is derived from `meeting_date` at read time, exactly as
   [Design notes](#design-notes) says derived values should be.
 - `sync_status`, `external_event_id` and `sync_error` track the one-way push to the
-  organizer's external calendar; `idempotency_key`, unique per organization, keeps
-  a retried create from booking the same slot twice.
+  workspace's Google Calendar; `idempotency_key`, unique per organization, keeps
+  a retried create from booking the same slot twice. eventa-api writes
+  `sync_status = 'pending'` on every write; eventa-worker writes `synced`, `failed`
+  or `not_connected`, `sync_error` and `link` only while `updated_at` is the one it
+  read, and `external_event_id` unconditionally — always the meeting's `id` without
+  hyphens — and never `version` or `updated_at` (ADR-15).
+- `calendar_connections` is the workspace's single Google Calendar connection:
+  `uq_calendar_connections_org` makes `ORGANIZATIONS ||--o| CALENDAR_CONNECTIONS` a
+  1:1, the schema's second after `payment_settings`, and no row means
+  disconnected. `connected_by → users` is `SET NULL`. `refresh_token_cipher` and
+  `oauth_verifier_cipher` are AES-256-GCM ciphertext under
+  `SECRET_ENCRYPTION_KEY`, write-only. `oauth_state_user_id` holds a `users.id`
+  with **no foreign key on purpose** — a pending connect lives ten minutes and is
+  cleared on first use — so it is drawn as an attribute, not an edge, and is not
+  one of the [Unenforced references](#unenforced-references). eventa-worker writes
+  only `status` → `expired` (and `updated_at`), and only while the row still holds
+  the cipher it used (ADR-15).
 
 ### System & Audit
 
@@ -2074,9 +2119,9 @@ end is `o|` when a single-column unique index makes the child at-most-one.
 **Identifying?** = existential ownership (composition/junction = Yes; optional or
 merely-referential = No).
 
-Rows 1–10 cover the tenant `organization_id` fan, which is 50 of the 129
-constraints and would otherwise swamp the table; rows 11–89 are the remaining 79
-constraints, one row each; rows 90–96 are the conceptual many-to-many edges that
+Rows 1–10 cover the tenant `organization_id` fan, which is 51 of the 131
+constraints and would otherwise swamp the table; rows 11–90 are the remaining 80
+constraints, one row each; rows 91–97 are the conceptual many-to-many edges that
 junction tables resolve. The six **unenforced** reference columns are not foreign
 keys and are tabulated separately below.
 
@@ -2091,7 +2136,7 @@ keys and are tabulated separately below.
 | 7 | organizations | payment_credentials | `\|\|--o{` | payment_credentials.organization_id | CASCADE | No |
 | 8 | organizations | audit_events | `\|\|--o{` | audit_events.organization_id | RESTRICT | No |
 | 9 | organizations | webhook_events | `\|o--o{` | webhook_events.organization_id | SET NULL | No |
-| 10 | organizations | *(all 50 tenant-scoped tables)* | `\|\|--o{` — except `\|\|--o\|` for payment_settings (`UNIQUE (organization_id)`) | `organization_id` | CASCADE (RESTRICT for audit_events, SET NULL for webhook_events) | No |
+| 10 | organizations | *(all 51 tenant-scoped tables)* | `\|\|--o{` — except `\|\|--o\|` for payment_settings and calendar_connections (each `UNIQUE (organization_id)`) | `organization_id` | CASCADE (RESTRICT for audit_events, SET NULL for webhook_events) | No |
 | 11 | attendees | check_ins | `\|o--o{` | check_ins.attendee_id | SET NULL | No |
 | 12 | attendees | orders | `\|o--o{` | orders.attendee_id | SET NULL | No |
 | 13 | attendees | tickets | `\|o--o{` | tickets.attendee_id | SET NULL | No |
@@ -2154,34 +2199,35 @@ keys and are tabulated separately below.
 | 70 | users | api_keys | `\|\|--o{` | api_keys.created_by | RESTRICT | No |
 | 71 | users | audit_events | `\|o--o{` | audit_events.actor_user_id | SET NULL | No |
 | 72 | users | auth_sessions | `\|\|--o{` | auth_sessions.user_id | CASCADE | Yes |
-| 73 | users | check_ins | `\|o--o{` | check_ins.checked_in_by | SET NULL | No |
-| 74 | users | event_invitations | `\|o--o{` | event_invitations.invited_by | SET NULL | No |
-| 75 | users | events | `\|o--o{` | events.created_by | SET NULL | No |
-| 76 | users | invoices | `\|o--o{` | invoices.voided_by | SET NULL | No |
-| 77 | users | meetings | `\|o--o{` | meetings.created_by | SET NULL | No |
-| 78 | users | memberships | `\|\|--o{` | memberships.user_id | CASCADE | Yes |
-| 79 | users | notification_preferences | `\|\|--o{` | notification_preferences.user_id | CASCADE | Yes |
-| 80 | users | notification_reads | `\|\|--o{` | notification_reads.user_id | CASCADE | Yes |
-| 81 | users | orders | `\|o--o{` | orders.created_by | SET NULL | No |
-| 82 | users | orders | `\|o--o{` | orders.decided_by | SET NULL | No |
-| 83 | users | orders | `\|o--o{` | orders.offered_by | SET NULL | No |
-| 84 | users | refunds | `\|\|--o{` | refunds.issued_by | RESTRICT | No |
-| 85 | users | saved_events | `\|\|--o{` | saved_events.user_id | CASCADE | Yes |
-| 86 | users | scan_attempts | `\|o--o{` | scan_attempts.scanned_by | SET NULL | No |
-| 87 | users | social_identities | `\|\|--o{` | social_identities.user_id | CASCADE | Yes |
-| 88 | users | survey_responses | `\|\|--o{` | survey_responses.user_id | CASCADE | Yes |
-| 89 | users | two_factors | `\|\|--o\|` | two_factors.user_id (UK) | CASCADE | Yes |
-| 90 | roles ⇄ permissions | role_permissions | `}o--o{` | junction role_permissions | CASCADE / RESTRICT | Yes |
-| 91 | users ⇄ organizations | memberships | `}o--o{` | junction memberships | CASCADE | Yes |
-| 92 | sessions ⇄ speakers | session_speakers | `}o--o{` | junction session_speakers | CASCADE | Yes |
-| 93 | discount_codes ⇄ orders | discount_redemptions | `}o--o{` | junction discount_redemptions | RESTRICT / CASCADE | Yes |
-| 94 | seats ⇄ tickets | seat_assignments | `}o--o{` | junction seat_assignments | RESTRICT / CASCADE | Yes |
-| 95 | payments ⇄ payouts | payout_items | `}o--o{` | junction payout_items | RESTRICT / CASCADE | Yes |
-| 96 | users ⇄ events | saved_events | `}o--o{` | junction saved_events | CASCADE | Yes |
+| 73 | users | calendar_connections | `\|o--o{` | calendar_connections.connected_by | SET NULL | No |
+| 74 | users | check_ins | `\|o--o{` | check_ins.checked_in_by | SET NULL | No |
+| 75 | users | event_invitations | `\|o--o{` | event_invitations.invited_by | SET NULL | No |
+| 76 | users | events | `\|o--o{` | events.created_by | SET NULL | No |
+| 77 | users | invoices | `\|o--o{` | invoices.voided_by | SET NULL | No |
+| 78 | users | meetings | `\|o--o{` | meetings.created_by | SET NULL | No |
+| 79 | users | memberships | `\|\|--o{` | memberships.user_id | CASCADE | Yes |
+| 80 | users | notification_preferences | `\|\|--o{` | notification_preferences.user_id | CASCADE | Yes |
+| 81 | users | notification_reads | `\|\|--o{` | notification_reads.user_id | CASCADE | Yes |
+| 82 | users | orders | `\|o--o{` | orders.created_by | SET NULL | No |
+| 83 | users | orders | `\|o--o{` | orders.decided_by | SET NULL | No |
+| 84 | users | orders | `\|o--o{` | orders.offered_by | SET NULL | No |
+| 85 | users | refunds | `\|\|--o{` | refunds.issued_by | RESTRICT | No |
+| 86 | users | saved_events | `\|\|--o{` | saved_events.user_id | CASCADE | Yes |
+| 87 | users | scan_attempts | `\|o--o{` | scan_attempts.scanned_by | SET NULL | No |
+| 88 | users | social_identities | `\|\|--o{` | social_identities.user_id | CASCADE | Yes |
+| 89 | users | survey_responses | `\|\|--o{` | survey_responses.user_id | CASCADE | Yes |
+| 90 | users | two_factors | `\|\|--o\|` | two_factors.user_id (UK) | CASCADE | Yes |
+| 91 | roles ⇄ permissions | role_permissions | `}o--o{` | junction role_permissions | CASCADE / RESTRICT | Yes |
+| 92 | users ⇄ organizations | memberships | `}o--o{` | junction memberships | CASCADE | Yes |
+| 93 | sessions ⇄ speakers | session_speakers | `}o--o{` | junction session_speakers | CASCADE | Yes |
+| 94 | discount_codes ⇄ orders | discount_redemptions | `}o--o{` | junction discount_redemptions | RESTRICT / CASCADE | Yes |
+| 95 | seats ⇄ tickets | seat_assignments | `}o--o{` | junction seat_assignments | RESTRICT / CASCADE | Yes |
+| 96 | payments ⇄ payouts | payout_items | `}o--o{` | junction payout_items | RESTRICT / CASCADE | Yes |
+| 97 | users ⇄ events | saved_events | `}o--o{` | junction saved_events | CASCADE | Yes |
 
-> **Note on rows 90–96.** These are the *conceptual* M:N edges; each is physically
+> **Note on rows 91–97.** These are the *conceptual* M:N edges; each is physically
 > realized by its junction table's two constituent foreign keys, which also appear
-> as their own numbered rows (e.g. 48+50 realize 90; 85+27 realize 96). The
+> as their own numbered rows (e.g. 48+50 realize 91; 86+27 realize 97). The
 > `On delete` column lists the two junction-arm behaviors.
 
 > **Note on rows 61–62 — the seat's ticket type.** Both foreign keys are
@@ -2201,15 +2247,16 @@ keys and are tabulated separately below.
 > `CASCADE` is unchanged: a hold is a short-lived reservation, not history. See
 > [Design notes → Each seat sells its own ticket type](#seat-ticket-types).
 
-> **Note on row 10 — one cardinality exception.** Row 10 carves out exceptions for
+> **Note on row 10 — two cardinality exceptions.** Row 10 carves out exceptions for
 > `ON DELETE` behaviour, but the tenant fan is not uniform in *cardinality*
-> either. `payment_settings` is the only one of the 50 tenant-scoped tables whose
-> `organization_id` carries a single-column `UNIQUE` index
-> (`uq_payment_settings_org`), so an organization has **at most one**
-> `payment_settings` row: that edge is `||--o|`, a 1:1, not the `||--o{` 1:N every
-> other tenant table gets. The diagrams already draw it that way
-> (`ORGANIZATIONS ||--o| PAYMENT_SETTINGS : "configures"` in the Master ERD and in
-> *Organization & Settings*). Its near-namesakes are genuinely 1:N and are **not**
+> either. `payment_settings` and `calendar_connections` are the only two of the 51
+> tenant-scoped tables whose `organization_id` carries a single-column `UNIQUE`
+> index (`uq_payment_settings_org`, `uq_calendar_connections_org`), so an
+> organization has **at most one** row in each: those edges are `||--o|`, a 1:1,
+> not the `||--o{` 1:N every other tenant table gets. The diagrams draw them that
+> way (`ORGANIZATIONS ||--o| PAYMENT_SETTINGS : "configures"` in the Master ERD and
+> in *Organization & Settings*; `ORGANIZATIONS ||--o| CALENDAR_CONNECTIONS` in the
+> Master ERD and in *Meetings*). Its near-namesakes are genuinely 1:N and are **not**
 > exceptions: `payment_credentials` (row 7) is unique on
 > `(organization_id, mode)`, one credential row per live/test mode, and
 > `payment_method_settings` on `(organization_id, method)`, one row per enabled
@@ -2217,8 +2264,10 @@ keys and are tabulated separately below.
 > touching an `organization_id` in this schema is composite
 > (`uq_memberships_org_user`, `uq_orders_org_reference`, `uq_invoices_org_number`,
 > `uq_events_org_slug`, …), which constrains a natural key *within* a tenant and
-> leaves the tenant edge 1:N. `uq_payment_settings_org` is the single exception,
-> so `payment_settings` is the schema's only 1:1 with `organizations`.
+> leaves the tenant edge 1:N. `uq_payment_settings_org` was the single exception
+> until migration `0075` added `uq_calendar_connections_org` — one Google Calendar
+> connection per workspace — so `payment_settings` and `calendar_connections` are
+> the schema's only 1:1s with `organizations`.
 
 <a id="unenforced-references"></a>
 ### Unenforced references
@@ -2244,6 +2293,15 @@ added without the `REFERENCES` clause their siblings carry rather than for any
 deliberate reason, so adding the constraints (after a one-off orphan sweep) is the
 obvious follow-up. Deciding that is a schema change and therefore out of scope for
 this document; recording it is not.
+
+One further column holds a `users.id` with no constraint and is **not** counted
+here, because it is deliberate rather than a gap:
+`calendar_connections.oauth_state_user_id` records who started a pending Google
+Calendar connect. It lives at most ten minutes, is cleared on its first matching
+use, and the callback re-checks that user's `setIntegrations` before anything is
+written — a removed member simply fails there — and on success its value is copied
+into `connected_by`, which *is* a foreign key. See
+[The 58th table](#the-58th-table).
 
 ---
 
@@ -2277,7 +2335,7 @@ like a contradiction to be adjudicated, so drift could sit unresolved while the
 two documents disagreed in public. Under the new rule a difference is simply a
 defect in whichever document is behind, with a known fix: read the database and
 correct the document. Counts are measured, never copied between documents — the
-57 in this file was taken from `pg_catalog`, and so was every figure derived from
+58 in this file was taken from `pg_catalog`, and so was every figure derived from
 it.
 
 **The drift that remains is one-directional and in the catalog's column.** One
@@ -2295,7 +2353,8 @@ docker exec eventa-postgres-1 psql -U eventa -d eventa -At -c \
 ```
 
 and check each name against both documents. `scan_attempts` was the newest such
-table when this pass ran; see [The 57th table](#the-57th-table).
+table when this pass ran; see [The 57th table](#the-57th-table). The newest table
+is now `calendar_connections`; see [The 58th table](#the-58th-table).
 
 <a id="designed-but-not-built"></a>
 ### Designed but not built
@@ -2529,6 +2588,63 @@ under [Normalization (3NF)](#normalization-3nf): `ticket_types.total` is now a
 stored derived value on seat-typed events, and `seats.ticket_type_id` is a fact
 about the seat itself, so the row-level repetition it used to carry is gone.
 
+<a id="the-58th-table"></a>
+### The 58th table — `calendar_connections`
+
+**Why there is a 58th table.** Every meeting write has queued a
+`meeting.sync_requested` request on the outbox since meetings shipped, and nothing
+could answer it, because there was no calendar to send an invite from. Migration
+`0075_calendar_connections.sql` adds the workspace's Google Calendar connection
+(US-MTG-08): an Admin connects it on Settings → Integrations, and eventa-worker
+uses it to create, move and cancel each meeting's Google event with a Meet link,
+the guest invite and a 15-minute reminder (US-MTG-04 to US-MTG-07). One row per
+workspace, and no row means disconnected. Its purpose and lifecycle are in
+[entities.md](entities.md#calendar_connections).
+
+**Why its own table and not columns on `organizations` or `payment_settings`.** It
+holds an encrypted OAuth refresh token and a pending PKCE verifier, both
+write-only, and a short-lived pending-connect state. It follows the
+`payment_settings` / `payment_credentials` precedent — tenant-scoped, RLS
+`tenant_isolation`, secrets as AES-256-GCM `bytea`, no `version` — rather than
+widening the tenant root with credential columns every read of `organizations`
+would carry. Being one row per workspace, it is the schema's **second 1:1 with
+`organizations`**, which is why row 10 of the
+[Relationship matrix](#relationship-matrix) and the note below it now name two
+exceptions.
+
+**What moved in this document.** `CALENDAR_CONNECTIONS` was added to the
+[Master ERD](#master-erd) and to the *Meetings* domain view, with its columns,
+keys and two foreign keys read from `information_schema.columns` and
+`pg_constraint` on 2026-10-20, from a scratch database migrated through `0075`.
+Its tenant edge joins row 10 (`||--o|`, like `payment_settings`); its one other
+foreign key, `connected_by → users` (`SET NULL`), is the new matrix row 73,
+inserted after `users → auth_sessions`, so the old rows 73–96 are now 74–97 and
+the cross-references into them were repointed: the matrix preamble (rows 11–90
+are the remaining 80 constraints, rows 91–97 the conceptual many-to-many edges),
+the note on rows 91–97 (48+50 realize 91; 86+27 realize 97) and the
+`saved_events` paragraph under [How to read this ERD](#how-to-read-this-erd)
+(row 97, rows 27 and 86). `oauth_state_user_id` holds a `users.id` with no
+foreign key **on purpose** and adds no edge; it is explained under
+[Unenforced references](#unenforced-references) rather than counted there. Each
+count was re-measured rather than incremented: **58** tables, **51** carrying
+`organization_id`, **131** enforced foreign keys, at the *Measured scale*
+headline, the tenancy-edge line, the [Master ERD](#master-erd) preamble, the
+matrix preamble, row 10 and the multi-tenancy paragraph under
+[Normalization (3NF)](#normalization-3nf). The seven tables with no tenant
+column are unchanged.
+
+**Derived artifacts.** `erd/full.png` and `erd/meetings.png` were re-rendered
+from the updated Mermaid. `erd/eventa-full.drawio` was again deliberately not
+touched and is now **two** tables behind (56 entities, 124 edges against 58 and
+131), for the reason given [above](#the-57th-table): it must be regenerated from
+the database, never patched by hand. `erd.tldr` was not regenerated either, so it
+lacks `calendar_connections` along with the entities recorded
+[earlier](#what-this-pass-changed).
+
+The 56-table pass, `#the-57th-table` and the seat note above are left as they
+were written: they record what those passes measured, and their figures are
+superseded by this one.
+
 ### Renames the diagrams had missed
 
 Ten drawn columns existed under a different name. These were corrected in place —
@@ -2574,7 +2690,7 @@ seats; now each seat carries its own type, a fact about that seat alone, so it
 depends on the seat's key and nothing else. A row whose seats share one type is
 a reading of those seats, not a stored fact, so no row table is missing.
 
-**Multi-tenancy via `organization_id`.** 50 of 57 tables carry
+**Multi-tenancy via `organization_id`.** 51 of 58 tables carry
 `organization_id … REFERENCES organizations(id)` (NOT NULL except the inbound
 `webhook_events` log, whose tenant is resolved after signature verification), and
 every read/write is filtered by the caller's org (row-level tenant isolation). The

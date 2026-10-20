@@ -18,7 +18,7 @@ The technical blueprint: the software architecture plus the data model that sati
   PostgreSQL tables across 12 bounded contexts, with keys, constraints, indexes, enums, junction
   tables. Multi-tenant, money-as-satang, order→ticket commerce model.
 - **[erd.md](erd.md)** — the **Entity Relationship Diagram**: master crow's-foot Mermaid diagram +
-  12 domain views + a 90-row relationship matrix, derived from `entities.md`.
+  12 domain views + a 97-row relationship matrix, derived from `entities.md`.
 - **[flowcharts/](flowcharts/README.md)** — **26 step-by-step flowcharts**, one per user journey across
   the attendee portal, the public pages and the organizer console, each drawn from and checked against
   the code, with what is not built marked rather than drawn as working.
