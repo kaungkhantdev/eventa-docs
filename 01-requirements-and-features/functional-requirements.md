@@ -1828,7 +1828,7 @@ _Notes: A meeting can be tied to a specific event or to "General (all events)". 
 - Given my calendar is not connected, when I save a meeting, then the meeting is still kept and I am prompted to connect my calendar to send the invite and link — nothing is lost.
 - Given the calendar service is briefly unavailable, when I save a meeting, then the meeting is kept and marked as not yet synced, with a way to retry, and the invite goes out once the service is reachable.
 
-_Notes: The resilience/retry behaviour is the safety net; the automatic invite and Meet link are the core value of scheduling from the console._
+_Notes: The resilience/retry behaviour is the safety net; the automatic invite and Meet link are the core value of scheduling from the console. "My calendar" is the workspace calendar of US-MTG-08; organizers without the Manage integrations permission are told to ask an Admin to connect it._
 
 ### US-MTG-05 — Reschedule or edit a meeting  ·  **Must**
 **As an** Event Organizer, **I want** to change a meeting's time or details and have the guest's invite updated in place, **so that** the invitation on everyone's calendar is never stale.
@@ -1863,7 +1863,7 @@ _Notes: Cancelling keeps the meeting on record (as Cancelled) rather than erasin
 - Given the connection later expires or is revoked, then I am prompted to reconnect rather than sync failing silently.
 - Given a non-Admin opens Meetings, then no connect/disconnect control is available to them.
 
-_Notes: Disconnecting stops future sync but does not remove meetings already on people's calendars._
+_Notes: Disconnecting stops future sync but does not remove meetings already on people's calendars. Admins connect, reconnect and disconnect Google Calendar from Settings → Integrations; the Meetings header shows the status and links Admins there._
 
 ### US-MTG-09 — Be warned about overlapping meetings  ·  **Could**
 **As an** Event Organizer, **I want** a gentle warning when a new meeting overlaps one I already have, **so that** I can avoid accidental double-booking while still deciding for myself.
