@@ -4020,7 +4020,7 @@ Locale assumptions: Asia/Bangkok timezone, EN/TH content, ฿ (VAT not applicabl
 
 ### TC-MTG-19b — Admin disconnects Google Calendar; future meetings flagged not synced; existing invites stay
 - **Traces:** US-MTG-08 · **Priority:** Medium · **Type:** Functional
-- **Preconditions:** Logged in as Admin. Workspace Google Calendar connected. One upcoming meeting already synced, its invite on the guest's calendar.
+- **Preconditions:** Logged in as Admin. Desktop-width screen (the header status is hidden on small screens). Workspace Google Calendar connected. One upcoming meeting already synced, its invite on the guest's calendar.
 - **Test data:** New meeting "Vendor follow-up", tomorrow 11:00–11:30 Bangkok, mode Phone call.
 - **Steps:**
   1. Open Settings → Integrations and click Disconnect on the Google Calendar card.
