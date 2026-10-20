@@ -54,7 +54,7 @@ Grouped by product area, with route and the backlog epic each screen serves (tra
 | Finance | `payments`, `payouts`, `invoices`, `taxes` | E9 |
 | Insights | `reports`, `reports-income`, `-transactions`, `-payouts`, `-registrations`, `-attendance`, `-discounts`, `-events` | E13 |
 | Engagement | `notifications`, `messaging-templates`, `messaging-announcements`, `messaging-log`, `feedback`, `feedback-detail` | E7 |
-| Settings & team | `settings-profile`, `-security`, `-notifications`, `-organization`, `-payments`, `users`, `roles` | E2 |
+| Settings & team | `settings-profile`, `-security`, `-notifications`, `-organization`, `-payments`, `-integrations`, `users`, `roles` | E2 (`-integrations`: E12, US-MTG-08) |
 
 *System:* a 404 screen for unknown routes.
 

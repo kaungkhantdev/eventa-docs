@@ -25,7 +25,7 @@ Each one draws what the code does today, and was checked claim by claim against 
 | 17 | [Set up the workspace](17-workspace-setup.md) | Home, Settings Organization, Settings Payments |
 | 18 | [Agenda, speakers and session changes](18-event-programme.md) | Admin Agenda, Admin Speakers, Event detail, Public event page, email |
 | 19 | [Discount codes: create, stop and redeem](19-discount-codes.md) | Admin Discounts, Checkout, Discounts report |
-| 20 | [Meetings with speakers, sponsors, venues and vendors](20-meetings.md) | Admin Meetings, Home |
+| 20 | [Meetings with speakers, sponsors, venues and vendors](20-meetings.md) | Admin Meetings, Home, Settings Integrations |
 | 21 | [Attendees, invitations and manual registration](21-attendees-invitations-and-manual-registration.md) | Admin Attendees, Attendee profile panel, Admin Registrations, email |
 | 22 | [Automated messages: templates, reminders and the delivery log](22-automated-messages.md) | Message templates, Delivery log, email |
 | 23 | [My tickets and payments, after purchase](23-my-tickets.md) | Guest order page, Portal sign-in, My Account (My Events, Payment history), Ticket QR modal, Portal Discover |
@@ -45,7 +45,6 @@ A flowchart documents built behaviour, so these have no chart of their own. Smal
 | Confirming a changed email address | US-SET-01, US-DISC-11 | the confirmation link lands on a route that does not exist, so the new address is never confirmed | [16](16-profile-preferences-and-account-deletion.md) |
 | Verifying a phone number | US-SET-01, US-DISC-11 | the code is issued, but no worker handler sends the text | [16](16-profile-preferences-and-account-deletion.md) |
 | Notification preferences taking effect | US-SET-06 | the switches are stored; nothing reads them | [16](16-profile-preferences-and-account-deletion.md), [22](22-automated-messages.md) |
-| Meeting invites, video links and reminders | US-MTG-04, US-MTG-08 | `meeting.sync_requested` is published and nothing consumes it | [20](20-meetings.md) |
 | Emailing one attendee | US-REG-09 | "Send email" opens a `mailto:` link; nothing is queued or logged | [21](21-attendees-invitations-and-manual-registration.md) |
 | Chasing unpaid invoices | US-FIN-09 | no resend and no automatic reminder | [08](08-invoice-and-vat.md) |
 | Speaker ratings from feedback | US-PROG-13 | only a rating badge that is always empty | [18](18-event-programme.md) |
