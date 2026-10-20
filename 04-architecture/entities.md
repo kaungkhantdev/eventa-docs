@@ -1868,8 +1868,10 @@ because the booking was never conditional on it.
 - **`cancelled_at` and `deleted_at` are both present and mean different things** — called off (the guest is
   told, the reason is kept) versus removed from the organizer's list.
 - **WRITERS — eventa-api owns this table, with one agreed exception.** eventa-api writes every column and sets
-  `sync_status = 'pending'` (clearing `sync_error`) and `updated_at` on every write, including the resync that
-  runs when a workspace connects Google Calendar. **eventa-worker** (`modules/meetings`, consuming
+  `sync_status = 'pending'` and `updated_at` on every write, including the resync that runs when a workspace
+  connects Google Calendar. A reschedule, **Send it now** (`POST /meetings/:id/sync`) and that resync also clear
+  `sync_error`; a cancel does not, so a cancelled meeting can read `pending` beside the sentence of an earlier
+  failure until the worker writes the cancel's own outcome. **eventa-worker** (`modules/meetings`, consuming
   `meeting.sync_requested`) writes `sync_status`, `sync_error` and `link` **conditional on `updated_at`** — only
   while the row still carries the `updated_at` it read, so an outcome for a superseded version is dropped
   rather than written over a newer edit — and `external_event_id` **unconditionally**, because eventa-api never
