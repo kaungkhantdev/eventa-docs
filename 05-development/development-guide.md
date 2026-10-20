@@ -59,23 +59,32 @@ eventa-api/
 └── openapi.json                     # generated → consumed by web
 ```
 
-**`eventa-worker`** — the same domains, handler-shaped; channel adapters injected:
+**`eventa-worker`** — the same domains, handler-shaped; channel providers injected:
 ```
 eventa-worker/
 ├── src/
 │   ├── main.ts                      # consumer bootstrap
-│   ├── modules/                     # mirror the api's module names, 1:1
-│   │   ├── auth/  auth-signup/  auth-password/   # the identity.* consumers
-│   │   ├── events/                  # the events.* family
+│   ├── app.module.ts                # imports every module (app.module.spec.ts enforces it)
+│   ├── modules/                     # flat; named after the api module they serve
+│   │   ├── auth/  auth-signup/  auth-password/  auth-two-factor/  auth-booking-signup/
+│   │   ├── access/  users/  account-deletion/  invitations/
+│   │   ├── events/  event-program/  payments/  waitlist/
 │   │   ├── registration/
-│   │   │   ├── order-confirmed.handler.ts
-│   │   │   └── order-confirmed.schema.ts     # zod: the shape it expects
-│   │   ├── payments/  engagement/  meetings/
-│   │   └── insights/                # read-model / projection builders
-│   └── common/
-│       ├── providers/               # email · sms · calendar (injected)
-│       └── idempotency/  tenancy/  telemetry/
-└── test/contract/                   # Pact CONSUMER tests
+│   │   │   ├── registration-confirmed.handler.ts
+│   │   │   └── registration-confirmed.schema.ts   # zod: the shape it expects
+│   │   ├── meetings/                # meeting.sync_requested → Google Calendar (ADR-15)
+│   │   │   ├── meeting-sync-requested.handler.ts  # + .schema.ts
+│   │   │   ├── meeting-calendar-sync.service.ts   # reconciles from the current row
+│   │   │   ├── meeting-sync.lock.ts               # Redis lock per meeting
+│   │   │   └── meetings.repository.ts  calendar-connections.repository.ts
+│   │   └── order-expiry/  scheduled-announcements/  scheduled-messages/   # clock-driven (ADR-14)
+│   ├── common/
+│   │   ├── email/  sms/  calendar/  # channel providers, chosen by env and injected
+│   │   ├── crypto/                  # SecretCipher: decrypts what eventa-api encrypted
+│   │   └── db/  idempotency/  logging/  messaging/  time/
+│   ├── rabbitmq/                    # consumer, retry ladder, dead-letter queue
+│   └── db/schema/                   # typed mirrors of the api's tables (write mirrors under ADR-14/15)
+└── test/                            # e2e specs
 ```
 
 **`eventa-web`** — feature-based (unchanged), with a generated API client:
@@ -95,15 +104,15 @@ whenever describing a module needs the word "and". Modules are **flat** under `s
 sub-feature folder nested inside another module — and depend on each other's **exported service
 interface**, never on another module's tables *or repository*. Cross-cutting code (guards, decorators,
 shared utils) lives in `src/common/`, never in a domain module. The **worker mirrors the api's module
-names** 1:1, with channel clients (email/sms/calendar) injected from `common/providers` — never used as the
-folder structure.
+names**, with channel clients injected from `common/email`, `common/sms` and `common/calendar` — never used as
+the folder structure.
 
 **Contract safety (no shared package):**
 - **web ↔ api** → `eventa-api/openapi.json` → `eventa-web/src/api/generated/`, regenerated in CI.
 - **api ↔ worker** → each owns its event type (`events/*.event.ts` in api, `*.schema.ts` in worker);
   the worker validates every message (tolerant reader) and **Pact** tests in both `test/contract/`
   folders fail CI on drift. Payloads carry a `version` field for breaking-change overlap.
-- **Schema ownership:** `eventa-api` owns migrations. `eventa-worker` touches only agreed read-model tables plus the ADR-14 exception; `eventa-relay` reads `outbox_events` and sets `published_at`, nothing else. Both keep typed mirrors that must track this repo's enums.
+- **Schema ownership:** `eventa-api` owns migrations. `eventa-worker` touches only agreed read-model tables plus the ADR-14 and ADR-15 exceptions; `eventa-relay` reads `outbox_events` and sets `published_at`, nothing else. Both keep typed mirrors that must track this repo's enums.
 
 ## 3. Local development setup
 **Prerequisites:** Node LTS, pnpm, Docker. Clone each service repo you're working on.
@@ -115,6 +124,35 @@ folder structure.
    product looks healthy.
 5. **`eventa-worker`**: `pnpm dev`.
 6. **`eventa-web`**: `pnpm dev` (port 5180).
+7. **Meetings and Google Calendar** (optional). With none of these variables set, both services resolve
+   the calendar provider to `off`: Settings → Integrations reads "Not set up" and every meeting ends
+   "not connected". The variables are catalogued in
+   [devops-infrastructure §5](../07-deployment/devops-infrastructure.md#google-calendar-config); never
+   add them to a committed `.env.example`.
+   - **With the fake, no Google account:** start eventa-api and eventa-worker with
+     `CALENDAR_PROVIDER=fake` and the **same** `SECRET_ENCRYPTION_KEY` — eventa-worker's `.env` has
+     none and falls back to the dev default, so copy eventa-api's value across. Connect on Settings →
+     Integrations: the fake goes straight back to the callback as `calendar@example.test`, Video
+     meetings get `https://meet.google.com/…` links, and a title containing `[calendar-down]` acts out
+     an outage. On a fresh exchange or queue, start the worker before the relay
+     ([how the services connect](../04-architecture/how-services-connect.md)).
+   - **With a real Google client:**
+     1. In a Google Cloud project, enable the **Google Calendar API**.
+     2. Configure the **OAuth consent screen** with the scopes `openid`, `email` and
+        `https://www.googleapis.com/auth/calendar.events`, and add the Google accounts you will connect
+        as **test users**.
+     3. Create an **OAuth client** of type *Web application* with the authorized redirect URI
+        `http://localhost:3000/api/v1/public/calendar-connection/google/callback`. Another environment
+        registers `${PUBLIC_API_URL}/api/v1/public/calendar-connection/google/callback`, or sets
+        `GOOGLE_CALENDAR_REDIRECT_URI`.
+     4. Put `GOOGLE_CALENDAR_CLIENT_ID` and `GOOGLE_CALENDAR_CLIENT_SECRET` in **both**
+        `eventa-api/.env` and `eventa-worker/.env`, and copy eventa-api's `SECRET_ENCRYPTION_KEY` into
+        `eventa-worker/.env`. With both client variables set, the provider resolves to `google` without
+        `CALENDAR_PROVIDER`.
+     5. While the consent screen is in **Testing** status, Google expires refresh tokens after
+        **7 days**; the card then reads "Reconnect needed" and an Admin reconnects. Publishing the app
+        needs Google's verification, because `calendar.events` is a sensitive scope. The Google
+        adapters are unproven against a real account until this has been run.
 
 > The **front-end prototype runs today** against mock data; point it at the local API as endpoints
 > land. Web regenerates its API client from `eventa-api`'s `openapi.json` in CI.
@@ -216,6 +254,14 @@ From a backlog story to shipped, every time:
   callback kills the process. Keep the rule in a plain service the cron calls: unit-testable, and an
   operator can run it by hand. Writing an eventa-api aggregate from one is the ADR-14 exception and must be
   enumerated per-table in [`entities.md`](../04-architecture/entities.md) before you add it.
+- **Writing back an external outcome** (ADR-15) is the other exception, and the same rule applies: enumerate
+  it per table in [`entities.md`](../04-architecture/entities.md) first. The meetings handler writes Google
+  Calendar's answer onto eventa-api's `meetings` row only `WHERE updated_at = <the value it read>` — zero rows
+  means a newer save superseded it, which is an outcome, not an error — never sets `version` or
+  `updated_at`, and writes `external_event_id` unconditionally because the API never does. It marks
+  `calendar_connections` `expired` only while the row still holds the cipher it used. The schema files it
+  writes through are **write** mirrors: an enum value added in eventa-api must be added there in the same
+  change.
 
 ## 9. Testing during development
 - **Unit-test the rules** (VAT, fees, capacity, discounts) TDD-style; **integration-test** flows against
@@ -245,6 +291,11 @@ NFRs · no known S1/S2 defects · PO-accepted in staging. (Matches the [project 
 
 ## 12. Security & quality in code (shift-left)
 - **Secrets** come from env/vault, **never committed**; `.env` is git-ignored (secret-scanning in CI).
+- **Integration secrets.** `GOOGLE_CALENDAR_CLIENT_SECRET` and `SECRET_ENCRYPTION_KEY` (one value shared by
+  eventa-api and eventa-worker) come from env/vault only. OAuth refresh tokens and PKCE verifiers are encrypted
+  with `SecretCipher` before they reach the database and are never decrypted into a response. Never log a
+  token, a cipher, the OAuth `code` or `state`, or a whole wrapped error — log `safeError(err)`; `sync_error`
+  and error messages carry only fixed sentences, an HTTP status and a whitelisted OAuth error code.
 - **Validate all input**; parameterized queries; enforce **authz server-side** on every mutating endpoint.
 - **Never handle card/bank data** — Stripe hosted fields only (PCI SAQ-A). Handle personal data per **PDPA** (minimize, retain, delete).
 - Keep dependencies current; CI runs SAST/SCA/secret/container scans ([DevSecOps](../08-maintenance/devops-observability-sre.md)).

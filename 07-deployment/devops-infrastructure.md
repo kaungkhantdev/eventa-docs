@@ -176,8 +176,13 @@ flowchart TB
 | Secrets manager | Regional | No | Surfaced to K8s via External Secrets (§5) |
 
 **Residency:** all primary data (DB, replica, backups, object storage, logs) stays in the
-SG/TH region. Third-party processors (Stripe, comms) are contracted PDPA sub-processors;
-card data never touches Eventa infra (PCI SAQ-A — Stripe hosted fields).
+SG/TH region. Third-party processors (Stripe, comms, Google) are contracted PDPA sub-processors;
+card data never touches Eventa infra (PCI SAQ-A — Stripe hosted fields). **Google** is a
+sub-processor for meetings (US-MTG-04, US-MTG-08): for each meeting the worker sends the guest's
+email and name and the meeting's title, time, location and notes to the workspace's connected
+Google Calendar, where Google holds them outside the region and emails the guest the invite — a
+cross-border transfer that must be disclosed in the privacy notice (NFR-PDPA-07). Nothing is sent
+until an Admin connects the calendar, and disconnecting stops it.
 
 ---
 
@@ -299,7 +304,7 @@ Strict 12-factor separation: **config is not secret, secret is never in Git**.
 | Kind | Mechanism | Example | Per-env |
 |---|---|---|---|
 | Non-secret config | **ConfigMaps** (from `values-<env>.yaml`) | log level, feature flags, region, queue names, replica hints | Yes |
-| Secrets | **Managed secrets manager** → K8s via **External Secrets Operator** | DB DSN, Redis auth, RabbitMQ creds, Stripe/PromptPay keys, SMTP/SMS tokens, signing keys | Yes |
+| Secrets | **Managed secrets manager** → K8s via **External Secrets Operator** | DB DSN, Redis auth, RabbitMQ creds, Stripe/PromptPay keys, SMTP/SMS tokens, signing keys, `SECRET_ENCRYPTION_KEY`, Google OAuth client secret | Yes |
 
 - **External Secrets Operator** watches `ExternalSecret` CRs (templated by Helm) and
   materialises them into K8s Secrets pulled from the managed secrets manager at runtime.
@@ -312,6 +317,39 @@ Strict 12-factor separation: **config is not secret, secret is never in Git**.
   (two active) for graceful rollover.
 - **Precedence:** chart defaults → `values-<env>.yaml` → ExternalSecret. No secret ever
   lands in a container image, ConfigMap, or Git.
+
+<a id="google-calendar-config"></a>
+**Google Calendar (meetings, US-MTG-04/08).** These variables are documented here and in the
+[development guide](../05-development/development-guide.md) §3 only — never added to a committed
+`.env` or `.env.example`. Each service validates its own in `src/config/env.validation.ts`.
+
+| Name | Service | Required | Default | Secret |
+|---|---|---|---|---|
+| `CALENDAR_PROVIDER` | api + worker | optional | derived: an explicit `off` / `fake` / `google` wins; otherwise `google` when both client variables are set, else `off` | no |
+| `GOOGLE_CALENDAR_CLIENT_ID` | api + worker | for `google` | none | no |
+| `GOOGLE_CALENDAR_CLIENT_SECRET` | api + worker | for `google` | none | **YES** |
+| `GOOGLE_CALENDAR_REDIRECT_URI` | api | optional | `${PUBLIC_API_URL}/api/v1/public/calendar-connection/google/callback` | no |
+| `SECRET_ENCRYPTION_KEY` | api **and** worker, identical value | required in production | the published dev default, outside production only | **YES** |
+
+- **Both services must resolve the same provider.** eventa-api answers `not_configured` (and a
+  `409` on connect) when it resolves `off`; eventa-worker then writes `not_connected` on every
+  meeting. If eventa-api is `google` and eventa-worker `off`, Settings → Integrations says connected
+  while every meeting ends "not connected". The worker logs `Calendar provider: <name>` once at boot.
+- **`fake` is refused in production** by both services ("CALENDAR_PROVIDER=fake cannot run in
+  production — no invite would ever reach Google."); `google` requires both client variables in
+  both. eventa-worker also refuses `google` with the dev-default `SECRET_ENCRYPTION_KEY` in
+  production ("SECRET_ENCRYPTION_KEY must be set to eventa-api's key in production."); eventa-api
+  does not yet refuse its own dev default in production.
+- **`SECRET_ENCRYPTION_KEY` is shared**: the worker decrypts the refresh token eventa-api stored in
+  `calendar_connections`, so the two `ExternalSecret`s must reference the **same** secret-manager
+  path. A mismatch fails every sync with "The Google Calendar connection could not be read." and
+  dead-letters it. Rotating it orphans the stored token (see
+  [observability §6.3](../08-maintenance/devops-observability-sre.md)).
+- **The client secret** is a Secret (ExternalSecret) in both workloads; the client id, the provider
+  and the redirect URI are ConfigMap values. Each environment registers its **own** redirect URI on
+  the Google OAuth client.
+- **Egress:** the worker needs outbound 443 to `oauth2.googleapis.com` and `www.googleapis.com`; the
+  API to `oauth2.googleapis.com`. The browser, not the cluster, visits `accounts.google.com`.
 
 ---
 

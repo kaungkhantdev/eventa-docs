@@ -277,7 +277,8 @@ stores a PAN (SAD §9). The pipeline enforces the scope boundary:
 | Concern | Control |
 |---|---|
 | **Secret storage** | Managed secrets manager; surfaced to K8s via **External Secrets**; never in Git (SAD/[overview](../07-deployment/devops-architecture.md)) |
-| **Rotation** | DB/Redis/RabbitMQ creds and API keys rotated on schedule (≤ 90 days) + on-demand after any suspected exposure; Stripe keys rotated per Stripe guidance |
+| **Rotation** | DB/Redis/RabbitMQ creds and API keys rotated on schedule (≤ 90 days) + on-demand after any suspected exposure; Stripe keys rotated per Stripe guidance; the **Google OAuth client secret** (`GOOGLE_CALENDAR_CLIENT_SECRET`) by adding a second secret in Google Cloud, rolling eventa-api and eventa-worker onto it together, then disabling the old one — a refresh made with a disabled secret fails as `invalid_client`, which the worker parks as refused rather than marking the connection expired |
+| **Encryption key** | `SECRET_ENCRYPTION_KEY` has no re-encryption tool, so rotating it **orphans every cipher written under the old key**: `payment_credentials` (Stripe secret and webhook secret), `two_factors.secret_encrypted`, and `calendar_connections.refresh_token_cipher` — every workspace's Admin must then reconnect Google Calendar, and until they do each sync ends "The Google Calendar connection could not be read." and parks. eventa-api and eventa-worker must change it together, to the same value; find every cipher column by name in `information_schema.columns` before rotating |
 | **Leaked-secret response** | gitleaks hit → revoke + rotate immediately, rewrite history if needed, postmortem |
 | **Least privilege** | Per-workload IAM roles / service accounts; check-in pool scoped to its needs; no shared "god" credentials |
 | **Audit** | Business **audit log** (SAD §9) + infra audit trail (cloud audit logs, K8s API audit, Argo CD sync history, Git history) retained in-region; who-changed-what for infra, deploys, and secret access |
@@ -349,6 +350,7 @@ Runbooks live in the ops repo (`/runbooks`), are linked from every alert rule, a
 | **Redis outage / cache cold** | Redis unreachable / hit-rate collapse | Fail over managed Redis, protect DB (rate-limit/shed), warm cache, verify sessions |
 | **Elevated 5xx / bad release** | Golden-signal error spike post-deploy | GitOps revert to last-good SHA (automated rollback), confirm canary metrics |
 | **Region / AZ degradation** | Multi-AZ health alarms | Execute DR plan, shift traffic, validate data-tier standby, comms + status page |
+| **Calendar sync failing / connection expired / provider mismatch between api and worker** | Meetings stuck `failed` or `not_connected`; parked `meeting.sync_requested` messages; the worker's boot line `Calendar provider: <name>` differs from what eventa-api resolves | Read the meeting's `sync_error`: *unavailable* → check Google's status, let the ladder run, then **Send it now** or replay; *expired* → an Admin reconnects on Settings → Integrations, whose resync re-sends every unsynced meeting; *could not be read* → eventa-api and eventa-worker have different `SECRET_ENCRYPTION_KEY`s, align them and reconnect; *refused (HTTP n)* → fix the Google Cloud project (Calendar API enabled, client valid), then replay; `not_connected` with no `sync_error` under a "Connected" card → the two services resolve different `CALENDAR_PROVIDER`s, align them and restart the worker. Meetings published before the worker first bound `meeting.sync_requested` were dropped unrouted — **Send it now** or a reconnect re-sends them |
 
 ### 8.1 Dead-letter handling
 
@@ -389,6 +391,18 @@ anything slower a human's problem rather than holding a message so long nobody l
 **Two routes reach the parking queue:** the ladder running out, or a failure classified permanent on
 arrival (a body that will not parse, an SMTP envelope rejection). The second skips the ladder entirely,
 because retrying a message that cannot parse only delays the diagnosis.
+
+**Meeting sync (`meeting.sync_requested`) classifies by Google's answer.** `invalid_grant` on the
+token refresh and `insufficientPermissions` from Calendar are **neither retried nor parked**: the
+handler marks the workspace's connection `expired` (only while it still holds the token it used),
+writes the meeting `not_connected` and **acks**, because only an Admin's reconnect can fix them. A
+401, a 429, a 5xx, a quota 403 (`rateLimitExceeded`, `userRateLimitExceeded`, `quotaExceeded`,
+`dailyLimitExceeded`), a network error or a timeout goes through the ladder, and so do a busy
+per-meeting lock and a Meet link Google has not finished making. Any other 4xx — a non-quota 403 such
+as `accessNotConfigured` included — and a refresh token that will not decrypt are permanent and park
+at once. Replaying a parked meeting message is safe at any age: the handler reconciles from the
+meeting's current row rather than the payload, and **Send it now** on the meeting does the same
+without touching the queue.
 
 **Parking is terminal and durable.** Messages are published persistent and the queue is durable with no
 TTL, no max-length and no consumer, so a parked message survives a broker restart and waits
