@@ -396,11 +396,15 @@ because retrying a message that cannot parse only delays the diagnosis.
 token refresh and `insufficientPermissions` from Calendar are **neither retried nor parked**: the
 handler marks the workspace's connection `expired` (only while it still holds the token it used),
 writes the meeting `not_connected` and **acks**, because only an Admin's reconnect can fix them. A
-401, a 429, a 5xx, a quota 403 (`rateLimitExceeded`, `userRateLimitExceeded`, `quotaExceeded`,
-`dailyLimitExceeded`), a network error or a timeout goes through the ladder, and so do a busy
-per-meeting lock and a Meet link Google has not finished making. Any other 4xx — a non-quota 403 such
-as `accessNotConfigured` included — and a refresh token that will not decrypt are permanent and park
-at once. Replaying a parked meeting message is safe at any age: the handler reconciles from the
+401 from the Calendar API (the next attempt refreshes a new access token), a 429, a 5xx, a quota 403
+(`rateLimitExceeded`, `userRateLimitExceeded`, `quotaExceeded`, `dailyLimitExceeded`), a network error
+or a timeout goes through the ladder, and so do a busy per-meeting lock and a Meet link Google has not
+finished making. Any other 4xx — a non-quota 403 such as `accessNotConfigured` included — is
+permanent: the meeting reads "Google Calendar refused the request (HTTP n)." and the message parks at
+once. That includes any 400 or 401 from the **token endpoint** other than `invalid_grant`, such as
+`invalid_client` after the client secret was disabled (§6.3): a 401 is retried only when the Calendar
+API sends it, never when the token refresh does. A refresh token that will not decrypt also parks at
+once. Replaying a parked meeting message is safe at any age: the handler reconciles from the
 meeting's current row rather than the payload, and **Send it now** on the meeting does the same
 without touching the queue.
 
