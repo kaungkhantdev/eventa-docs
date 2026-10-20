@@ -3870,32 +3870,35 @@ Locale assumptions: Asia/Bangkok timezone, EN/TH content, ฿ (VAT not applicabl
 ### TC-MTG-07 — Schedule a valid meeting and see it in the correct group
 - **Traces:** US-MTG-03 · **Priority:** High · **Type:** Functional
 - **Preconditions:** Logged in as Event Organizer. Calendar connected.
-- **Test data:** Title "Keynote speaker briefing"; date tomorrow; start 10:00, end 10:45; type Speaker; mode Video; guest "Anong Phromma", email anong@example.com; related event "Tech Summit BKK"; notes "Confirm slides".
+- **Test data:** Title "Keynote speaker briefing"; date tomorrow; start 10:00, end 10:45; type Speaker; mode Video call (Google Meet); guest "Anong Phromma", email anong@example.com; related event "Tech Summit BKK"; notes "Confirm slides".
 - **Steps:**
-  1. Open the schedule panel.
-  2. Fill in all required fields with the test data.
-  3. Save.
-- **Expected result:** A new meeting is created with status Scheduled and appears under Upcoming (tomorrow), earliest-start ordered. Confirms the happy-path creation criterion.
+  1. Open the schedule panel and look at Mode before choosing anything.
+  2. Choose Video call (Google Meet).
+  3. Fill in the other required fields with the test data.
+  4. Save.
+  5. Open the new meeting's Edit.
+- **Expected result:** Mode first reads "Choose how you'll meet", with no Meet-link note under it; once Video call (Google Meet) is chosen, "A Meet link is generated automatically." appears. A new meeting is created with status Scheduled and appears under Upcoming (tomorrow), earliest-start ordered, its badge reading "Video call". Edit opens with Video call (Google Meet) already chosen. Confirms the happy-path creation and mode-choice criteria.
 
-### TC-MTG-08 — Validation blocks bad title, past date and non-forward end time
+### TC-MTG-08 — Validation blocks bad title, past date, non-forward end time and no mode
 - **Traces:** US-MTG-03 · **Priority:** High · **Type:** Negative
 - **Preconditions:** Logged in as Event Organizer. Schedule panel open.
-- **Test data:** (a) Title blank / single character "x"; (b) date = yesterday; (c) start 14:00, end 13:30 (end not after start).
+- **Test data:** (a) Title blank / single character "x"; (b) date = yesterday; (c) start 14:00, end 13:30 (end not after start); (d) every other field valid, Mode left on "Choose how you'll meet".
 - **Steps:**
   1. Leave the title blank (then try one character), attempt to save.
   2. Set the date to yesterday, attempt to save.
   3. Set start 14:00 and end 13:30, attempt to save.
-- **Expected result:** Save is blocked in each case with a specific, field-level message telling exactly what to fix (title too short/required; date cannot be in the past; end time must be after start). No meeting is created.
+  4. Fill every other field validly, leave Mode unchosen, attempt to save.
+- **Expected result:** Save is blocked in each case with a specific, field-level message telling exactly what to fix (title too short/required; date cannot be in the past; end time must be after start; a mode must be chosen). No meeting is created — in (d) none is saved as a video call.
 
 ### TC-MTG-09 — Location derives from mode; double-submit creates only one meeting
 - **Traces:** US-MTG-03 · **Priority:** Medium · **Type:** Edge
 - **Preconditions:** Logged in as Event Organizer. Event "Tech Summit BKK" has venue "BITEC Hall 2".
-- **Test data:** Meeting X mode In person on event "Tech Summit BKK"; Meeting Y mode Phone. Rapid double-click on Save for one submission.
+- **Test data:** Meeting X mode In person on event "Tech Summit BKK"; Meeting Y mode Phone call. Rapid double-click on Save for one submission.
 - **Steps:**
   1. Create Meeting X with mode In person tied to "Tech Summit BKK" and save.
-  2. Create Meeting Y with mode Phone and save.
+  2. Create Meeting Y with mode Phone call and save.
   3. On a third valid meeting, click Save twice in rapid succession.
-- **Expected result:** Meeting X shows location = event venue "BITEC Hall 2"; Meeting Y shows location = "Phone call". The double-submitted meeting is created exactly once, not duplicated.
+- **Expected result:** Neither In person nor Phone call shows the Meet-link note while chosen. Meeting X shows location = event venue "BITEC Hall 2"; Meeting Y shows location = "Phone call". The double-submitted meeting is created exactly once, not duplicated.
 
 ---
 
@@ -3945,7 +3948,7 @@ Locale assumptions: Asia/Bangkok timezone, EN/TH content, ฿ (VAT not applicabl
 ### TC-MTG-14 — Changing mode video → in person removes Meet link and shows venue
 - **Traces:** US-MTG-05 · **Priority:** Medium · **Type:** Functional
 - **Preconditions:** Logged in as Event Organizer. A synced video meeting with a Meet link, tied to event "Tech Summit BKK" (venue "BITEC Hall 2").
-- **Test data:** Change mode from Video to In person.
+- **Test data:** Change mode from Video call (Google Meet) to In person.
 - **Steps:**
   1. Open the meeting and switch mode to In person.
   2. Save and inspect the meeting.

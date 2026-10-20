@@ -1813,8 +1813,9 @@ _Notes: Search works equally for Thai and English content._
 **As an** Event Organizer, **I want** to book a meeting in a few simple fields — title, date, start/end time, type, mode, who it is with, their email, the related event and any notes — **so that** I can set up calls and walkthroughs without leaving the console.
 **Acceptance criteria**
 - Given I open the schedule panel and fill in the required details, when I save, then a new meeting is created with status Scheduled and appears in the correct time group.
+- Given I open the schedule panel, then no mode is chosen for me: Mode reads "Choose how you'll meet", and I cannot save until I choose Video call (Google Meet), In person or Phone call — the same words the meeting's badge shows once it is saved. The note that a Meet link is generated automatically appears only once I choose Video call. When I edit a meeting, its saved mode is already chosen.
 - Given I leave the title blank or too short, choose a date in the past, or set an end time that is not after the start, then I am told exactly what to fix before I can save.
-- Given I set the mode to In person, then the meeting shows the related event's venue as its location; given Phone, then it shows "Phone call".
+- Given I choose In person, then the meeting shows the related event's venue as its location; given Phone call, then it shows "Phone call".
 - Given I double-submit the form by accident, then only one meeting is created, not two.
 
 _Notes: A meeting can be tied to a specific event or to "General (all events)". A guest email is needed so the invite can be sent._
