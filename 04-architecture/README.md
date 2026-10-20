@@ -12,7 +12,7 @@ The technical blueprint: the software architecture plus the data model that sati
   **module (bounded-context)** design, the **event-driven** topology (RabbitMQ + a NestJS consumer
   tier + the **transactional outbox**), runtime views (the **synchronous, transactional checkout**
   boundary; reliable eventing), deployment, cross-cutting concerns (payments/PCI, multi-tenancy,
-  concurrency & overselling, PDPA, observability, security), the technology stack, **13 ADRs**, and
+  concurrency & overselling, PDPA, observability, security), the technology stack, **15 ADRs**, and
   an NFR → mechanism mapping.
 - **[entities.md](entities.md)** — the **target data architecture**: relational data dictionary, 58
   PostgreSQL tables across 12 bounded contexts, with keys, constraints, indexes, enums, junction

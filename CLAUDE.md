@@ -97,7 +97,7 @@ Change one link and the others should follow. Some specifics that require readin
 ## Conventions that matter when editing
 
 - **Counts are repeated** in doc headers, the stage `README.md`s and the root `README.md` (162 stories ·
-  354 test cases · 58 tables · 13 epics/ADRs · MoSCoW splits). When a count changes, update every place —
+  354 test cases · 58 tables · 13 epics · 15 ADRs · MoSCoW splits). When a count changes, update every place —
   `README.md` is the index to keep current. The table count is **measured from the database**, never
   copied from another document (see *Architecture is layered* above).
 - **Crow's-foot notation in ERDs:** nullable FKs use `|o--o{`, non-null FKs use `||--o{` — stay consistent
