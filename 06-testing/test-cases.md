@@ -5,7 +5,7 @@
 | **Author** | QA Engineer |
 | **Version** | 1.0 · 2026-07-23 |
 | **Companion** | [test-plan.md](test-plan.md) |
-| **Scope** | 353 test cases across 13 epics, tracing to the 162 user stories in the [product backlog](../01-requirements-and-features/functional-requirements.md) |
+| **Scope** | 354 test cases across 13 epics, tracing to the 162 user stories in the [product backlog](../01-requirements-and-features/functional-requirements.md) |
 
 > Each test case is derived from a user story's Given/When/Then acceptance criteria, and lists its traceability (`US-*`), priority, type, preconditions, test data, steps, and expected result. Priority defaults from MoSCoW (Must→High, Should→Medium, Could→Low). See [test-plan.md](test-plan.md) for strategy, environment, defect process, and closure.
 
@@ -24,9 +24,9 @@
 | 9 | [Get Paid & Manage Finances](#tc-e09) | 14 | 27 | 20 | 7 | 0 |
 | 10 | [Build the Event Program](#tc-e10) | 13 | 24 | 14 | 9 | 1 |
 | 11 | [Organizer Home & Dashboard](#tc-e11) | 13 | 25 | 14 | 9 | 2 |
-| 12 | [Coordinate Meetings](#tc-e12) | 9 | 21 | 8 | 11 | 2 |
+| 12 | [Coordinate Meetings](#tc-e12) | 9 | 22 | 8 | 12 | 2 |
 | 13 | [Measure Performance (Reports)](#tc-e13) | 12 | 25 | 10 | 13 | 2 |
-| | **Total** | **162** | **353** | **197** | **135** | **21** |
+| | **Total** | **162** | **354** | **197** | **136** | **21** |
 
 ---
 
@@ -3915,11 +3915,13 @@ Locale assumptions: Asia/Bangkok timezone, EN/TH content, ฿ (VAT not applicabl
 
 ### TC-MTG-11 — Meeting saved when calendar not connected; prompted to connect
 - **Traces:** US-MTG-04 · **Priority:** High · **Type:** Negative
-- **Preconditions:** Logged in as Event Organizer. Workspace Google Calendar NOT connected.
-- **Test data:** Any valid video meeting.
+- **Preconditions:** Workspace Google Calendar NOT connected. Two sessions: an Event Organizer without the Manage integrations permission, and an Admin.
+- **Test data:** Any valid video meeting, once per session.
 - **Steps:**
-  1. Schedule a valid meeting and save.
-- **Expected result:** The meeting is still saved (nothing lost) and flagged as not synced; the organizer is prompted to connect the calendar so the invite and Meet link can be sent. No error discards the meeting.
+  1. As the Organizer, open the schedule panel, read the note above Schedule, then schedule a valid meeting and save.
+  2. As the Admin, schedule a valid meeting and save.
+  3. Read each new meeting's card.
+- **Expected result:** Before saving, the panel says "Google Calendar isn't connected, so this meeting will be saved without an invite or Meet link." Each meeting is still saved (nothing lost) and flagged as not synced: its card reads "No calendar is connected, so no invite was sent." The organizer is prompted to connect the calendar so the invite and Meet link can be sent: the Admin's card offers a "Connect Google Calendar" link to Settings → Integrations, and the Organizer's card says "Ask an Admin to connect Google Calendar." No error discards the meeting.
 
 ### TC-MTG-12 — Calendar service briefly unavailable — meeting kept, marked not synced, retry sends invite
 - **Traces:** US-MTG-04 · **Priority:** Medium · **Type:** Edge
@@ -3929,7 +3931,7 @@ Locale assumptions: Asia/Bangkok timezone, EN/TH content, ฿ (VAT not applicabl
   1. Save the meeting while the calendar service is unavailable.
   2. Observe the meeting's sync state and the retry option.
   3. Restore the service and trigger/allow retry.
-- **Expected result:** The meeting is kept and marked "not yet synced" with a retry option; nothing is lost. Once the service is reachable and retry runs, the invite (and Meet link) go out and the meeting shows as synced.
+- **Expected result:** The meeting is kept and marked as not yet synced — its card reads "The calendar invite couldn't be sent." with **Send it now** — and nothing is lost. Once the service is reachable and a retry runs (automatic, or Send it now), the invite (and Meet link) go out and the meeting shows as synced: the note and Send it now disappear and a video meeting shows its Meet link.
 
 ---
 
@@ -4007,22 +4009,36 @@ Locale assumptions: Asia/Bangkok timezone, EN/TH content, ฿ (VAT not applicabl
 
 ### TC-MTG-19 — Admin connects the workspace Google Calendar; header shows connected
 - **Traces:** US-MTG-08 · **Priority:** Medium · **Type:** Functional
-- **Preconditions:** Logged in as Admin. Workspace calendar currently disconnected.
+- **Preconditions:** Logged in as Admin on a desktop-width screen (the header status is hidden on small screens). Workspace calendar currently disconnected. One upcoming meeting was scheduled while disconnected, its card reading "No calendar is connected, so no invite was sent."
 - **Test data:** Valid Google account authorization for the workspace.
 - **Steps:**
-  1. Open Meetings and start the Google Calendar connection.
+  1. Open Meetings, follow the header's "Connect Google Calendar" link to Settings → Integrations and click Connect Google Calendar.
   2. Complete the Google authorization successfully.
-  3. Observe the Meetings header status.
-- **Expected result:** The workspace is marked connected and the Meetings header shows a connected status. Subsequently scheduled meetings sync normally.
+  3. Back on Settings → Integrations, read the toast and the Google Calendar card.
+  4. Open Meetings and observe the header status and the meeting scheduled while disconnected.
+- **Expected result:** Back on Settings → Integrations the toast "Google Calendar connected." is shown and the card reads "Connected" with the Google account and today's date. The workspace is marked connected and the Meetings header shows a connected status ("Google Calendar"). The meeting saved while disconnected is sent without a reload: its note clears and the guest receives the invite. Subsequently scheduled meetings sync normally.
+
+### TC-MTG-19b — Admin disconnects Google Calendar; future meetings flagged not synced; existing invites stay
+- **Traces:** US-MTG-08 · **Priority:** Medium · **Type:** Functional
+- **Preconditions:** Logged in as Admin. Workspace Google Calendar connected. One upcoming meeting already synced, its invite on the guest's calendar.
+- **Test data:** New meeting "Vendor follow-up", tomorrow 11:00–11:30 Bangkok, mode Phone call.
+- **Steps:**
+  1. Open Settings → Integrations and click Disconnect on the Google Calendar card.
+  2. Read the confirmation and choose Keep it connected.
+  3. Click Disconnect again and confirm with Disconnect.
+  4. Open Meetings; inspect the header and the meeting synced earlier.
+  5. Schedule "Vendor follow-up" and save.
+- **Expected result:** The confirmation is titled "Disconnect Google Calendar?" and says new and changed meetings won't be sent to Google Calendar until it's connected again, and meetings already on people's calendars stay there; Keep it connected changes nothing. Confirming shows the toast "Google Calendar disconnected." and the card reads "Not connected" with no account shown. The Meetings header offers "Connect Google Calendar". The meeting synced earlier stays synced and its invite stays on the guest's calendar. "Vendor follow-up" is saved and flagged not synced: "No calendar is connected, so no invite was sent."
 
 ### TC-MTG-20 — Non-Admin sees no connect/disconnect control; expired connection prompts reconnect
 - **Traces:** US-MTG-08 · **Priority:** Medium · **Type:** Negative
-- **Preconditions:** (a) Logged in as Event Organizer (non-Admin). (b) Separately, workspace connection has expired/been revoked.
+- **Preconditions:** (a) Logged in as Event Organizer (non-Admin, without the Manage integrations permission). (b) Separately, workspace connection has expired/been revoked. Desktop-width screen (the header status is hidden on small screens).
 - **Test data:** N/A.
 - **Steps:**
-  1. As a non-Admin Organizer, open Meetings and look for calendar connect/disconnect controls.
-  2. With the connection expired, as Admin/Organizer trigger a sync (e.g., schedule a meeting).
-- **Expected result:** The non-Admin sees no connect/disconnect control. When the connection is expired/revoked, the user is prompted to reconnect rather than sync failing silently; meetings scheduled while disconnected are saved but flagged not synced.
+  1. As a non-Admin Organizer, open Meetings and look for calendar connect/disconnect controls; open Settings and look for an Integrations entry; then open `/admin/settings-integrations` directly.
+  2. With the connection expired, as Admin/Organizer trigger a sync (e.g., schedule a meeting) and read the Meetings header.
+  3. With the connection expired, as Admin open Settings → Integrations.
+- **Expected result:** The non-Admin sees no connect/disconnect control: Settings lists no Integrations entry, and the page opened directly shows the status with no buttons, no account address and "Only an Admin can connect or disconnect Google Calendar." When the connection is expired/revoked, the user is prompted to reconnect rather than sync failing silently: the Meetings header reads "Calendar needs reconnecting" for the non-Admin and is a "Reconnect Google Calendar" link for the Admin, and Settings → Integrations shows "Reconnect needed" with a Reconnect button. Meetings scheduled while disconnected are saved but flagged not synced.
 
 ---
 

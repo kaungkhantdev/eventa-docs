@@ -71,7 +71,7 @@ Change one link and the others should follow. Some specifics that require readin
   specifically because SAD patterns require them), so a shipped table needs an entry there as well as a
   place in the ERD. Measure counts against the database rather than copying them between documents, and
   if you touch one document update the other and their shared counts.
-- **Tests trace to stories:** `06-testing/test-cases.md` has **353 `TC-*` cases** covering **all 162
+- **Tests trace to stories:** `06-testing/test-cases.md` has **354 `TC-*` cases** covering **all 162
   stories**; `test-plan.md` is the strategy/process. Each test case names the `US-*` it verifies.
 - **DevOps is deliberately split across stages 07 and 08**, not under `04-architecture`: `07-deployment`
   holds `devops-architecture.md` (overview) + `devops-ci-cd.md` + `devops-infrastructure.md`;
@@ -97,7 +97,7 @@ Change one link and the others should follow. Some specifics that require readin
 ## Conventions that matter when editing
 
 - **Counts are repeated** in doc headers, the stage `README.md`s and the root `README.md` (162 stories ·
-  353 test cases · 57 tables · 13 epics/ADRs · MoSCoW splits). When a count changes, update every place —
+  354 test cases · 57 tables · 13 epics/ADRs · MoSCoW splits). When a count changes, update every place —
   `README.md` is the index to keep current. The table count is **measured from the database**, never
   copied from another document (see *Architecture is layered* above).
 - **Crow's-foot notation in ERDs:** nullable FKs use `|o--o{`, non-null FKs use `||--o{` — stay consistent
