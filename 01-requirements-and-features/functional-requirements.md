@@ -1828,7 +1828,7 @@ _Notes: A meeting can be tied to a specific event or to "General (all events)". 
 - Given my calendar is not connected, when I save a meeting, then the meeting is still kept and I am prompted to connect my calendar to send the invite and link — nothing is lost.
 - Given the calendar service is briefly unavailable, when I save a meeting, then the meeting is kept and marked as not yet synced, with a way to retry, and the invite goes out once the service is reachable.
 
-_Notes: The resilience/retry behaviour is the safety net; the automatic invite and Meet link are the core value of scheduling from the console. "My calendar" is the workspace calendar of US-MTG-08; organizers without the Manage integrations permission are told to ask an Admin to connect it._
+_Notes: The resilience/retry behaviour is the safety net; the automatic invite and Meet link are the core value of scheduling from the console. "My calendar" is the workspace calendar of US-MTG-08; organizers without the Manage integrations permission are told to ask an Admin to connect it. The 15-minute reminder is set on the workspace calendar the invite is sent from; a guest's own reminder follows the guest's calendar settings, which an invite cannot set._
 
 ### US-MTG-05 — Reschedule or edit a meeting  ·  **Must**
 **As an** Event Organizer, **I want** to change a meeting's time or details and have the guest's invite updated in place, **so that** the invitation on everyone's calendar is never stale.

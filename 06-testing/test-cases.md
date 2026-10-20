@@ -3910,8 +3910,8 @@ Locale assumptions: Asia/Bangkok timezone, EN/TH content, ฿ (VAT not applicabl
 - **Test data:** Video meeting "Sponsor kickoff", tomorrow 15:00–15:30 Bangkok, guest email partner@example.com.
 - **Steps:**
   1. Schedule the video meeting and save.
-  2. Inspect the saved meeting and the guest-facing invite.
-- **Expected result:** A Google Meet link is created and attached to the meeting and included in the invite; the guest receives a calendar invite for 15:00–15:30 Asia/Bangkok; both organizer and guest have a 15-minute-before reminder set.
+  2. Inspect the saved meeting, the event on the workspace Google Calendar and the guest-facing invite.
+- **Expected result:** A Google Meet link is created and attached to the meeting and included in the invite; the guest receives a calendar invite for 15:00–15:30 Asia/Bangkok; the event on the workspace calendar has a 15-minute-before reminder set. The guest's own reminder follows the guest's calendar settings and is not checked here.
 
 ### TC-MTG-11 — Meeting saved when calendar not connected; prompted to connect
 - **Traces:** US-MTG-04 · **Priority:** High · **Type:** Negative
