@@ -3877,7 +3877,7 @@ Locale assumptions: Asia/Bangkok timezone, EN/TH content, ฿ (VAT not applicabl
   3. Fill in the other required fields with the test data.
   4. Save.
   5. Open the new meeting's Edit.
-- **Expected result:** Mode first reads "Choose how you'll meet", with no Meet-link note under it; once Video call (Google Meet) is chosen, "A Meet link is generated automatically." appears. A new meeting is created with status Scheduled and appears under Upcoming (tomorrow), earliest-start ordered, its badge reading "Video call". Edit opens with Video call (Google Meet) already chosen. Confirms the happy-path creation and mode-choice criteria.
+- **Expected result:** Mode first reads "Choose how you'll meet", and nothing on the panel mentions a Meet link — neither a note under Mode nor the note above Schedule; once Video call (Google Meet) is chosen, "A Meet link is generated automatically." appears and the note above Schedule names a Google Meet link as well as the Google Calendar invite. A new meeting is created with status Scheduled and appears under Upcoming (tomorrow), earliest-start ordered, its badge reading "Video call". Edit opens with Video call (Google Meet) already chosen. Confirms the happy-path creation and mode-choice criteria.
 
 ### TC-MTG-08 — Validation blocks bad title, past date, non-forward end time and no mode
 - **Traces:** US-MTG-03 · **Priority:** High · **Type:** Negative
@@ -3898,7 +3898,7 @@ Locale assumptions: Asia/Bangkok timezone, EN/TH content, ฿ (VAT not applicabl
   1. Create Meeting X with mode In person tied to "Tech Summit BKK" and save.
   2. Create Meeting Y with mode Phone call and save.
   3. On a third valid meeting, click Save twice in rapid succession.
-- **Expected result:** Neither In person nor Phone call shows the Meet-link note while chosen. Meeting X shows location = event venue "BITEC Hall 2"; Meeting Y shows location = "Phone call". The double-submitted meeting is created exactly once, not duplicated.
+- **Expected result:** Neither In person nor Phone call shows the Meet-link note while chosen, and with either one chosen the note above Schedule reads "A Google Calendar invite is emailed to each guest, with a reminder 15 minutes before." — no Meet link. Meeting X shows location = event venue "BITEC Hall 2"; Meeting Y shows location = "Phone call". The double-submitted meeting is created exactly once, not duplicated.
 
 ---
 
