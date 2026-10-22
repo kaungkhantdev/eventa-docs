@@ -77,7 +77,8 @@ Every PR gets a disposable, isolated environment so reviewers test the *real* ru
 | Trigger | PR opened / synchronized → Argo CD `ApplicationSet` (PR generator) renders a per-PR app |
 | Namespace | `preview-pr-<n>`; URL `pr-<n>.preview.eventa.dev` |
 | Images | The exact SHA-tagged images built by that PR's CI run |
-| Data | Ephemeral Postgres (seeded fixtures) + Redis + RabbitMQ (per-preview vhost); Stripe/PromptPay in **test mode**; email/SMS to a mailtrap sink; Google Meet stubbed |
+| Data | Ephemeral Postgres (seeded fixtures) + Redis + RabbitMQ (per-preview vhost); Stripe/PromptPay in **test mode**; email/SMS to a mailtrap sink; Google Calendar/Meet through the **fake provider** (`CALENDAR_PROVIDER=fake` in api and worker, with one shared `SECRET_ENCRYPTION_KEY`) |
+| Google OAuth | Each environment that talks to real Google (staging, production) registers its **own** redirect URI, `${PUBLIC_API_URL}/api/v1/public/calendar-connection/google/callback`, on its OAuth client. A per-PR host cannot be registered ahead of time, which is one reason previews use the fake; `fake` is refused under `NODE_ENV=production` |
 | Isolation | Own tenant seed; **no production data ever** (PDPA); network-policy isolated |
 | Teardown | Auto-destroyed on PR close/merge; TTL reaper (48 h idle) as backstop |
 

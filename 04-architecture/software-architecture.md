@@ -76,7 +76,7 @@ flowchart TB
 |---|---|---|
 | Stripe (cards, Connect) + PromptPay | out + **webhooks in** | Charges, refunds, payouts; webhook = payment truth |
 | Email / SMS providers | out + delivery webhooks | Confirmations, receipts, reminders, announcements |
-| Google Calendar / Meet | out | Meeting invites & links |
+| Google Calendar / Meet | out + OAuth consent redirect in | Meeting invites, Meet links, workspace connection |
 | CDN / object storage | out | Media & static assets |
 
 ## 5. Solution strategy
@@ -124,6 +124,7 @@ flowchart TB
     api --> obj
     api --> ext_pay
     ext_pay -. webhooks .-> api
+    api --> ext_google
     db --> relay
     relay --> mq
     mq --> consumer
@@ -132,6 +133,11 @@ flowchart TB
     consumer --> ext_comms
     consumer --> ext_google
 ```
+
+The API's own edge to Google is the workspace calendar connection (US-MTG-08): it exchanges the OAuth
+authorization code at connect and revokes the refresh token at disconnect. Invites, updates and
+cancellations go from the consumer service. The `software-architecture.tldr` canvas predates that edge
+and has not been regenerated.
 
 | Container | Tech | Responsibility |
 |---|---|---|
@@ -147,7 +153,8 @@ flowchart TB
 
 ### 6.2 API modules (bounded contexts, as NestJS modules)
 Identity & Access · Organization · Events & Program · Ticketing · **Registration & Orders**
-(owns the synchronous checkout) · Attendance · Payments & Finance · Engagement · Meetings ·
+(owns the synchronous checkout) · Attendance · Payments & Finance · Engagement · Meetings
+(`meetings` + `calendar-connection`, the workspace Google Calendar connection) ·
 **Platform** (outbox, idempotency, audit, jobs). Modules own their tables and talk through
 interfaces — no cross-module table access.
 
@@ -161,9 +168,13 @@ never on its tables or repository. See the development guide §2 and Appendix A.
 ### 6.3 RabbitMQ topology
 - **Exchange:** `eventa.events` (topic). Routing keys like `order.confirmed`, `payment.succeeded`,
   `registration.waitlisted`, `feedback.requested`.
-- **Queues:** one per consumer concern (email, sms, calendar, read-model, search), bound to the keys
-  they need — competing consumers scale horizontally.
-- **Reliability:** publisher confirms; manual acks; **dead-letter exchange** `eventa.dlx` with retry
+- **Queue:** a single durable `eventa.worker` queue serves the whole consumer service. At boot the
+  worker binds it to the exchange once for each routing key it has a handler for, and the binding
+  persists on the durable queue. A key no handler claims is **dropped**: the relay publishes without
+  the `mandatory` flag and the exchange has no alternate exchange, so the outbox row still reads as
+  published. A new event's consumer must therefore be deployed, and booted once, before its producer
+  starts emitting. Competing consumers scale by running more replicas on the one queue.
+- **Reliability:** publisher confirms; manual acks; **dead-letter exchange** `eventa.events.dlx` with retry
   (backoff) and a parking queue for poison messages.
 
 ### 6.4 Interfaces & API contracts
@@ -185,6 +196,7 @@ catalogue is a follow-up artifact):
 | Payments & finance | Payments & Finance | `GET /payments`, `POST /refunds`, `GET /invoices/:id.pdf`, `GET /payouts` |
 | Engagement | Engagement | `POST /announcements`, `GET /notifications`, `POST /surveys` |
 | Settings & team | Organization / Identity | `GET/PUT /org`, `POST /members`, `PUT /roles/:id` |
+| Calendar connection | Meetings (`calendar-connection`) | `GET /calendar-connection`, `POST /calendar-connection/connect`, `POST /calendar-connection/disconnect` (`setIntegrations`); `GET /public/calendar-connection/google/callback` (Google's OAuth redirect; always a 302 to Settings → Integrations) |
 
 **Inter-module interfaces (in-process).** Each NestJS module exposes a typed service interface (a
 provider); callers depend on the interface, never on another module's implementation or tables — this
@@ -199,7 +211,7 @@ payload schema — that decouple producers from consumers:
 | `payment.succeeded` / `refunded` | paymentId, orderId, amount | finance read-model, email |
 | `registration.waitlisted` / `promoted` | registrationId, eventId | email, sms |
 | `checkin.recorded` | ticketId, eventId, at | live-stats, read-model |
-| `meeting.scheduled` | meetingId, attendees | calendar (Google Meet) |
+| `meeting.sync_requested` | organizationId, meetingId, intent (+ v1 snapshot fields) | worker → Google Calendar |
 | `feedback.requested` | eventId, attendee | email |
 
 **Inbound webhooks (external → API).** Signature-verified and idempotent, handled by the API (not a
@@ -314,9 +326,10 @@ flowchart LR
 - **Concurrency & inventory integrity** — capacity/seat changes only inside DB transactions with row
   locks / conditional updates; **short-lived seat holds** during checkout; idempotency keys on order
   create & confirm; unique constraints on QR tokens and discount redemptions.
-- **AuthN/AuthZ** — **JWT**: short-lived access tokens (`Authorization: Bearer`, verified statelessly)
-  plus long-lived **refresh tokens** persisted in `auth_sessions` so logout / compromise is revocable
-  (a short access-TTL bounds the revocation window); **two separate identity realms** (attendee vs
+- **AuthN/AuthZ** — **JWT**: short-lived access tokens (`Authorization: Bearer`), each checked against
+  its live `auth_sessions` row on every request, plus long-lived **refresh tokens** persisted in the same
+  table, so signing a device out, resetting the password or deleting the account cuts that device off on
+  its next request rather than when its token lapses (US-ACC-09, US-ACC-04, NFR-PDPA-03); **two separate identity realms** (attendee vs
   workspace member); TOTP 2FA; OAuth social sign-in; **RBAC** (12 permissions × 4 roles) enforced
   server-side on every mutating endpoint.
 - **Payments & PCI** — Stripe hosted fields + PromptPay; platform is **SAQ-A** (never stores PANs/bank
@@ -334,6 +347,19 @@ flowchart LR
   calls, DLQ for messages, graceful degradation (read-only discovery from cache under stress).
 - **Security** — TLS, WAF, per-IP + per-account rate limiting (Redis), secrets vault, encryption at
   rest, dependency scanning, least-privilege infra roles.
+- **Integration credentials (Google Calendar)** — the workspace's OAuth refresh token and the pending
+  PKCE verifier are stored AES-256-GCM (`iv | authTag | ciphertext`) under `SECRET_ENCRYPTION_KEY`, the
+  same cipher as the Stripe keys and TOTP seeds, and the **same key value in eventa-api and
+  eventa-worker**, because the worker decrypts the refresh token to sync. Access tokens are never
+  stored, and no token reaches a response, a log, an error message, `sync_error` or an outbox payload.
+  The connect flow's CSRF and code-injection guard is an opaque `state` (`<org>.<43-character nonce>`,
+  carrying no user id, email or JWT) of which only the SHA-256 is stored — compared in constant time,
+  consumed on the first matching use, lapsing after 10 minutes on the database clock, and never cleared
+  by a mismatch — plus PKCE S256 with a verifier generated and held server-side. The starting user's
+  `setIntegrations` is re-checked at the callback, which redirects only to `PUBLIC_WEB_URL` + a fixed
+  path + a status word. A JWT state was rejected because the email-verification, email-change and
+  password-reset verifiers do not check a token's `typ`. Scopes are `openid`, `email` and
+  `calendar.events` on the connecting account's primary calendar only.
 
 ## 10. Technology stack
 
@@ -362,15 +388,16 @@ flowchart LR
 | **ADR-3** | **Transactional outbox** for publishing | Eliminates dual-write loss. |
 | **ADR-4** | **Checkout/inventory is synchronous & transactional**; async only for eventually-consistent side effects | Prevents oversell/double-charge. *Alt: fully event-sourced checkout — too risky for MVP.* |
 | **ADR-5** | Shared PostgreSQL, multi-tenant `organization_id` + RLS | Strong isolation, low ops. *Alt: DB-per-tenant — overhead.* |
-| **ADR-6** | Redis for cache/rate-limit/idempotency (separate from RabbitMQ) | Right tool per job. Sessions are stateless JWTs; refresh state lives in `auth_sessions`. |
+| **ADR-6** | Redis for cache/rate-limit/idempotency (separate from RabbitMQ) | Right tool per job. Sessions are JWTs backed by their `auth_sessions` row, which holds the refresh state too. |
 | **ADR-7** | Stripe + PromptPay; SAQ-A; webhooks as truth | Minimal PCI scope. |
-| **ADR-8** | **JWT access + refresh** (Bearer) + dual realms + TOTP 2FA; server-side RBAC | Stateless access checks; refresh tokens persisted in `auth_sessions` keep revocation (logout/compromise); persona separation. *Revised from server-side sessions.* |
+| **ADR-8** | **JWT access + refresh** (Bearer) + dual realms + TOTP 2FA; server-side RBAC | Signed access tokens, each checked against its live `auth_sessions` row per request, so a revoked session loses access on its next request (US-ACC-09); refresh tokens persisted in the same table; persona separation. *Revised from server-side sessions, then from fully stateless access checks, which left a signed-out device working until its token lapsed.* |
 | **ADR-9** | SSR/prerender public pages; SPA for portal/admin | SEO & speed where needed. |
 | **ADR-10** | Postgres FTS (bilingual) for MVP search | Avoids extra infra now. |
 | **ADR-11** | Host SG/TH region | Latency + PDPA residency. |
 | **ADR-12** | Money as integer satang; ledger reconciled from Stripe | Avoids float errors; auditable. |
 | **ADR-13** | Idempotent consumers + DLQ + retry/backoff | Safe under at-least-once delivery. |
 | **ADR-14** | **Scheduled domain jobs run in the consumer service** (`@nestjs/schedule`), not the API — and may write an API aggregate where the transition is purely time-driven | Some state changes have no event to trigger them: an unpaid order whose seat hold lapsed (US-DISC-05), an event whose start date passed. A timer in the API would run in *every* replica; a separate fourth deployable would be one more process to forget to start. The consumer tier already runs as a single scheduled service. Jobs must be **idempotent and cursor-free** so overlapping or replicated runs are harmless. *Cost, accepted:* the worker's `orders`/`seat_holds` schema files become **write** mirrors that must track eventa-api's enums — so the exception is enumerated per-table in [`entities.md`](entities.md) rather than left open-ended. *Alt: an internal endpoint the worker calls on a schedule — keeps the rule inside the owning module but needs a service-auth mechanism; revisit if a third job appears.* |
+| **ADR-15** | **Event-driven write-back of an external outcome onto an API aggregate.** The consumer service, handling `meeting.sync_requested`, writes Google Calendar's answer back onto eventa-api's `meetings` — `sync_status`, `sync_error` and `link` **conditional on the `updated_at` it read**, and `external_event_id` **unconditionally** — and sets `calendar_connections.status = 'expired'` (with `updated_at`) only while the row still holds the refresh-token cipher it used. It never writes `meetings.version` or `meetings.updated_at`. | The outcome of an external call exists only in the process that made it. Every API write sets `sync_status = 'pending'` and `updated_at`, so a conditional write makes a stale outcome harmless — the newer save has already queued its own request — and the conditional `expired` never undoes a reconnect that landed mid-sync. The event id is deterministic (the meeting id without hyphens) and eventa-api never writes the column, so recording it unconditionally is safe and lets a cancel that overtook a create still find the event. Unlike ADR-14 the write is driven by an event, not a clock, and it records a fact from outside the platform rather than a time-driven transition. *Cost, accepted:* the worker's `meetings` and `calendar_connections` schema files are **write** mirrors of `meeting_mode`, `meeting_status`, `meeting_sync_status` and `calendar_connection_status`, and the exception is enumerated per table in [`entities.md`](entities.md). *Alt: a `meeting.synced` event back to the API — the API has no consumer; an internal callback endpoint — needs service auth and a second hop for every invite.* |
 
 ## 12. Quality requirements (NFR → mechanism)
 
@@ -391,6 +418,7 @@ flowchart LR
 - **RabbitMQ operational burden** → managed/clustered RabbitMQ; DLQ dashboards; alerting on queue depth.
 - **Tenant data leakage** → RLS + scoped data layer + cross-tenant denial tests.
 - **Monolith erosion** → enforced module boundaries; no cross-module table access; periodic fitness checks.
+- **Google OAuth app not yet published / verified** → while the consent screen is in Google's *Testing* status, refresh tokens expire after 7 days, so the workspace connection flips to "Reconnect needed" weekly; `calendar.events` is a sensitive scope, and publishing the app needs Google's verification. The worker marks the connection expired and the UI prompts an Admin to reconnect (US-MTG-08), so nothing fails silently, but go-live needs the verification budgeted. The Google adapters (OAuth in the API, Calendar in the worker) are tested only against fakes and are unproven against a real account, PKCE with a Web client included.
 
 ## 14. Evolution
 Split a module into a service only on a real driver: a **payments/ledger** service for compliance

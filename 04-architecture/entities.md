@@ -15,7 +15,7 @@
 > stored as **integer minor units (satang)**, never floating point.
 >
 > **Schema status.** The **live PostgreSQL schema is the reference**, and this
-> catalog describes it. All **57 tables** below exist in `public` today; every
+> catalog describes it. All **58 tables** below exist in `public` today; every
 > column, type, key and `ON DELETE` rule is read back from
 > `information_schema.columns` and `pg_constraint`, never copied from another
 > document. Where the catalog and the database disagree, the database wins and
@@ -62,7 +62,7 @@
   Human-facing references (`orders.reference` = `REG-YYYY-NNNNNN`,
   `invoices.number`, `payments.txn`, `payouts.reference`) are separate **UNIQUE**
   natural keys, never the PK.
-- **Multi-tenancy.** 50 of the 57 physical tables carry
+- **Multi-tenancy.** 51 of the 58 physical tables carry
   `organization_id bigint REFERENCES organizations(id)` (NOT NULL except the
   inbound `webhook_events` log while its tenant is unresolved). Every tenant
   read/write is filtered by the caller's organization (row-level isolation).
@@ -145,7 +145,8 @@ One PostgreSQL `ENUM` type per row. Values are listed in wire form (as stored).
 | `meeting_type` | `Venue`, `Sponsor`, `Vendor`, `Speaker`, `Internal` | `meetings.type` | `meetings.ts` |
 | `meeting_mode` | `Video`, `In person`, `Phone` | `meetings.mode` | `meetings.ts` |
 | `meeting_status` | `scheduled`, `cancelled` | `meetings.status` | production — a meeting is held or called off; the today/upcoming/past bucket it replaced is computed from `meeting_date` |
-| `meeting_sync_status` | `pending`, `synced`, `failed`, `not_connected` | `meetings.sync_status` | production (external calendar push) |
+| `meeting_sync_status` | `pending`, `synced`, `failed`, `not_connected` | `meetings.sync_status` | production — eventa-api writes `pending` on every meeting write; eventa-worker writes `synced`, `failed` and `not_connected` once Google Calendar answers (ADR-15) |
+| `calendar_connection_status` | `disconnected`, `connected`, `expired` | `calendar_connections.status` | `calendar-connections.ts` |
 | `template_id` | `aurora`, `noir`, `minimal`, `atlas` | `landing_templates.id`, `events.landing_template_id` | `landingTemplates.ts` |
 | `message_channel` | `email`, `sms` | `message_templates.channels`, `message_deliveries.channel` | `messagingTemplates.ts`, `deliveryLog.ts` |
 | `announcement_status` | `scheduled`, `sent`, `cancelled` | `announcements.status` | `announcements.ts`; `cancelled` added with scheduled sends (migration `0065`) |
@@ -207,7 +208,9 @@ partial or functional — they are named in the `UNIQUE` bullet where they apply
 **Null** = *is the column nullable?* (`no` = NOT NULL, `yes` = nullable). A column
 that holds another table's `id` without a foreign-key constraint behind it carries
 no `FK` marker and says so in its Notes — there are six such columns, tabulated in
-`erd.md` → [Unenforced references](erd.md#unenforced-references). Every table also
+`erd.md` → [Unenforced references](erd.md#unenforced-references), plus one that is
+unconstrained on purpose, `calendar_connections.oauth_state_user_id`, explained on its
+table. Every table also
 carries the common audit columns from *Conventions* (`created_at`, `updated_at`,
 `version`, and `deleted_at`/`created_by` where noted); they are shown per table for
 completeness.
@@ -274,7 +277,7 @@ A login identity. Admin-console and portal personas are distinct rows even at th
 
 - **PRIMARY KEY** (`id`)
 - **FOREIGN KEY** `organization_id`→`organizations(id)` **ON DELETE CASCADE**
-- **UNIQUE** (`organization_id`, `email`, `persona`) — same email may exist once per persona per org
+- **UNIQUE** partial `uq_users_org_email_persona` (`organization_id`, `email`, `persona`) WHERE `deleted_at IS NULL` — same email may exist once per persona per org among *live* accounts. Removing a teammate (US-SET-11) and deleting an attendee account (US-DISC-14) soft-delete the row and keep its email for the record, and the partial clause is what lets that address be re-invited or sign up again (US-DISC-15) (migration `0072`)
 - **INDEXES** `ix_users_org` (`organization_id`), `ix_users_email` (`email`)
 - **`attendee_id` is an unenforced reference.** It holds an `attendees.id` and the application joins on it,
   but no `REFERENCES` clause was ever added, so the portal-persona link can dangle: removing the attendee
@@ -456,7 +459,9 @@ Integration/API credentials (`setIntegrations`; emits `apikey` audit events).
 - **INDEX** `ix_api_keys_org` (`organization_id`)
 
 #### `notification_preferences`
-Per-user email/SMS toggle per notification category (`NotifCategory`); gates whether a `message_deliveries` row is generated.
+Per-user email/SMS toggle per notification category (`NotifCategory`). An absent row means on. One send
+reads it so far: the attendee event reminder leaves out an attendee who switched "Event reminders" off
+(US-DISC-12). No other message consults it yet.
 
 | Column | Type | Null | Key | Default | Notes |
 |---|---|---|---|---|---|
@@ -563,7 +568,9 @@ stored in plain text because it is designed to be public.
   an audited domain record whose stale writes are worth a `409`.
 
 #### `payment_method_settings`
-Per-method on/off for checkout (US-SET-09). An absent row means the method is disabled.
+Per-method on/off for checkout (US-SET-09). An absent row means **on** for Card and PromptPay, the two
+methods checkout can collect, so a workspace that never opened the screen still takes payment, and
+**off** for every other method.
 
 | Column | Type | Null | Key | Default | Notes |
 |---|---|---|---|---|---|
@@ -588,7 +595,7 @@ Event categorization for discover/landing. Org-scoped, seeded then customizable.
 |---|---|---|---|---|---|
 | `id` | bigint identity | no | PK | | |
 | `organization_id` | bigint | no | FK→organizations.id, UK, IX | | |
-| `name` | text | no | UK | | Unique per org. |
+| `name` | text | no | UK | | Unique per org among live categories, ignoring case. |
 | `description` | text | yes | | | `Category.desc`. |
 | `icon` | text | no | | | Hugeicons slug (`CATEGORY_ICONS`). |
 | `color` | `category_color` | no | | | pink/blue/amber/brand/violet/indigo/teal/red. |
@@ -599,7 +606,7 @@ Event categorization for discover/landing. Org-scoped, seeded then customizable.
 
 - **PRIMARY KEY** (`id`)
 - **FOREIGN KEY** `organization_id`→`organizations(id)` **ON DELETE CASCADE**
-- **UNIQUE** (`organization_id`, `name`)
+- **UNIQUE** partial expression `uq_categories_org_name` (`organization_id`, `lower(name)`) WHERE `deleted_at IS NULL` — the service's own duplicate rule, enforced: "Music" and "music" collide, and a deleted category frees its name for re-use (US-EVT-11) (migration `0073`)
 - **INDEXES** `ix_categories_org` (`organization_id`), expression `ix_categories_search_name` (`search_norm(name)`) — `search_norm()` lowercases and strips Latin accents and Thai vowel/tone marks (migration `0023`), so Discover matches a category name however it was typed (US-DISC-02)
 - `count` (events in category) is **derived**, not stored.
 
@@ -796,7 +803,7 @@ A sellable ticket tier for an event.
 | `status` | `ticket_status` | no | | `'scheduled'` | onsale/scheduled/paused/soldout. |
 | `admission_type` | `admission_type` | no | | `'general_admission'` | reserved_seat ties to seat_maps. |
 | `sold` | integer | no | | `0` | Derived counter; ≥0, ≤`total`. |
-| `total` | integer | no | | `0` | Allocation/quota, ≥0. |
+| `total` | integer | no | | `0` | Allocation/quota, ≥0. On a seat-typed event (reserved, and at least one seat carries a tier) it is derived, never typed: the count of `seats` carrying this tier, `0` for a tier with none, written by the seating save (`PUT /events/:eventId/seating/reserved`) in the same transaction and never below `sold`. |
 | `sales_start_at` | timestamptz | yes | | | scheduled→onsale. |
 | `sales_end_at` | timestamptz | yes | | | After → paused. |
 | `min_per_order` | integer | no | | `1` | |
@@ -815,6 +822,7 @@ A sellable ticket tier for an event.
 - **CHECK** `sold >= 0 AND sold <= total`, `price_satang >= 0`, `NOT is_free OR price_satang = 0`
 - **INDEXES** `ix_ticket_types_event` (`event_id`), `ix_ticket_types_org` (`organization_id`)
 - `soldout`, `revenue`, `featured` are derived. `sold` is an atomic counter guarded on booking.
+- **Seats (US-EVT-05).** On a reserved event each seat sells one tier (`seats.ticket_type_id`), given a whole row at a time or seat by seat, so a row can be split between tiers. A tier's `total` is then set by the seating save, and an edit that sends a different quantity is refused (409). A reserved event publishes only when every seat has a tier and every live tier has at least one seat, and a tier that still has seats cannot be removed (US-TKT-05). The public event page shows the split read-only (US-PAGE-05): `GET /public/events/:slug` lists the tiers in creation order (`created_at`, then `id`) and returns `seatMap` as `{ seatsPerRow, rows: [{ label, ticketTypeId, seatTicketTypes }] }` — each row's `row_label`, each seat's tier in seat-number order (null for an untyped seat), and `ticketTypeId` the tier when the whole row shares it, null otherwise — or `null` unless the event is in person, reserved and has a typed seat. A tier's seat-map colour is its place in that creation order, on the page and in the wizard's preview alike. See `erd.md` → [Each seat sells its own ticket type](erd.md#seat-ticket-types).
 
 #### `discount_codes`
 A redeemable discount for an event (or org-wide).
@@ -1101,7 +1109,7 @@ An individual addressable seat within a seat map.
 | `section` | text | yes | | | Section/zone label. |
 | `row_label` | text | yes | | | Row. |
 | `seat_number` | text | no | UK | | Seat within row. |
-| `ticket_type_id` | uuid | yes | FK→ticket_types.id, IX | | Tier this seat belongs to. |
+| `ticket_type_id` | uuid | yes | FK→ticket_types.id, IX | | Tier this seat sells as. Written seat by seat by `PUT /events/:eventId/seating/reserved` (`seatTicketTypes`, or `rowTicketTypes` as a whole-row shorthand — never both; US-EVT-05), so the seats of one row may carry different tiers; a seat that is booked or held keeps its tier, while the rest of its row can change. A seat sells only under its own tier. Null on a seat with no type yet, and on every seat of a map laid out before seats carried tiers (or copied onto a duplicated event). Only on a map with no typed seat at all does an untyped seat sell under any of the event's tiers; once any seat on the map has a tier, an untyped seat is not on sale (US-DISC-04). Every seat needs one before a reserved draft publishes, and a published map whose seats are typed cannot leave a seat untyped (app-enforced, no constraint). |
 | `status` | `seat_status` | no | | `'available'` | available/held/reserved/sold/blocked. |
 | `created_at` | timestamptz | no | | `now()` | |
 | `updated_at` | timestamptz | no | | `now()` | |
@@ -1265,11 +1273,15 @@ as they stand and must not be backfilled.
 | `created_at` | timestamptz | no | | `now()` | |
 | `updated_at` | timestamptz | no | | `now()` | |
 | `gateway_account_id` | text | yes | | | Which provider account took the money — see above. Null means the platform account. |
+| `seller_name` | text | yes | | | The workspace's legal name as it stood when the payment settled, printed on the attendee's receipt (US-SET-07). Null while pending. |
+| `seller_address` | text | yes | | | Seller address, stamped with `seller_name`. |
+| `seller_tax_id` | text | yes | | | Seller tax ID, stamped with `seller_name`. |
 
 - **PRIMARY KEY** (`id`)
 - **FOREIGN KEYS** `organization_id`→`organizations(id)` **ON DELETE CASCADE**; `order_id`→`orders(id)` **ON DELETE RESTRICT**; `event_id`→`events(id)` **ON DELETE RESTRICT**
 - **UNIQUE** `uq_payments_org_txn` (`organization_id`, `txn`), `uq_payments_org_idem` (`organization_id`, `idempotency_key`)
 - **INDEXES** `ix_payments_order` (`order_id`), `ix_payments_event` (`event_id`), `ix_payments_status` (`organization_id`, `status`)
+- **The receipt keeps the seller it was issued by.** The three `seller_*` columns are copied from `organizations` in the transaction that settles the payment, so a later edit to the workspace's name, address or tax ID does not rewrite a receipt already issued (US-SET-07). They are copied together: an address or tax ID that was blank at settlement stays blank. A row never stamped (`seller_name` null) falls back to the live organization. Migration `0074` stamped every settled payment that existed with the organization as it stood then.
 
 #### `refunds`
 A full/partial reversal of a payment. Append-only.
@@ -1332,6 +1344,9 @@ A tax invoice for an order.
 | `voided_at` | timestamptz | yes | | | Set when an Admin voids an issued or overdue invoice raised in error (US-FIN-10). |
 | `void_reason` | text | yes | | | The optional reason given with the void (US-FIN-10). |
 | `voided_by` | uuid | yes | FK→users.id | | The Admin who voided it; null once that account is removed. |
+| `seller_name` | text | yes | | | The workspace's legal name as it stood on issue (US-SET-07). |
+| `seller_address` | text | yes | | | Seller address, stamped with `seller_name`. |
+| `seller_tax_id` | text | yes | | | Seller tax ID, stamped with `seller_name`. |
 
 - **PRIMARY KEY** (`id`)
 - **FOREIGN KEYS** `organization_id`→`organizations(id)` **ON DELETE CASCADE**; `order_id`→`orders(id)` **ON DELETE RESTRICT**; `event_id`→`events(id)` **ON DELETE RESTRICT**; `voided_by`→`users(id)` **ON DELETE SET NULL**
@@ -1342,6 +1357,10 @@ A tax invoice for an order.
   invoice itself and `status` moves to `void`; the sequence keeps the number for audit, which is
   why a correction is a new invoice and not an edit (US-FIN-10). Voiding frees the
   `uq_invoices_live_order` slot above so that new invoice can be issued for the same order.
+- **The invoice keeps the seller it was issued by.** The three `seller_*` columns are copied from
+  `organizations` in the issuing transaction, so a later edit to the workspace does not rewrite an
+  invoice already issued (US-SET-07); same rules as on `payments` above. `vat_rate` is still read
+  from the organization.
 
 #### `payouts`
 A settlement of net proceeds to the organizer bank account over a period.
@@ -1823,14 +1842,14 @@ because the booking was never conditional on it.
 | `role` | text | yes | | | Counterparty role label. |
 | `guest_email` | citext | no | | | Where the invite goes; `citext` so a differently-cased address is the same guest. |
 | `event_id` | uuid | yes | FK→events.id, IX | | Null means the meeting is general rather than about one event, which the story allows explicitly. |
-| `link` | text | yes | | | The conference link, once the calendar sync has produced one (US-MTG-04). |
+| `link` | text | yes | | | The Google Meet link for a Video meeting, written by eventa-worker once Google Calendar has produced one (US-MTG-04); eventa-api only ever clears it, when a meeting stops being Video (US-MTG-05). |
 | `location` | text | yes | | | The venue for In person, "Phone call" for Phone, null for Video. |
 | `notes` | text | yes | | | Organizer's own notes. |
 | `cancellation_reason` | text | yes | | | Why it was called off; shown to the guest (US-MTG-06). |
 | `cancelled_at` | timestamptz | yes | | | Set when called off. |
 | `sync_status` | `meeting_sync_status` | no | IX | `'pending'` | `pending` \| `synced` \| `failed` \| `not_connected`. |
-| `external_event_id` | text | yes | | | The calendar's own id, held so a reschedule **updates** the guest's existing invite instead of sending a second one (US-MTG-05). |
-| `sync_error` | text | yes | | | The calendar's reason, when `sync_status = failed`. |
+| `external_event_id` | text | yes | | | The Google Calendar event id, held so a reschedule **updates** the guest's existing invite instead of sending a second one (US-MTG-05). It is always the meeting's `id` without its hyphens — 32 lowercase hex characters, a valid Google event id — so a retry, or a cancel that overtakes a create, addresses the same event. Written by eventa-worker only. |
+| `sync_error` | text | yes | | | Why the invite has not gone out: one of eventa-worker's fixed sentences ("Google Calendar is unavailable right now.", "Google Calendar refused the request (HTTP n).", "The Google Calendar connection has expired.", "The Google Calendar connection could not be read."). Never Google's own text, an email or a token, and never in a response. |
 | `idempotency_key` | text | yes | UK | | The organizer's key for this booking. |
 | `created_by` | uuid | yes | FK→users.id | | |
 | `created_at` | timestamptz | no | | `now()` | |
@@ -1848,12 +1867,86 @@ because the booking was never conditional on it.
   conversation that happened, and it outlives the event row.
 - **`cancelled_at` and `deleted_at` are both present and mean different things** — called off (the guest is
   told, the reason is kept) versus removed from the organizer's list.
+- **WRITERS — eventa-api owns this table, with one agreed exception.** eventa-api writes every column and sets
+  `sync_status = 'pending'` and `updated_at` on every write, including the resync that runs when a workspace
+  connects Google Calendar. A reschedule, **Send it now** (`POST /meetings/:id/sync`) and that resync also clear
+  `sync_error`; a cancel does not, so a cancelled meeting can read `pending` beside the sentence of an earlier
+  failure until the worker writes the cancel's own outcome. **eventa-worker** (`modules/meetings`, consuming
+  `meeting.sync_requested`) writes `sync_status`, `sync_error` and `link` **conditional on `updated_at`** — only
+  while the row still carries the `updated_at` it read, so an outcome for a superseded version is dropped
+  rather than written over a newer edit — and `external_event_id` **unconditionally**, because eventa-api never
+  writes that column and a create superseded mid-flight must still record the event it made. The worker never
+  writes `version` or `updated_at` (ADR-15). **Consequence:** the worker's `meetings` schema file is a *write*
+  mirror — `meeting_mode`, `meeting_status` and `meeting_sync_status` must match here exactly, and its
+  `updated_at` has no default and no on-update hook, since the value is compared, not set.
 
 > **Designed, not built.** There is no `bucket` column. The catalog listed a stored
 > `meeting_bucket` (`today`/`upcoming`/`past`) marked "derived", and a stored one is wrong from the moment
 > the Bangkok day turns — it would need a nightly job to stay true. It is computed per request instead,
 > the same call this schema makes for invoice ageing and session colour, and the enum was never created.
 > The `status` column that occupies that name is a different thing: whether the meeting is going ahead.
+
+#### `calendar_connections`
+The workspace's Google Calendar connection (US-MTG-08) — at most one row per organization. It is what lets
+eventa-worker send each meeting's invite, Meet link and 15-minute reminder (US-MTG-04 to US-MTG-07) from the
+Google account an Admin connected on Settings → Integrations. **No row means disconnected**; the row is
+created by the first connect attempt.
+
+**The two secrets are write-only.** `refresh_token_cipher` and `oauth_verifier_cipher` are AES-256-GCM
+ciphertext (`iv | authTag | ciphertext`) under `SECRET_ENCRYPTION_KEY`, the same cipher that protects
+`payment_credentials` and `two_factors.secret_encrypted` — and the **same key value in eventa-api and
+eventa-worker**, because the worker decrypts the refresh token to sync. Nothing decrypts either into a
+response: the refresh token only into a Google token request (the worker's access-token refresh, eventa-api's
+revoke on disconnect), the verifier only into the code exchange. Access tokens are never stored. Rotating the
+key orphans the stored refresh token, and the Admin has to reconnect.
+
+| Column | Type | Null | Key | Default | Notes |
+|---|---|---|---|---|---|
+| `id` | bigint identity | no | PK | | |
+| `organization_id` | bigint | no | FK→organizations.id, UK | | One row per workspace. |
+| `status` | `calendar_connection_status` | no | | `'disconnected'` | `connected` once a callback succeeds; `expired` when Google stops accepting the token; `disconnected` after Disconnect. |
+| `account_email` | citext | yes | | | The Google account that granted access. Returned only to callers holding `setIntegrations` (NFR-PDPA-04). |
+| `refresh_token_cipher` | bytea | yes | | | Google OAuth refresh token, encrypted at rest. Never read back to a caller. |
+| `connected_by` | uuid | yes | FK→users.id | | The Admin whose connect succeeded. |
+| `connected_at` | timestamptz | yes | | | |
+| `disconnected_at` | timestamptz | yes | | | |
+| `oauth_state_hash` | text | yes | | | sha256 hex of the pending connect's nonce — never the nonce itself, which only the browser's round trip through Google carries. |
+| `oauth_state_user_id` | uuid | yes | | | Who started the pending connect. Deliberately **not** a foreign key — see below. |
+| `oauth_verifier_cipher` | bytea | yes | | | The pending PKCE `code_verifier`, encrypted at rest; never sent to the browser. |
+| `oauth_state_expires_at` | timestamptz | yes | | | Start time plus 10 minutes, on the database clock. |
+| `created_at` | timestamptz | no | | `now()` | |
+| `updated_at` | timestamptz | no | | `now()` | |
+
+- **PRIMARY KEY** (`id`)
+- **FOREIGN KEYS** `organization_id`→`organizations(id)` **ON DELETE CASCADE**; `connected_by`→`users(id)` **ON DELETE SET NULL**
+- **UNIQUE** `uq_calendar_connections_org` (`organization_id`) — one connection per workspace, which makes this
+  the schema's second 1:1 with `organizations`, after `payment_settings`
+- **CHECK** `ck_calendar_connections_token` — `status <> 'connected' OR refresh_token_cipher IS NOT NULL`: a
+  workspace is never marked connected without a token to sync with
+- **RLS** tenant isolation on `organization_id`
+- No `version` and no index beyond the unique key: like `payment_credentials`, this is credential storage
+  keyed by the workspace and overwritten in place, not an audited domain record whose stale writes are worth
+  a `409`.
+- **`oauth_state_user_id` is unconstrained on purpose**, and is not one of the six gaps in `erd.md` →
+  *Unenforced references*. It lives at most ten minutes, is cleared on its first matching use, and the
+  callback re-checks that user's `setIntegrations` in the workspace before connecting — a removed member
+  simply fails there — so a constraint would add nothing. On success its value is copied into `connected_by`,
+  which is enforced. It adds no foreign key to the ERD counts.
+- **Row lifecycle.** *Start connect* upserts on `organization_id`, writing the four `oauth_state_*` and
+  verifier columns (a second start overwrites the first: the last one wins) and touching `updated_at`; on
+  insert `status` keeps its default. *A callback whose nonce matches* clears those four columns in the same
+  transaction as the read, so a state is single-use; a non-matching one leaves them untouched, so nobody who
+  guesses a workspace id can cancel an Admin's connect in progress. *Success* sets `status = 'connected'`,
+  `account_email`, `refresh_token_cipher`, `connected_by` (the user who started it), `connected_at = now()`
+  and clears `disconnected_at`. *Disconnect* sets `status = 'disconnected'`, `disconnected_at = now()` and
+  clears the cipher, the account and every pending-state column, after revoking the token at Google on a
+  best-effort basis; it creates no row when there is none.
+- **WRITERS — eventa-api owns it; eventa-worker writes `status` → `expired` (and `updated_at`) only,
+  conditional on the cipher it used (ADR-15).** When Google answers `invalid_grant` or
+  `insufficientPermissions`, the worker runs `UPDATE … SET status = 'expired' WHERE status = 'connected' AND
+  refresh_token_cipher = <the cipher it decrypted>`, so a reconnect that landed mid-sync is never marked
+  expired by a stale token. The cipher is left in place, unused, until the Admin reconnects or disconnects.
+  The worker's schema file is a write mirror: `calendar_connection_status` must match here exactly.
 
 ### System & Audit
 
@@ -1904,7 +1997,7 @@ Short-lived checkout reservation that expires and releases inventory if the buye
 | `organization_id` | bigint | no | FK→organizations.id | | Tenant. |
 | `event_id` | uuid | no | FK→events.id | | |
 | `order_id` | uuid | yes | FK→orders.id, IX | | Pending order this hold backs; null while cart-only. |
-| `ticket_type_id` | uuid | yes | FK→ticket_types.id | | For GA quantity holds. |
+| `ticket_type_id` | uuid | yes | FK→ticket_types.id | | The tier being bought: set on GA quantity holds and on reserved-seat checkout holds (`POST /public/checkout/hold`). Placing the order is refused (409) unless the held seats are exactly the priced seats and each sells under the order's tier — checked against each seat's own tier, so a row split between tiers sells each seat only as its own (US-DISC-04). |
 | `seat_id` | bigint | yes | FK→seats.id, UK | | For reserved-seat holds; one row per seat. |
 | `quantity` | integer | no | | `1` | Seats/units held. |
 | `status` | `hold_status` | no | | `'active'` | active/converted/expired/released. |
@@ -2016,7 +2109,7 @@ marker is there because the constraint is missing. `erd.md` →
 | sessions ⇄ speakers | session_speakers | M:N | junction session_speakers | A speaker owns many sessions. |
 | ticket_types | order_items | 1:N | order_items.ticket_type_id | RESTRICT. |
 | ticket_types | tickets | 1:N | tickets.ticket_type_id | RESTRICT. |
-| ticket_types | seats | 1:N | seats.ticket_type_id | Tier per seat; SET NULL. |
+| ticket_types | seats | 1:N | seats.ticket_type_id | Tier per seat, set seat by seat or a whole row at a time (US-EVT-05); SET NULL — a tier that still has seats can't be deleted (US-TKT-05). |
 | discount_codes | orders | 1:N | orders.discount_code_id | Applied code; SET NULL. |
 | discount_codes ⇄ orders | discount_redemptions | M:N | junction discount_redemptions | Idempotent per order. |
 | attendees | orders | 1:N | orders.attendee_id | Null for guests; SET NULL. |
@@ -2048,6 +2141,8 @@ marker is there because the constraint is missing. `erd.md` →
 | users | check_ins | 1:N | check_ins.checked_in_by | Staff who admitted them; SET NULL. |
 | attendees | check_ins | 1:N | check_ins.attendee_id | The CRM row admitted; SET NULL. |
 | meetings | users | N:1 | meetings.created_by | Organizer. |
+| organizations | calendar_connections | 1:1 | calendar_connections.organization_id (UK) | Optional singleton per workspace; no row means disconnected; CASCADE. |
+| users | calendar_connections | 1:N | calendar_connections.connected_by | The Admin whose connect succeeded; SET NULL. |
 | organizations | payment_credentials | 1:N | payment_credentials.organization_id | One key pair per mode; CASCADE. |
 | users | announcements | 1:N | announcements.sent_by_user_id | Who sent the broadcast; SET NULL. |
 | users | announcements | 1:N | announcements.cancelled_by_user_id | Who called it off; SET NULL. |
@@ -2058,6 +2153,6 @@ marker is there because the constraint is missing. `erd.md` →
 | organizations | seat_holds | 1:N | seat_holds.organization_id | CASCADE. |
 | events | seat_holds | 1:N | seat_holds.event_id | CASCADE. |
 | orders | seat_holds | 1:N | seat_holds.order_id | Null while cart-only; SET NULL. |
-| ticket_types | seat_holds | 1:N | seat_holds.ticket_type_id | GA quantity holds; CASCADE. |
+| ticket_types | seat_holds | 1:N | seat_holds.ticket_type_id | The tier being bought, GA and reserved holds; CASCADE. |
 | seats | seat_holds | 1:N | seat_holds.seat_id | Reserved-seat holds; CASCADE. |
 | organizations | webhook_events | 1:N | webhook_events.organization_id | Resolved tenant; SET NULL. |

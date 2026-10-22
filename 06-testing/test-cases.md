@@ -5,7 +5,7 @@
 | **Author** | QA Engineer |
 | **Version** | 1.0 · 2026-07-23 |
 | **Companion** | [test-plan.md](test-plan.md) |
-| **Scope** | 340 test cases across 13 epics, tracing to the 162 user stories in the [product backlog](../01-requirements-and-features/functional-requirements.md) |
+| **Scope** | 354 test cases across 13 epics, tracing to the 162 user stories in the [product backlog](../01-requirements-and-features/functional-requirements.md) |
 
 > Each test case is derived from a user story's Given/When/Then acceptance criteria, and lists its traceability (`US-*`), priority, type, preconditions, test data, steps, and expected result. Priority defaults from MoSCoW (Must→High, Should→Medium, Could→Low). See [test-plan.md](test-plan.md) for strategy, environment, defect process, and closure.
 
@@ -15,18 +15,18 @@
 |---|------|:---:|:---:|:---:|:---:|:---:|
 | 1 | [Accounts & Sign-in](#tc-e01) | 12 | 24 | 19 | 5 | 0 |
 | 2 | [Configure the Workspace & Team](#tc-e02) | 13 | 29 | 16 | 11 | 2 |
-| 3 | [Create & Manage Events](#tc-e03) | 15 | 35 | 20 | 13 | 2 |
-| 4 | [Public Event Pages](#tc-e04) | 10 | 21 | 11 | 9 | 1 |
-| 5 | [Sell Tickets & Run Promotions](#tc-e05) | 12 | 24 | 9 | 12 | 3 |
-| 6 | [Discover & Register for Events](#tc-e06) | 15 | 35 | 25 | 8 | 2 |
+| 3 | [Create & Manage Events](#tc-e03) | 15 | 39 | 24 | 13 | 2 |
+| 4 | [Public Event Pages](#tc-e04) | 10 | 22 | 12 | 9 | 1 |
+| 5 | [Sell Tickets & Run Promotions](#tc-e05) | 12 | 25 | 9 | 13 | 3 |
+| 6 | [Discover & Register for Events](#tc-e06) | 15 | 42 | 31 | 9 | 2 |
 | 7 | [Communicate with Attendees](#tc-e07) | 10 | 20 | 3 | 13 | 4 |
 | 8 | [Manage Registrations & Admit Attendees](#tc-e08) | 14 | 30 | 17 | 13 | 0 |
 | 9 | [Get Paid & Manage Finances](#tc-e09) | 14 | 27 | 20 | 7 | 0 |
 | 10 | [Build the Event Program](#tc-e10) | 13 | 24 | 14 | 9 | 1 |
 | 11 | [Organizer Home & Dashboard](#tc-e11) | 13 | 25 | 14 | 9 | 2 |
-| 12 | [Coordinate Meetings](#tc-e12) | 9 | 21 | 8 | 11 | 2 |
+| 12 | [Coordinate Meetings](#tc-e12) | 9 | 22 | 8 | 12 | 2 |
 | 13 | [Measure Performance (Reports)](#tc-e13) | 12 | 25 | 10 | 13 | 2 |
-| | **Total** | **162** | **340** | **186** | **133** | **21** |
+| | **Total** | **162** | **354** | **197** | **136** | **21** |
 
 ---
 
@@ -712,15 +712,18 @@ Epic E3 · Area code: EVT · Locale: Thai market (฿, VAT 7%, PromptPay, Asia/B
 
 ### TC-EVT-04 — Wizard progress, live summary, and Save as draft resume
 - **Traces:** US-EVT-02  ·  **Priority:** High  ·  **Type:** Functional
-- **Preconditions:** Signed in as Event Organizer with create rights.
-- **Test data:** Name "TechConf BKK 2026"; one ticket type "Early Bird ฿890 × 100"; General admission capacity 100.
+- **Preconditions:** Signed in as Event Organizer with create rights; an existing online draft to edit.
+- **Test data:** Name "TechConf BKK 2026", in person; start 2026-08-15 09:00 (Asia/Bangkok); one ticket type "Early Bird ฿890 × 100"; General admission capacity 100.
 - **Steps:**
-  1. Start a new event; confirm the wizard shows a progress indicator and step rail (Basics, Date & location, Seating, Tickets, Review & publish).
-  2. Enter the name and a ticket type; watch the live summary panel.
-  3. On any step, click "Save as draft".
-  4. Leave the wizard, then open the events list and reopen the event.
-- **Expected result:** Wizard shows progress + step rail and a live summary reflecting name, ticket types, capacity and seating as entered. "Save as draft" stores the event as a Draft that appears in the events list; reopening restores the entered data so work resumes.
-
+  1. Start a new in-person event; confirm the wizard shows a progress indicator and a step rail, and read the steps on the rail.
+  2. On the Seating step choose Reserved and read the rail and the progress again; then choose General admission and read them once more.
+  3. With General admission chosen, open Assign seats from the rail, read it and press "Go to Seating".
+  4. Enter the name, the start date and a ticket type; watch the live summary panel.
+  5. On any step, click "Save as draft".
+  6. Leave the wizard, then open the events list and reopen the event.
+  7. In the reopened general-admission draft, open Assign seats and press "Save changes" in the header, watching the network requests.
+  8. Open the existing online draft in the wizard, read its rail, and open Assign seats.
+- **Expected result:** Wizard shows progress + step rail and a live summary reflecting name, ticket types, capacity and seating as entered. The rail always has the same six steps — Basics, Date & location, Seating, Tickets, Assign seats, Review & publish — and the progress is measured against the six: choosing Reserved or General admission adds or removes nothing. With General admission, Assign seats says "General admission has no seats to assign. To sell seats by ticket type, choose Reserved seating on the Seating step." and "Go to Seating" opens the Seating step. "Save as draft" stores the event as a Draft that appears in the events list; reopening restores the entered data, General admission included, so work resumes. On the reopened draft the header button reads "Save changes"; pressed on Assign seats it sends PATCH /events/:id and PUT /events/:id/highlights, sends no request to /seating, and confirms "Changes saved." The online draft, edited, shows the same six steps, and its Assign seats says "Online events have no seats to assign."
 ### TC-EVT-05 — Leaving with unsaved changes prompts to save as draft; autosave preserves interrupted work
 - **Traces:** US-EVT-02  ·  **Priority:** Medium  ·  **Type:** Negative
 - **Preconditions:** Organizer partway through the wizard with unsaved edits on the current step.
@@ -816,23 +819,76 @@ Epic E3 · Area code: EVT · Locale: Thai market (฿, VAT 7%, PromptPay, Asia/B
   3. Switch to General admission and set headcount 150.
 - **Expected result:** Reserved shows a live seat-map preview with total = 200 (rows × seats/row). General admission simply captures a headcount (150) with no specific seat assignment.
 
-### TC-EVT-13 — Seat map smaller than ticket quantities warns on publish; Online offers no seating
-- **Traces:** US-EVT-05  ·  **Priority:** Medium  ·  **Type:** Edge
-- **Preconditions:** Two events available: (a) in-person Reserved with 100 seats but total ticket quantities of 150; (b) an Online event.
-- **Test data:** (a) Reserved 5×20 = 100 seats, tickets summing to 150; (b) Online event.
+### TC-EVT-12b — A row's select gives the whole row a ticket type and each type's quantity is its seat count
+- **Traces:** US-EVT-05  ·  **Priority:** High  ·  **Type:** Functional
+- **Preconditions:** In-person draft event with Reserved seating; ticket types VIP ฿2,500, Normal ฿890 and Free ฿0 already added and saved on the Tickets step, in that order; nothing sold.
+- **Test data:** 7 rows × 16 seats/row (112 seats); rows 1–2 VIP, rows 3–6 Normal, row 7 Free; then row 6 moved from Normal to VIP.
 - **Steps:**
-  1. On event (a) proceed to publish.
-  2. On event (b) open the Seating step.
-- **Expected result:** Event (a) shows a warning that the seat map (100) is smaller than the ticket quantities (150). Event (b) offers no seating options and tells the user a join link is emailed after registration.
+  1. Open the Assign seats step and check the "Ticket types by row" list: one select per row, labelled Row 1 … Row 7, each offering VIP, Normal, Free and "No ticket type".
+  2. With the selects, give rows 1–2 VIP, rows 3–6 Normal and row 7 Free; save.
+  3. Read the preview and its legend, then go back to the Tickets step, look for a Quantity column, and save the step.
+  4. Go on to Assign seats, change row 6 to VIP and read the legend before saving; save, reopen the Tickets step, and read the three ticket types on the Tickets screen (`/admin/tickets`).
+  5. Send `PATCH /events/:eventId/tickets/:ticketId` for Normal with `total` 100; then send it again with Normal's current quantity and a per-order limit of 6.
+- **Expected result:** The preview numbers its rows 1–7 (no letters) and colours every seat of a row in that row's ticket type; the legend lists the types in ticket order — "VIP · Rows 1–2 · 32 seats", "Normal · Rows 3–6 · 64 seats" and "Free · Row 7 · 16 seats". The Tickets step has no Quantity column — no Quantity heading, and no quantity box or "Set by the seat map" on any ticket type, which shows just its name and price lined up under their headings — with "Each type's quantity is the seats it holds — give seats a type in the next step, Assign seats." below the list; saving the step sends no `total` for any ticket type and leaves all three quantities as they were. Once row 6 moves, the legend reads "VIP · Rows 1–2, 6 · 48 seats", "Normal · Rows 3–5 · 48 seats" and "Free · Row 7 · 16 seats" straight away, before the row is saved — always adding up to the 112 seats. After the save the Tickets step still has no Quantity column, and the Tickets screen shows VIP 48, Normal 48 and Free 16, each read-only and marked "Set by the seat map" when opened for editing. The `PATCH` with 100 is refused (409) with "This event's ticket quantities come from its seat map. Give rows to a ticket type instead." and Normal stays at 48; the `PATCH` that repeats 48 is accepted and saves the new per-order limit.
 
-### TC-EVT-14 — Reducing rows/seats on a published reserved event never removes sold seats
-- **Traces:** US-EVT-05  ·  **Priority:** High  ·  **Type:** Negative
-- **Preconditions:** Published reserved event with some seats already sold (e.g. seats in row 5 sold).
-- **Test data:** Reserved map 6 rows × 20; sold seats include row 5; attempt to reduce to 4 rows.
+### TC-EVT-12c — Part of a row is given a ticket type by clicking or dragging across its seats
+- **Traces:** US-EVT-05  ·  **Priority:** High  ·  **Type:** Functional
+- **Preconditions:** A complete in-person draft (title, description, venue) with Reserved seating 7 rows × 16 seats/row (112 seats); ticket types VIP ฿2,500, Normal ฿890 and Free ฿0 added and saved on the Tickets step, in that order; on Assign seats rows 1–2 saved as VIP and rows 3–7 as Normal; nothing sold; user has publish rights.
+- **Test data:** Free for row 7 seats 1–5 — seat 1 clicked, seats 2–5 dragged across; row 7 seat 16 set to "No ticket type" and back to Normal from the keyboard.
 - **Steps:**
-  1. Edit seating and reduce rows from 6 to 4 (which would drop row 5).
-  2. Save.
-- **Expected result:** Seats already sold are never removed; the reduction cannot strip out sold seats (either blocked or those seats retained).
+  1. Open Assign seats and read the picker above the seat map, the hint under it, the seats' accessible names, Row 7's select and the legend.
+  2. Choose Free under "Paint seats with"; click row 7 seat 1, then press on row 7 seat 2, drag across to seat 5 and release; move the pointer over seats 6–8 without pressing. Read the seats, Row 7's select and the legend.
+  3. Choose "No ticket type", move keyboard focus to row 7 seat 16 and press Enter; read the legend. Then choose Normal and press Space on the same seat.
+  4. Save, watching the `PUT /events/:eventId/seating/reserved` request; reload the wizard, reopen Assign seats, and read the three ticket types on the Tickets screen (`/admin/tickets`).
+  5. Pick Normal in Row 7's select and read the seats and the legend; then reload without saving.
+  6. Publish the event, open its public page at `/e/<slug>` and read the Free and Normal cards, the seat map and its legend.
+  7. At phone width (375 px), open Assign seats again, scroll the seat map within its box and tap one seat.
+- **Expected result:** Step 1: "Paint seats with" offers VIP, Normal, Free and "No ticket type", with VIP — the first ticket type — chosen; the hint reads "Pick a ticket type, then click or drag across seats to give just those seats that type."; every seat is a button named for its place and type, e.g. "Row 7, seat 1: Normal"; Row 7's select reads Normal, and the legend reads "VIP · Rows 1–2 · 32 seats", "Normal · Rows 3–7 · 80 seats" and "Free · 0 seats". Step 2: row 7 seats 1–5 take Free's colour — each seat the drag entered, and none once the button was released — and seat 1 is now named "Row 7, seat 1: Free"; Row 7's select reads "Mixed", which cannot itself be picked; before any save the legend reads "VIP · Rows 1–2 · 32 seats", "Normal · Rows 3–6, row 7 seats 6–16 · 75 seats" and "Free · Row 7 seats 1–5 · 5 seats", still 112 seats in all. Step 3: Enter turns seat 16 neutral, Normal reads "Normal · Rows 3–6, row 7 seats 6–15 · 74 seats" and a last entry "No ticket type · 1 seat" appears; Space with Normal gives the seat back its type, the "No ticket type" entry goes and Normal reads 75 seats again. Step 4: the request carries `seatTicketTypes` — seven lists of 16, row 7's holding Free's id five times and then Normal's eleven times — and no `rowTicketTypes`; after the reload row 7's seats 1–5 are still Free, its select reads "Mixed" and the legend is unchanged; the Tickets screen shows VIP 32, Normal 75 and Free 5, each "Set by the seat map". Step 5: the select gives all 16 seats of row 7 Normal, the select reads Normal and the legend goes back to "Normal · Rows 3–7 · 80 seats" and "Free · 0 seats"; after the reload row 7 is split again, as saved. Step 6: the event publishes. The Free card says "Row 7 seats 1–5" and the Normal card "Rows 3–6, row 7 seats 6–16"; on the seat map row 7's seats 1–5 have Free's colour and seats 6–16 Normal's — the colours of the wizard's preview — and the legend, cheapest first like the cards, reads "Free · Row 7 seats 1–5 · 5 seats", "Normal · Rows 3–6, row 7 seats 6–16 · 75 seats", "VIP · Rows 1–2 · 32 seats". Step 7: the seat map scrolls sideways inside its own box while the page itself never scrolls sideways, and the tapped seat takes the type chosen under "Paint seats with".
+
+### TC-EVT-13 — Seats without a ticket type stay neutral; no ticket types yet points to Tickets; Online has no seats to assign
+- **Traces:** US-EVT-05  ·  **Priority:** Medium  ·  **Type:** Edge
+- **Preconditions:** Two events available: (a) a new in-person draft being built in the wizard, with Reserved seating and no ticket types yet; (b) an Online event.
+- **Test data:** (a) Reserved 5 rows × 20 seats (100 seats); ticket types VIP and Normal added later; rows 1–2 VIP, rows 3–4 Normal, row 5 left on "No ticket type"; (b) Online event.
+- **Steps:**
+  1. On event (a), before any ticket type exists, read the Seating step; then open Assign seats from the step rail and press "Go to Tickets".
+  2. Add VIP and Normal on the Tickets step and look for a Quantity column before and after saving the step; go on to Assign seats, give rows 1–2 VIP and rows 3–4 Normal with their selects, leave row 5 on "No ticket type", and save.
+  3. Read the preview and legend; go back to the Tickets step, then open the Review & publish checklist.
+  4. On event (b) open the Seating step, then read the step rail and open Assign seats.
+- **Expected result:** Step 1: the Seating step shows the rows, seats per row, total and preview but no row selects, and says "After Tickets, give the seats ticket types in Assign seats." under the preview; Assign seats has no seats to give a type and says "Add your ticket types in the Tickets step first, then give the seats one here.", and "Go to Tickets" opens the Tickets step. Step 2: the Tickets step has no Quantity column before or after the save — VIP and Normal show only a name and a price — and "Each type's quantity is the seats it holds — give seats a type in the next step, Assign seats." is shown below the list; the save sends no `total`, so both types are stored at 0, since no seat has a type yet. Step 3: rows 1–2 and 3–4 take their types' colours and row 5's seats stay a neutral colour; the legend reads "VIP · Rows 1–2 · 40 seats", "Normal · Rows 3–4 · 40 seats" and "No ticket type · 20 seats", and the Tickets step still has no Quantity column, only that note. No warning compares the seat map with ticket quantities anywhere — the two can no longer disagree; the only thing flagged is row 5's seats, through the checklist's "Every seat has a ticket type" (publishing itself is TC-EVT-13b). Event (b) offers no seating options and tells the user a join link is emailed after registration; its rail still has all six steps, and its Assign seats says "Online events have no seats to assign."
+
+### TC-EVT-13b — Publishing waits until every seat has a ticket type and every ticket type has seats
+- **Traces:** US-EVT-05  ·  **Priority:** High  ·  **Type:** Negative
+- **Preconditions:** A complete in-person draft (title, description, venue) with Reserved seating 7 rows × 16 and ticket types VIP, Normal and Free; user has publish rights. A second draft whose reserved map was laid out before seats carried ticket types (no seat has one).
+- **Test data:** Run A: rows 1–2 VIP, rows 3–6 Normal, row 7 seats 1–5 Free and seats 6–16 on "No ticket type". Run B: rows 1–2 VIP, rows 3–7 Normal, so Free has no seats. Run C: rows 1–2 VIP, rows 3–6 Normal, row 7 seats 1–5 Free and seats 6–16 Normal.
+- **Steps:**
+  1. Save Run A's split, open Review & publish and read the checklist and the Publish button; then send `POST /events/:id/publish` for the draft directly.
+  2. Save Run B's split and click Publish.
+  3. Save Run C's split and click Publish.
+  4. Open the second draft's Review & publish step without opening its Assign seats step; then send `POST /events/:id/publish` for it directly.
+- **Expected result:** Run A: the checklist shows "Every seat has a ticket type" as not done and the Publish button stays disabled; the direct request is refused (422) with "Give every seat a ticket type before publishing." and the event stays a draft — row 7's five Free seats do not make up for the eleven left without a type. Run B: the checklist has nothing left to flag, so Publish can be clicked, and the refusal (422) "Free has no seats. Give it some seats or remove it." shows in the page's error banner; still a draft. Run C: the event publishes. The second draft is treated like Run A — its checklist flags the seats, Publish stays disabled and the direct request is refused with the same sentence, because a map laid out before seats had types counts as seats without a type — and it publishes only once every seat has been given one.
+
+### TC-EVT-14 — Resizing a published reserved event never removes sold seats, and its new seats wait for a ticket type
+- **Traces:** US-EVT-05  ·  **Priority:** High  ·  **Type:** Negative
+- **Preconditions:** Published reserved event whose seats have ticket types, with some seats already sold (e.g. seats in row 5 sold); the organizer edits it in the wizard.
+- **Test data:** Reserved map 6 rows × 20, rows 1–3 VIP and rows 4–6 Normal (60 seats each); sold seats include row 5; attempt to reduce to 4 rows, then grow to 7 rows, then to 21 seats per row.
+- **Steps:**
+  1. On the Seating step reduce rows from 6 to 4 (which would drop row 5) and save.
+  2. Reload the wizard, set rows to 7 on the Seating step, read the step, and press the header Save; then reload and reopen the Seating step.
+  3. Set rows to 7 again and press Next through Tickets to Assign seats; leave row 7 on "No ticket type" and save.
+  4. Give row 7 Normal and save; read the legend, reopen the Seating and Tickets steps, and read VIP and Normal on the Tickets screen (`/admin/tickets`).
+  5. On the Seating step set seats per row to 21 and press the header Save; go on to Assign seats and read the row selects and the legend; give rows 1–3 VIP and rows 4–7 Normal again with their selects and save.
+- **Expected result:** Step 1: the save is refused (422) with "Seats that are already sold cannot be removed from a published event."; nothing is saved, so the map keeps its 6 rows and row 5's sold seats. Step 2: under "After Tickets, give the seats ticket types in Assign seats." the step says "New seats need a ticket type. The seat map is saved when you give them one in Assign seats."; Save shows "Saved. Give the new seats a ticket type in Assign seats to save the seat map." — not "Changes saved." — and sends no seating request, so after the reload the map still has 6 rows. Step 3: Next moves on with no message and still sends no seating request; Assign seats lists Row 7 on "No ticket type", and its save is refused (422) with "Give every seat in row 7 a ticket type. Every seat of a published event needs one."; the map keeps 6 rows. Step 4: the map saves with 7 rows; the legend reads "VIP · Rows 1–3 · 60 seats" and "Normal · Rows 4–7 · 80 seats", and the Tickets screen shows Normal's quantity as 80 and VIP's still 60; the Seating step no longer shows the note, and the Tickets step has no Quantity column, only "Each type's quantity is the seats it holds — give seats a type in the next step, Assign seats." under the list. Step 5: Seating shows the same note and Save message and sends no seating request, because every row's new seat 21 has no type; on Assign seats every row's select reads "Mixed" — seats 1–20 keep their types, seat 21 has none — and the legend adds "No ticket type · 7 seats"; once each row is given its type again the map saves with 7 × 21 seats, VIP 63 and Normal 84.
+
+### TC-EVT-14b — A booked or held seat keeps its ticket type while the rest of its row can change
+- **Traces:** US-EVT-05  ·  **Priority:** High  ·  **Type:** Negative
+- **Preconditions:** Published reserved event 7 rows × 16 with rows 1–2 VIP, rows 3–6 Normal, row 7 Free. In row 3, seat 2 is booked on a confirmed order; in row 4, seat 8 is held in an attendee's checkout that has not expired; no other seat is booked or held.
+- **Test data:** Row 3 to VIP by its select; row 4 seat 8 painted VIP; row 3 seat 1 and seats 3–16 painted VIP; row 4 to VIP by its select.
+- **Steps:**
+  1. On the Assign seats step, change row 3 to VIP with its select and save.
+  2. Put row 3 back to Normal; choose VIP under "Paint seats with", click row 4 seat 8 and save.
+  3. Paint row 4 seat 8 back to Normal; paint row 3 seat 1 and seats 3–16 VIP, leaving seat 2 on Normal, and save.
+  4. Let the row-4 hold expire, then change row 4 to VIP with its select and save.
+- **Expected result:** Step 1 is refused (409) with "Row 3 seat 2 is booked or held, so its ticket type can't change."; nothing is saved and every quantity is unchanged. Step 2 is refused the same way, naming row 4 seat 8. Step 3 is accepted: row 3's select reads "Mixed", VIP becomes 47 and Normal 49. Step 4 is accepted once seat 8 is no longer held: VIP becomes 63 and Normal 33. The booked seat, row 3 seat 2, still belongs to Normal throughout.
 
 ---
 
@@ -840,7 +896,7 @@ Epic E3 · Area code: EVT · Locale: Thai market (฿, VAT 7%, PromptPay, Asia/B
 
 ### TC-EVT-15 — Ticket rows require unique name, ฿ price (0 allowed) and quantity; at least one type, last row locked
 - **Traces:** US-EVT-06  ·  **Priority:** High  ·  **Type:** Functional
-- **Preconditions:** Organizer on the Tickets step.
+- **Preconditions:** Organizer on the Tickets step of a general-admission event (a reserved event's quantities come from its seat map — TC-EVT-12b).
 - **Test data:** Ticket "General ฿890 × 100"; a free ticket "Student ฿0 × 50"; attempt a duplicate name "General"; then attempt to remove the only remaining row.
 - **Steps:**
   1. Add ticket "General" at ฿890 × 100.
@@ -860,7 +916,7 @@ Epic E3 · Area code: EVT · Locale: Thai market (฿, VAT 7%, PromptPay, Asia/B
 
 ### TC-EVT-17 — Quantity/capacity below sold is rejected; out-of-window registration closes; approval and waitlist behave
 - **Traces:** US-EVT-06  ·  **Priority:** High  ·  **Type:** Negative
-- **Preconditions:** Published event with 60 tickets already sold on a type of quantity 100; registration window and toggles configurable.
+- **Preconditions:** Published general-admission event with 60 tickets already sold on a type of quantity 100; registration window and toggles configurable.
 - **Test data:** Try to set that ticket's quantity to 50 (below 60 sold); try event capacity below total registered; registration window 2026-08-01 to 2026-08-10 with current date 2026-07-27 (before window); Require approval ON; Waitlist ON then OFF.
 - **Steps:**
   1. Set the ticket quantity to 50 and save.
@@ -1217,6 +1273,20 @@ Epic E4 — Public Event Pages. Area code: PAGE. Locale context: Thai market, �
   2. Open event (B) and inspect the low-seat tier for an urgency line.
 - **Expected result:** For (A), all tier buttons are disabled and a "registration is closed" message is shown. For (B), an urgency line such as "Going fast — only 3 left" is displayed on the low-seat tier. (AC: registration closed → all buttons disabled + closed message; very few seats → urgency line.)
 
+### TC-PAGE-11b — A reserved event's page shows which seats each ticket sells; other events show no seat map
+- **Traces:** US-PAGE-05  ·  **Priority:** High  ·  **Type:** Functional
+- **Preconditions:** (A) A published in-person event with Reserved seating, 7 rows × 16 seats, whose seats were given ticket types on the wizard's Assign seats step; no seat in row 6 is booked or held. (B) A published general-admission event. (C) A published online event. (D) A reserved event published before seats carried ticket types (no seat has one). Tester is a guest; the organizer of (A) is signed in on a second browser.
+- **Test data:** (A) "Bangkok Symphony Night" — ticket types created in the order VIP ฿2,500, Normal ฿890, Free; rows 1–2 VIP, rows 3–6 Normal, row 7 Free; then row 6 seats 1–8 moved from Normal to VIP.
+- **Steps:**
+  1. Open (A) at `/e/<slug>` and scroll to the Tickets section; read each ticket card, the seat map below the cards and its legend.
+  2. Check the seat map's accessible name with a screen reader or the accessibility inspector.
+  3. Narrow the window to phone width (375 px) and look at the seat map again.
+  4. Open (A) in each of the four designs from the template preview (`/landing/<template>?event=<slug>`).
+  5. As the organizer, on the Assign seats step paint row 6 seats 1–8 VIP and save; as the guest, reload (A).
+  6. Open (B), (C) and (D) and look for a seat map and for a rows line on each ticket.
+  7. Read the `GET /public/events/:slug` response for (A) and for (B).
+- **Expected result:** Step 1: the cards run cheapest first — Free says "Row 7", Normal "Rows 3–6" and VIP "Rows 1–2". The seat map shows a stage labelled "Stage" and seven rows of 16 seats numbered 1–7, each seat in its ticket type's colour; the legend lists the types in the same order as the ticket cards, cheapest first — "Free · Row 7 · 16 seats", "Normal · Rows 3–6 · 64 seats", "VIP · Rows 1–2 · 32 seats". The colours follow the order the types were created, not that list: VIP, created first, has the palette's first colour though it is listed last, and every type has the colour it has in the organizer's wizard preview. No seat is shown as sold, held or available — the map shows the split, not availability. Step 2: the accessible name summarises the split, each type with the rows and seats it sells in the legend's words, cheapest first (e.g. "Seat map: Free row 7; Normal rows 3–6; VIP rows 1–2"). Step 3: the seat map stays readable inside its own block — seats shrink or the block scrolls sideways — and the page itself never scrolls sideways. Step 4: every design shows the same rows lines, seat map and legend in its own styling. Step 5: with no re-publish, the reload shows Normal "Rows 3–5, row 6 seats 9–16" and VIP "Rows 1–2, row 6 seats 1–8", the legend reading "Normal · Rows 3–5, row 6 seats 9–16 · 56 seats" and "VIP · Rows 1–2, row 6 seats 1–8 · 40 seats", with row 6's seats 1–8 now in VIP's colour and seats 9–16 still in Normal's. Step 6: (B), (C) and (D) show no seat map, and none of their tickets names any rows or seats. Step 7: (A)'s response lists `tickets` in the order they were created (VIP, Normal, Free) and carries `seatMap` with `seatsPerRow` 16 and seven `rows` in order, labels "1"–"7", each with `seatTicketTypes` — 16 ids from that event's `tickets[].id`, in seat order — and a `ticketTypeId` that is the row's type where all its seats share one and null for row 6, whose seats now differ; nothing else about seats — no status, holds or sold counts; (B)'s `seatMap` is `null`. (AC: seats with ticket types → seat map coloured seat by seat, legend with where each type's seats are and their count, the same wording on each ticket; GA, online or untyped reserved → no seat map.)
+
 ---
 
 ## US-PAGE-06 — Frequently asked questions
@@ -1490,6 +1560,17 @@ Locale: Thai market — ฿ (whole baht), 7% VAT recalculated at checkout, Promp
   1. Attempt to delete the ticket while a checkout is in progress.
 - **Expected result:** Deletion is blocked with a message to pause it and try again shortly.
 
+### TC-TKT-13b — A ticket type that still has seats can't be deleted or retired
+- **Traces:** US-TKT-05  ·  **Priority:** Medium  ·  **Type:** Negative
+- **Preconditions:** Published reserved event 7 rows × 16 with rows 1–2 VIP, rows 3–6 Normal, row 7 Free. Free has never sold; VIP has sold 10 seats; no checkout is in progress.
+- **Test data:** Delete Free; delete VIP; move row 7 to Normal; delete Free again.
+- **Steps:**
+  1. On the Tickets screen, delete Free and confirm.
+  2. Delete VIP and confirm.
+  3. On the event's Assign seats step in the wizard, give row 7 to Normal with its select and save.
+  4. Delete Free again and confirm.
+- **Expected result:** Step 1 is refused (409) with "Free still has seats. Give them to another ticket type first."; Free stays on sale with its 16 seats. Step 2 is refused the same way for VIP — it is neither deleted nor retired, and its 10 holders are untouched. Step 3 leaves Free with no seats: Free shows 0 and Normal 80. Step 4 removes Free completely, because it never sold.
+
 ---
 
 ## US-TKT-06 — Share a ticket's registration link and QR
@@ -1731,6 +1812,18 @@ Locale defaults: currency ฿ (THB), VAT 7%, PromptPay, Asia/Bangkok, languages 
   5. Enter guest name, email, and mobile number; place the order without opting into an account.
 - **Expected result:** Checkout shows the event summary and a single-choice ticket type in ฿. Chosen seats are held for the attendee during checkout; already-taken seats cannot be selected. The order summary and sticky action bar update live with subtotal (฿1,780), service fee (฿100), and total (฿1,880). Guest fields are captured, and after placing the order no account is silently created for the guest.
 
+### TC-DISC-07b — Other ticket types' seats are greyed out, seat by seat, and dropped on a type switch
+- **Traces:** US-DISC-04  ·  **Priority:** High  ·  **Type:** Functional
+- **Preconditions:** Published reserved event, 12 rows × 10 seats, with rows 1–2 VIP ฿2,500, row 3 split between VIP (seats 1–5) and Normal ฿890 (seats 6–10), and rows 4–12 Normal; nothing sold or held. Attendee is a guest.
+- **Test data:** VIP seats row 1 seat 5 and row 3 seat 5; Normal seats row 3 seats 6 and 7.
+- **Steps:**
+  1. Open checkout and choose VIP.
+  2. Read the seat map's row order and legend; try to select row 3 seat 6 and a seat in row 12.
+  3. Select row 1 seat 5 and row 3 seat 5.
+  4. Switch the ticket type to Normal.
+  5. Select row 3 seats 6 and 7.
+- **Expected result:** Rows are listed 1, 2, 3 … 9, 10, 11, 12 (numeric, never 1, 10, 11, 12, 2). With VIP chosen, row 3 seats 6–10 and rows 4–12 are shown but disabled and styled as "Other ticket type", which the legend lists, while row 3 seats 1–5 stay selectable; clicking a disabled seat selects nothing. Row 1 seat 5 and row 3 seat 5 are picked and the summary shows a ฿5,000 subtotal. Switching to Normal drops both VIP seats from the pick and the summary; rows 1–2 and row 3 seats 1–5 become "Other ticket type", and row 3 seats 6–10 and rows 4–12 selectable. Row 3 seats 6 and 7 are picked with a ฿1,780 subtotal.
+
 ### TC-DISC-08 — Quantity boundaries (1–8) and free-event fee/payment skip
 - **Traces:** US-DISC-04  ·  **Priority:** High  ·  **Type:** Edge
 - **Preconditions:** A general-admission or online event for quantity selection; a separate free event.
@@ -1751,6 +1844,17 @@ Locale defaults: currency ฿ (THB), VAT 7%, PromptPay, Asia/Bangkok, languages 
   2. Wait until the seat hold expires (or have another buyer take A14) before confirming.
   3. Attempt to continue/confirm.
 - **Expected result:** The attendee is told the seat/hold is no longer available and is asked to re-select. No charge is made for the lapsed selection, and the released seat becomes available again.
+
+### TC-DISC-09b — A held seat of another ticket type can't be paid for at this type's price
+- **Traces:** US-DISC-04  ·  **Priority:** High  ·  **Type:** Negative
+- **Preconditions:** The event from TC-DISC-07b (rows 1–2 VIP ฿2,500, row 3 seats 1–5 VIP and seats 6–10 Normal ฿890, rows 4–12 Normal); an API client that can send the public checkout requests directly.
+- **Test data:** VIP seat row 3 seat 5; Normal seat row 3 seat 6, next to it in the same row; buyer email anong.p@example.com.
+- **Steps:**
+  1. Send `POST /public/checkout/hold` for Normal naming the VIP seat (row 3 seat 5).
+  2. Hold row 3 seat 5 for VIP through `POST /public/checkout/hold`; note the hold id.
+  3. Send `POST /public/checkout/confirm` for Normal, naming the Normal seat (row 3 seat 6) but carrying the VIP hold id from step 2.
+  4. Look for an order, a payment and a ticket for this buyer, and check row 3 seat 5 on the seat map once the hold has lapsed.
+- **Expected result:** Step 1 is refused (422) with "Those seats belong to a different ticket type. Please choose again."; nothing is held — sharing a row with Normal seats does not make seat 5 a Normal seat. Step 3 is refused (409) with "Your seats changed. Please choose again." No order, payment or ticket exists for the buyer, row 3 seat 5 is never sold at the Normal price, and it is free again once its hold lapses.
 
 ---
 
@@ -1995,58 +2099,123 @@ Locale defaults: currency ฿ (THB), VAT 7%, PromptPay, Asia/Bangkok, languages 
 
 ## US-DISC-15 — Create my account from my confirmation
 
-### TC-DISC-29 — Follow the confirmation link and create the account with a locked email
+### TC-DISC-29 — Create the account from the link emailed to the booking's address
 - **Traces:** US-DISC-15  ·  **Priority:** High  ·  **Type:** Functional
-- **Preconditions:** A guest (no account) has just confirmed a registration and is on the "You're registered!" screen. Their name, email and phone were captured during checkout.
-- **Test data:** Buyer "Anong Pattana" / anong.p@example.com; one confirmed order with one QR ticket.
+- **Preconditions:** A guest (no account) has just confirmed a registration and is on the confirmation screen — the order page that the "You're registered!" recap and the confirmation email both link to. Their name, email and phone were captured during checkout. The tester can read that email inbox.
+- **Test data:** Buyer "Anong Pattana" / anong.p@example.com; one confirmed order with one QR ticket; password `Silom#2026` (8+ characters with a number and a symbol).
 - **Steps:**
-  1. Confirm the ticket and QR are shown on the recap, and that the account offer is a link — the recap itself asks for no credential.
-  2. Follow the "Create account" link.
-  3. Inspect the email field on the sign-up page.
-  4. Set a password and submit.
-- **Expected result:** The sign-up page opens with anong.p@example.com already filled in and the field disabled — it cannot be edited or cleared. Only a password is asked for. On submit the attendee is signed in immediately and lands on My Events, with no email-verification step, because the address was proven by the ticket being sent to it.
+  1. Confirm the order reads Confirmed with its ticket and QR shown, that the account offer ("Keep these tickets") appears beneath them and asks for no credential, and that its dismiss reads "Not now — your ticket is already in your email".
+  2. Choose "Create account".
+  3. Read the on-screen message, then check the anong.p@example.com inbox.
+  4. Open the link in the email.
+  5. Inspect the name and email on the sign-up page.
+  6. Enter the password twice, accept Terms & Privacy, and submit.
+  7. Open the inbox again.
+- **Expected result:** The offer is there because the order is confirmed and holds a live ticket (TC-DISC-29f covers an order that isn't). Choosing "Create account" creates no account and asks for no password; the offer is replaced by "We've sent a link to anong.p@example.com. Open it to choose a password — it proves the address is yours." Exactly one email arrives at that address: it names the event, says the link lets the reader choose a password and see every booking made with this address in one place, gives the link's expiry in Asia/Bangkok time, and says nothing is created unless the link is opened and a password chosen. The link opens the sign-up page with "Anong Pattana" and anong.p@example.com shown and not editable; only the password (twice) and the Terms & Privacy box are asked for. On submit the attendee is signed in immediately and lands on My Events with this booking listed. No "confirm your email" message is sent and no check-your-email page appears — opening the emailed link was the proof of the address.
 
-### TC-DISC-29b — The locked email cannot be substituted before submitting
+### TC-DISC-29b — The address in the link cannot be substituted before submitting
 - **Traces:** US-DISC-15  ·  **Priority:** High  ·  **Type:** Negative
-- **Preconditions:** The sign-up page has been opened from a completed booking.
+- **Preconditions:** The sign-up page has been opened from the link emailed to anong.p@example.com.
 - **Steps:**
-  1. Re-enable or overwrite the disabled email field in the browser, or post the form with a different email than the booking's.
-  2. Submit.
-- **Expected result:** The account is created for the booking's own email regardless, or the request is refused — the submitted email is never trusted. A claimed booking can never be turned into an account for a different address.
+  1. Re-enable or overwrite the locked email field in the browser with another address, then submit.
+  2. From a second copy of the same link, send the account-creation request directly with an extra `email` field (another address) and an extra `name` field.
+- **Expected result:** Step 1: the edited field has no effect — the account is created for anong.p@example.com with the booking's name, and no account exists for the other address. Step 2: the request is refused as invalid because it names an email or a name, and nothing is created. The address only ever comes from the emailed link and the name only from the booking, so a claimed booking can never be turned into an account for a different address.
+
+### TC-DISC-29c — Booking with someone else's address cannot claim their account or choose its password
+- **Traces:** US-DISC-15  ·  **Priority:** High  ·  **Type:** Negative
+- **Preconditions:** A free event that accepts RSVPs. somchai.k@example.com belongs to someone else, has no Eventa account, and has two earlier confirmed bookings with other organizers. The tester ("the booker") cannot read that inbox.
+- **Test data:** Booker's own browser, signed out; buyer email somchai.k@example.com typed at checkout.
+- **Steps:**
+  1. RSVP to the free event as a guest using somchai.k@example.com.
+  2. On the confirmation screen, choose "Create account".
+  3. From the booker's browser, try every route to a password that starts from the booking: reload the order page, choose "Create account" again, and call the account-creation endpoints directly with the order's id and a password (including a single request that sends `POST /auth/register/from-booking` an order id and a password together).
+  4. Try to sign in to the attendee portal as somchai.k@example.com with the password used in step 3.
+  5. Ask the owner of somchai.k@example.com to check the inbox without opening the link.
+- **Expected result:** The booker is never shown a password field for somchai.k@example.com: the only result on screen is "We've sent a link to somchai.k@example.com…". No request made with the order's id creates an account or sets a password — no endpoint accepts an order id and a password together — and asking again only sends the owner another link — at most one a minute and five a day (TC-DISC-29e). Sign-in fails, so the booker sees neither this booking nor the two earlier ones on any My Events page. The owner has received one email explaining that nothing is created unless the link is opened and a password chosen; while it is ignored, no account exists.
+
+### TC-DISC-29d — An expired, altered or already-used link is refused
+- **Traces:** US-DISC-15  ·  **Priority:** High  ·  **Type:** Negative
+- **Preconditions:** Three links emailed for bookings: one more than 7 days old; one with a single character of its token changed; one already used to create an account for anong.p@example.com (password `Silom#2026`).
+- **Steps:**
+  1. Open the expired link.
+  2. Open the altered link.
+  3. Open the used link.
+  4. On a sign-up page that was opened from the used link before the account was created, enter a new password and submit.
+  5. Sign in as anong.p@example.com with `Silom#2026`.
+  6. Delete that account from the portal's Settings tab (US-DISC-14), then open the used link again.
+  7. On the booking's confirmation, choose "Create account" and open the new link that arrives.
+- **Expected result:** Steps 1–2 show "This link has expired or is no longer valid. Ask for a new one from your booking confirmation." with a link to the attendee sign-in; no name or email is shown and no password is asked for. Step 3 opens "You already have an account" — "An account already uses anong.p@example.com. Sign in to see every booking in one place." — with "Sign in instead" and no password field. Step 4 creates nothing: the page checks the link again and switches to that same "You already have an account" screen with "Sign in instead". No second account is created and the existing password is not changed, so step 5 succeeds with the original password. Once the account is deleted (step 6), the used link does not come back to life: it no longer says "Sign in instead" either, but shows the same "This link has expired or is no longer valid…" message with no name, no email and no password field, and nothing is created — a used link never makes the account a second time, whether that account still stands or has since been deleted or moved to another address. Step 7 is the way back: the confirmation offers "Create account" again, and the new link opens the sign-up page with the booking's name and address.
+
+### TC-DISC-29e — Claim links to one address are limited to one a minute and five a day
+- **Traces:** US-DISC-15  ·  **Priority:** High  ·  **Type:** Negative
+- **Preconditions:** Two confirmed guest bookings made with somchai.k@example.com, with different organizers; no attendee account uses that address and no account link has been sent to it in the last 24 hours. The tester can read that inbox.
+- **Steps:**
+  1. On the first booking's confirmation, choose "Create account".
+  2. At once, ask for the link again for the same booking — reload and choose "Create account", or send the request directly — and then for the second booking.
+  3. Ask four more times, a minute apart, alternating the two bookings.
+  4. A minute later, ask a sixth time.
+  5. Count the account emails in the inbox.
+- **Expected result:** Step 1 sends a link. Both requests in step 2 are refused with "A confirmation link was just sent. Give it a minute before asking for another." and send nothing — the wait belongs to the address, not the booking. Each request in step 3 sends a link. Step 4 is refused with "That is as many links as we can email one address for now. You can ask for another in 24 hours. If the emails are not arriving, another link will not help — check the spam folder, and that the address is right." (the wait is counted from the first link and rounded up) and sends nothing. The inbox holds exactly five account emails, so neither the booker nor anyone else holding a booking can use the button to flood the address.
+
+### TC-DISC-29f — No account link for a booking that isn't confirmed
+- **Traces:** US-DISC-15  ·  **Priority:** Medium  ·  **Type:** Negative
+- **Preconditions:** Guest orders made with addresses that have no account: (a) a paid order not yet paid, its hold still live; (b) an order on a require-approval event waiting for the organizer; (c) an order on the waitlist; (d) a paid order whose hold lapsed unpaid; (e) a confirmed paid order since refunded. The tester can read those inboxes.
+- **Steps:**
+  1. Open each order's page from its email or payment return.
+  2. For each order, send the account-link request directly with its order id, and ask directly whether its address has an account.
+  3. Pay order (a) and reload its page.
+- **Expected result:** Step 1: no page shows the account offer — no "Create account", no "Sign in" and no "Not now — your ticket is already in your email" — because there is no ticket to keep. Step 2: every request — the link and the account question alike — is refused with "This booking isn't confirmed, so there are no tickets to keep in an account yet."; no email is sent, and nothing reveals whether any of those addresses has an account. Step 3: once order (a) is confirmed, the offer appears beneath its ticket and "Create account" sends the link as in TC-DISC-29.
 
 ### TC-DISC-30 — Declining the account leaves the registration untouched
 - **Traces:** US-DISC-15  ·  **Priority:** High  ·  **Type:** Functional
 - **Preconditions:** A guest has just confirmed a registration.
 - **Steps:**
-  1. Skip or ignore the account offer.
+  1. Choose "Not now — your ticket is already in your email", or ignore the account offer.
   2. Check the ticket, QR and confirmation email.
   3. Follow the ticket link in the confirmation email while signed out.
-- **Expected result:** The registration, ticket and receipt are entirely unaffected. The emailed ticket link opens without signing in. The offer never blocks the ticket.
+- **Expected result:** The registration, ticket and receipt are entirely unaffected, and no account link is emailed. The emailed ticket link opens without signing in. The offer never blocks the ticket.
 
 ### TC-DISC-31 — Past registrations appear once the account exists
 - **Traces:** US-DISC-15  ·  **Priority:** High  ·  **Type:** Functional
-- **Preconditions:** The same email has TWO earlier confirmed registrations, made as a guest with no account.
+- **Preconditions:** The same email has TWO earlier confirmed registrations, made as a guest with no account, with different organizers.
 - **Steps:**
-  1. Create the account from a third registration's confirmation screen.
-  2. Open My Events.
-- **Expected result:** All three registrations are listed, including the two made before the account existed — registrations are matched to the account by the email the order was placed with.
+  1. From a third registration's confirmation screen, choose "Create account".
+  2. Open the link emailed to that address, set a password and submit.
+  3. Open My Events.
+- **Expected result:** All three registrations are listed, including the two made before the account existed — registrations are matched to the account by the email the order was placed with, which the emailed link has just proven.
 
-### TC-DISC-32 — An email that already has an account is offered sign-in, not a duplicate
+### TC-DISC-32 — An email that already has a confirmed account is offered sign-in, not a duplicate
 - **Traces:** US-DISC-15  ·  **Priority:** Medium  ·  **Type:** Negative
-- **Preconditions:** An attendee account already exists for the email used at checkout.
+- **Preconditions:** A confirmed attendee account (its confirmation email opened, so not Unconfirmed) already exists for the email used at checkout.
 - **Steps:**
   1. Complete a registration with that email as a signed-out guest.
-  2. Follow the "Create account" link from the confirmation.
-- **Expected result:** The page invites signing in instead of offering a second account. No duplicate account is created.
+  2. Look at the account offer on the confirmation.
+  3. Choose "Sign in" and sign in with the existing password.
+  4. Ask for the account link for this order anyway — from a copy of the page that still shows "Create account", or by sending the request directly.
+- **Expected result:** The offer shows only "Sign in" — no "Create account". Signing in returns the attendee to the order they were looking at, where the offer has become "Every booking in one place" with a "See all your bookings" button to My Events — neither "Sign in" nor "Create account" is offered to someone already signed in. Step 4 is refused with "An account already uses this email. Sign in instead." and no link is emailed. No duplicate account is created.
 
-### TC-DISC-32b — The sign-up link cannot be guessed to harvest a buyer's email
+### TC-DISC-32b — The booking identifier cannot be guessed to harvest a buyer's email
 - **Traces:** US-DISC-15  ·  **Priority:** High  ·  **Type:** Negative
 - **Preconditions:** A real confirmed order exists, with reference ORD-GAZJG4J0 printed on its ticket.
 - **Steps:**
-  1. Open the sign-up page using the order's human-readable REFERENCE as the identifier.
-  2. Open it using a plausible neighbouring reference.
-  3. Open it using a random value.
-- **Expected result:** None of these reveal an email address. The page accepts only the order's unguessable id; anything else opens the page in its ordinary mode with an empty, editable email field. The buyer's address is never disclosed to someone who merely guessed an identifier.
+  1. Ask whether the booking has an account, and ask for the account link, using the order's human-readable REFERENCE as the identifier.
+  2. Do the same with a plausible neighbouring reference.
+  3. Do the same with a random value.
+  4. Open the sign-up page with the reference, then a random value, in place of the emailed link's token.
+- **Expected result:** Steps 1–3 are refused — not a valid order id, or no such order — and reveal no email address and no account status, and no email is sent. Only the order's unguessable id is accepted. Step 4 shows the invalid-link message with no name or email. The buyer's address is never disclosed to, and no mail is sent on behalf of, someone who merely guessed an identifier.
+
+### TC-DISC-32c — A stranger's unconfirmed sign-up neither blocks the claim nor survives it
+- **Traces:** US-DISC-15  ·  **Priority:** High  ·  **Type:** Negative
+- **Preconditions:** Someone other than the owner of anong.p@example.com has started an attendee sign-up with that address at `/portal/register`, under the name "Someone Else" and the password `Stranger#1`, and its confirmation email has not been opened, so the account is Unconfirmed. The owner, who can read the inbox, then registers for a free event as a guest with that address under the name "Anong Pattana".
+- **Test data:** Owner's password `Silom#2026`.
+- **Steps:**
+  1. Look at the account offer on the owner's confirmation.
+  2. Choose "Create account", open the link emailed to anong.p@example.com, and look at the page it opens.
+  3. Enter `Silom#2026` twice, accept Terms & Privacy, and submit.
+  4. In another browser, sign in to the attendee portal as anong.p@example.com with `Stranger#1`.
+  5. Open the confirmation link the stranger's sign-up emailed, then try `Stranger#1` again.
+  6. Sign in with `Silom#2026` and open My Events.
+- **Expected result:** The unconfirmed sign-up does not count as an account: step 1 offers "Create account", not "Sign in", and step 2 shows "Anong Pattana" and anong.p@example.com with the password fields rather than "You already have an account". Submitting signs the owner in and lands on My Events. From then on anong.p@example.com has one attendee account, active, named after the booking, and only `Silom#2026` opens it: `Stranger#1` is refused in step 4, and opening the stranger's old confirmation link changes nothing — the account is already active and keeps the owner's password — so `Stranger#1` is refused again in step 5. Step 6 succeeds with the booking listed. A password chosen by someone who never proved the inbox is never left one click away from a live account.
 
 ### TC-DISC-33 — The account can be created later from the attendee sign-in page
 - **Traces:** US-DISC-15  ·  **Priority:** Medium  ·  **Type:** Functional
@@ -3701,32 +3870,35 @@ Locale assumptions: Asia/Bangkok timezone, EN/TH content, ฿ (VAT not applicabl
 ### TC-MTG-07 — Schedule a valid meeting and see it in the correct group
 - **Traces:** US-MTG-03 · **Priority:** High · **Type:** Functional
 - **Preconditions:** Logged in as Event Organizer. Calendar connected.
-- **Test data:** Title "Keynote speaker briefing"; date tomorrow; start 10:00, end 10:45; type Speaker; mode Video; guest "Anong Phromma", email anong@example.com; related event "Tech Summit BKK"; notes "Confirm slides".
+- **Test data:** Title "Keynote speaker briefing"; date tomorrow; start 10:00, end 10:45; type Speaker; mode Video call (Google Meet); guest "Anong Phromma", email anong@example.com; related event "Tech Summit BKK"; notes "Confirm slides".
 - **Steps:**
-  1. Open the schedule panel.
-  2. Fill in all required fields with the test data.
-  3. Save.
-- **Expected result:** A new meeting is created with status Scheduled and appears under Upcoming (tomorrow), earliest-start ordered. Confirms the happy-path creation criterion.
+  1. Open the schedule panel and look at Mode before choosing anything.
+  2. Choose Video call (Google Meet).
+  3. Fill in the other required fields with the test data.
+  4. Save.
+  5. Open the new meeting's Edit.
+- **Expected result:** Mode first reads "Choose how you'll meet", and nothing on the panel mentions a Meet link — neither a note under Mode nor the note above Schedule; once Video call (Google Meet) is chosen, "A Meet link is generated automatically." appears and the note above Schedule names a Google Meet link as well as the Google Calendar invite. A new meeting is created with status Scheduled and appears under Upcoming (tomorrow), earliest-start ordered, its badge reading "Video call". Edit opens with Video call (Google Meet) already chosen. Confirms the happy-path creation and mode-choice criteria.
 
-### TC-MTG-08 — Validation blocks bad title, past date and non-forward end time
+### TC-MTG-08 — Validation blocks bad title, past date, non-forward end time and no mode
 - **Traces:** US-MTG-03 · **Priority:** High · **Type:** Negative
 - **Preconditions:** Logged in as Event Organizer. Schedule panel open.
-- **Test data:** (a) Title blank / single character "x"; (b) date = yesterday; (c) start 14:00, end 13:30 (end not after start).
+- **Test data:** (a) Title blank / single character "x"; (b) date = yesterday; (c) start 14:00, end 13:30 (end not after start); (d) every other field valid, Mode left on "Choose how you'll meet".
 - **Steps:**
   1. Leave the title blank (then try one character), attempt to save.
   2. Set the date to yesterday, attempt to save.
   3. Set start 14:00 and end 13:30, attempt to save.
-- **Expected result:** Save is blocked in each case with a specific, field-level message telling exactly what to fix (title too short/required; date cannot be in the past; end time must be after start). No meeting is created.
+  4. Fill every other field validly, leave Mode unchosen, attempt to save.
+- **Expected result:** Save is blocked in each case with a specific, field-level message telling exactly what to fix (title too short/required; date cannot be in the past; end time must be after start; a mode must be chosen). No meeting is created — in (d) none is saved as a video call.
 
 ### TC-MTG-09 — Location derives from mode; double-submit creates only one meeting
 - **Traces:** US-MTG-03 · **Priority:** Medium · **Type:** Edge
 - **Preconditions:** Logged in as Event Organizer. Event "Tech Summit BKK" has venue "BITEC Hall 2".
-- **Test data:** Meeting X mode In person on event "Tech Summit BKK"; Meeting Y mode Phone. Rapid double-click on Save for one submission.
+- **Test data:** Meeting X mode In person on event "Tech Summit BKK"; Meeting Y mode Phone call. Rapid double-click on Save for one submission.
 - **Steps:**
   1. Create Meeting X with mode In person tied to "Tech Summit BKK" and save.
-  2. Create Meeting Y with mode Phone and save.
+  2. Create Meeting Y with mode Phone call and save.
   3. On a third valid meeting, click Save twice in rapid succession.
-- **Expected result:** Meeting X shows location = event venue "BITEC Hall 2"; Meeting Y shows location = "Phone call". The double-submitted meeting is created exactly once, not duplicated.
+- **Expected result:** Neither In person nor Phone call shows the Meet-link note while chosen, and with either one chosen the note above Schedule reads "A Google Calendar invite is emailed to each guest, with a reminder 15 minutes before." — no Meet link. Meeting X shows location = event venue "BITEC Hall 2"; Meeting Y shows location = "Phone call". The double-submitted meeting is created exactly once, not duplicated.
 
 ---
 
@@ -3738,16 +3910,18 @@ Locale assumptions: Asia/Bangkok timezone, EN/TH content, ฿ (VAT not applicabl
 - **Test data:** Video meeting "Sponsor kickoff", tomorrow 15:00–15:30 Bangkok, guest email partner@example.com.
 - **Steps:**
   1. Schedule the video meeting and save.
-  2. Inspect the saved meeting and the guest-facing invite.
-- **Expected result:** A Google Meet link is created and attached to the meeting and included in the invite; the guest receives a calendar invite for 15:00–15:30 Asia/Bangkok; both organizer and guest have a 15-minute-before reminder set.
+  2. Inspect the saved meeting, the event on the workspace Google Calendar and the guest-facing invite.
+- **Expected result:** A Google Meet link is created and attached to the meeting and included in the invite; the guest receives a calendar invite for 15:00–15:30 Asia/Bangkok; the event on the workspace calendar has a 15-minute-before reminder set. The guest's own reminder follows the guest's calendar settings and is not checked here.
 
 ### TC-MTG-11 — Meeting saved when calendar not connected; prompted to connect
 - **Traces:** US-MTG-04 · **Priority:** High · **Type:** Negative
-- **Preconditions:** Logged in as Event Organizer. Workspace Google Calendar NOT connected.
-- **Test data:** Any valid video meeting.
+- **Preconditions:** Workspace Google Calendar NOT connected. Two sessions: an Event Organizer without the Manage integrations permission, and an Admin.
+- **Test data:** Any valid video meeting, once per session.
 - **Steps:**
-  1. Schedule a valid meeting and save.
-- **Expected result:** The meeting is still saved (nothing lost) and flagged as not synced; the organizer is prompted to connect the calendar so the invite and Meet link can be sent. No error discards the meeting.
+  1. As the Organizer, open the schedule panel, read the note above Schedule, then schedule a valid meeting and save.
+  2. As the Admin, schedule a valid meeting and save.
+  3. Read each new meeting's card.
+- **Expected result:** Before saving, the panel says "Google Calendar isn't connected, so this meeting will be saved without an invite or Meet link." Each meeting is still saved (nothing lost) and flagged as not synced: its card reads "No calendar is connected, so no invite was sent." The organizer is prompted to connect the calendar so the invite and Meet link can be sent: the Admin's card offers a "Connect Google Calendar" link to Settings → Integrations, and the Organizer's card says "Ask an Admin to connect Google Calendar." No error discards the meeting.
 
 ### TC-MTG-12 — Calendar service briefly unavailable — meeting kept, marked not synced, retry sends invite
 - **Traces:** US-MTG-04 · **Priority:** Medium · **Type:** Edge
@@ -3757,7 +3931,7 @@ Locale assumptions: Asia/Bangkok timezone, EN/TH content, ฿ (VAT not applicabl
   1. Save the meeting while the calendar service is unavailable.
   2. Observe the meeting's sync state and the retry option.
   3. Restore the service and trigger/allow retry.
-- **Expected result:** The meeting is kept and marked "not yet synced" with a retry option; nothing is lost. Once the service is reachable and retry runs, the invite (and Meet link) go out and the meeting shows as synced.
+- **Expected result:** The meeting is kept and marked as not yet synced — its card reads "The calendar invite couldn't be sent." with **Send it now** — and nothing is lost. Once the service is reachable and a retry runs (automatic, or Send it now), the invite (and Meet link) go out and the meeting shows as synced: the note and Send it now disappear and a video meeting shows its Meet link.
 
 ---
 
@@ -3776,7 +3950,7 @@ Locale assumptions: Asia/Bangkok timezone, EN/TH content, ฿ (VAT not applicabl
 ### TC-MTG-14 — Changing mode video → in person removes Meet link and shows venue
 - **Traces:** US-MTG-05 · **Priority:** Medium · **Type:** Functional
 - **Preconditions:** Logged in as Event Organizer. A synced video meeting with a Meet link, tied to event "Tech Summit BKK" (venue "BITEC Hall 2").
-- **Test data:** Change mode from Video to In person.
+- **Test data:** Change mode from Video call (Google Meet) to In person.
 - **Steps:**
   1. Open the meeting and switch mode to In person.
   2. Save and inspect the meeting.
@@ -3835,22 +4009,36 @@ Locale assumptions: Asia/Bangkok timezone, EN/TH content, ฿ (VAT not applicabl
 
 ### TC-MTG-19 — Admin connects the workspace Google Calendar; header shows connected
 - **Traces:** US-MTG-08 · **Priority:** Medium · **Type:** Functional
-- **Preconditions:** Logged in as Admin. Workspace calendar currently disconnected.
+- **Preconditions:** Logged in as Admin on a desktop-width screen (the header status is hidden on small screens). Workspace calendar currently disconnected. One upcoming meeting was scheduled while disconnected, its card reading "No calendar is connected, so no invite was sent."
 - **Test data:** Valid Google account authorization for the workspace.
 - **Steps:**
-  1. Open Meetings and start the Google Calendar connection.
+  1. Open Meetings, follow the header's "Connect Google Calendar" link to Settings → Integrations and click Connect Google Calendar.
   2. Complete the Google authorization successfully.
-  3. Observe the Meetings header status.
-- **Expected result:** The workspace is marked connected and the Meetings header shows a connected status. Subsequently scheduled meetings sync normally.
+  3. Back on Settings → Integrations, read the toast and the Google Calendar card.
+  4. Open Meetings and observe the header status and the meeting scheduled while disconnected.
+- **Expected result:** Back on Settings → Integrations the toast "Google Calendar connected." is shown and the card reads "Connected" with the Google account and today's date. The workspace is marked connected and the Meetings header shows a connected status ("Google Calendar"). The meeting saved while disconnected is sent without a reload: its note clears and the guest receives the invite. Subsequently scheduled meetings sync normally.
+
+### TC-MTG-19b — Admin disconnects Google Calendar; future meetings flagged not synced; existing invites stay
+- **Traces:** US-MTG-08 · **Priority:** Medium · **Type:** Functional
+- **Preconditions:** Logged in as Admin. Desktop-width screen (the header status is hidden on small screens). Workspace Google Calendar connected. One upcoming meeting already synced, its invite on the guest's calendar.
+- **Test data:** New meeting "Vendor follow-up", tomorrow 11:00–11:30 Bangkok, mode Phone call.
+- **Steps:**
+  1. Open Settings → Integrations and click Disconnect on the Google Calendar card.
+  2. Read the confirmation and choose Keep it connected.
+  3. Click Disconnect again and confirm with Disconnect.
+  4. Open Meetings; inspect the header and the meeting synced earlier.
+  5. Schedule "Vendor follow-up" and save.
+- **Expected result:** The confirmation is titled "Disconnect Google Calendar?" and says new and changed meetings won't be sent to Google Calendar until it's connected again, and meetings already on people's calendars stay there; Keep it connected changes nothing. Confirming shows the toast "Google Calendar disconnected." and the card reads "Not connected" with no account shown. The Meetings header offers "Connect Google Calendar". The meeting synced earlier stays synced and its invite stays on the guest's calendar. "Vendor follow-up" is saved and flagged not synced: "No calendar is connected, so no invite was sent."
 
 ### TC-MTG-20 — Non-Admin sees no connect/disconnect control; expired connection prompts reconnect
 - **Traces:** US-MTG-08 · **Priority:** Medium · **Type:** Negative
-- **Preconditions:** (a) Logged in as Event Organizer (non-Admin). (b) Separately, workspace connection has expired/been revoked.
+- **Preconditions:** (a) Logged in as Event Organizer (non-Admin, without the Manage integrations permission). (b) Separately, workspace connection has expired/been revoked. Desktop-width screen (the header status is hidden on small screens).
 - **Test data:** N/A.
 - **Steps:**
-  1. As a non-Admin Organizer, open Meetings and look for calendar connect/disconnect controls.
-  2. With the connection expired, as Admin/Organizer trigger a sync (e.g., schedule a meeting).
-- **Expected result:** The non-Admin sees no connect/disconnect control. When the connection is expired/revoked, the user is prompted to reconnect rather than sync failing silently; meetings scheduled while disconnected are saved but flagged not synced.
+  1. As a non-Admin Organizer, open Meetings and look for calendar connect/disconnect controls; open Settings and look for an Integrations entry; then open `/admin/settings-integrations` directly.
+  2. With the connection expired, as Admin/Organizer trigger a sync (e.g., schedule a meeting) and read the Meetings header.
+  3. With the connection expired, as Admin open Settings → Integrations.
+- **Expected result:** The non-Admin sees no connect/disconnect control: Settings lists no Integrations entry, and the page opened directly shows the status with no buttons, no account address and "Only an Admin can connect or disconnect Google Calendar." When the connection is expired/revoked, the user is prompted to reconnect rather than sync failing silently: the Meetings header reads "Calendar needs reconnecting" for the non-Admin and is a "Reconnect Google Calendar" link for the Admin, and Settings → Integrations shows "Reconnect needed" with a Reconnect button. Meetings scheduled while disconnected are saved but flagged not synced.
 
 ---
 

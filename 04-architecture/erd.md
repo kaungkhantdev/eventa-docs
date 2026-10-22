@@ -20,7 +20,7 @@
 > reference for the data model, and both this ERD and the design catalog
 > [entities.md](entities.md) **describe** it (`CLAUDE.md`, *Architecture is
 > layered*) — so the catalog is not a rival inventory to be out-counted but the
-> data dictionary a reader goes to for a table's purpose. The 57 here is the
+> data dictionary a reader goes to for a table's purpose. The 58 here is the
 > implementation inventory, and a shipped table needs an entry in both documents;
 > where either lags the schema, the document is what gets corrected. See
 > [Design notes → Which document describes the schema](#which-document-governs).
@@ -34,7 +34,7 @@
 > `ENUM` types, integer-satang money, `timestamptz` in UTC, 3NF normalization,
 > row-level tenant isolation via `organization_id`.
 >
-> **Measured scale.** 57 tables · 129 enforced foreign-key constraints (50 of them
+> **Measured scale.** 58 tables · 131 enforced foreign-key constraints (51 of them
 > the shared tenant `organization_id` edge) · 7 conceptual many-to-many edges
 > resolved by junction tables · **6 reference columns carried with no foreign-key
 > constraint behind them** (see
@@ -103,15 +103,15 @@ timestamps. By that measure it is a *stricter* junction than `memberships`
 `discount_redemptions` (`buyer_email`, `amount_satang`), both of which this
 document has always counted as junctions. The absent `organization_id` does not
 disqualify it: `role_permissions` and `session_speakers` carry no tenant column
-either. So it appears as the seventh M:N in the headline above, as row 96
-of the Relationship matrix (physically realized by rows 27 and 85), and in the
+either. So it appears as the seventh M:N in the headline above, as row 97
+of the Relationship matrix (physically realized by rows 27 and 86), and in the
 associative-table list under [Normalization](#normalization-3nf).
 
 In the diagrams a junction sits between its two parents with a solid, identifying
 `||--o{` edge to each; the conceptual M:N is annotated in the Relationship matrix
 as `}o--o{`.
 
-**Tenancy edge.** Most tables carry `organization_id` (50 of 57 tables).
+**Tenancy edge.** Most tables carry `organization_id` (51 of 58 tables).
 To keep the domain views legible, that shared edge is drawn explicitly only in the
 Master ERD and the *Identity & Access* view; in the other domain views the tenant
 column is listed as an attribute (`bigint organization_id FK`) and its edge to
@@ -125,7 +125,7 @@ column is listed as an attribute (`bigint organization_id FK`) and its edge to
 
 ## Master ERD
 
-The single canonical picture: **all 57 entities** and **all** their foreign-key
+The single canonical picture: **all 58 entities** and **all** their foreign-key
 relationships, including the tenant `organization_id` fan from `ORGANIZATIONS`.
 Attributes are trimmed to the primary key, the salient foreign keys, and one to
 three defining columns per table — the domain views below carry fuller attribute
@@ -133,10 +133,10 @@ lists. This diagram is intentionally large; it is the authoritative wiring
 diagram.
 
 `erd/eventa-full.drawio` is a second rendering of the same schema, generated
-straight from the database rather than hand-maintained. **It is one table behind
+straight from the database rather than hand-maintained. **It is two tables behind
 this one.** It was generated before migration `0068` and so draws 56 entities and
-124 foreign-key edges, missing `scan_attempts` and its five FKs; the Mermaid below
-draws all 57 and 129. Edit the Mermaid here; the `.drawio` is a generated artifact
+124 foreign-key edges, missing `scan_attempts` and its five FKs and, since `0075`,
+`calendar_connections` and its two; the Mermaid below draws all 58 and 131. Edit the Mermaid here; the `.drawio` is a generated artifact
 and must be **regenerated from the database**, never hand-reconciled — patching one
 table into it by hand is how it would stop being a second, independent reading of
 the schema and become a copy of this diagram's mistakes.
@@ -520,6 +520,13 @@ erDiagram
         meeting_type type
         meeting_status status
     }
+    CALENDAR_CONNECTIONS {
+        bigint id PK
+        bigint organization_id FK,UK
+        uuid connected_by FK
+        calendar_connection_status status
+        bytea refresh_token_cipher
+    }
     AUDIT_EVENTS {
         bigint id PK
         bigint organization_id FK
@@ -597,6 +604,7 @@ erDiagram
     ORGANIZATIONS ||--o{ SURVEY_RESPONSES : "owns"
     ORGANIZATIONS ||--o{ SURVEY_ANSWERS : "owns"
     ORGANIZATIONS ||--o{ MEETINGS : "owns"
+    ORGANIZATIONS ||--o| CALENDAR_CONNECTIONS : "connects"
     ORGANIZATIONS ||--o{ AUDIT_EVENTS : "records"
     ORGANIZATIONS ||--o{ OUTBOX_EVENTS : "owns"
     ORGANIZATIONS ||--o{ SEAT_HOLDS : "owns"
@@ -649,7 +657,7 @@ erDiagram
 
     TICKET_TYPES ||--o{ ORDER_ITEMS : "priced in"
     TICKET_TYPES ||--o{ TICKETS : "issued as"
-    TICKET_TYPES |o--o{ SEATS : "tiers"
+    TICKET_TYPES |o--o{ SEATS : "sells (seat's ticket type)"
     DISCOUNT_CODES |o--o{ ORDERS : "applied to"
     DISCOUNT_CODES ||--o{ DISCOUNT_REDEMPTIONS : "redeemed as"
     ORDERS ||--o{ DISCOUNT_REDEMPTIONS : "redeems"
@@ -692,10 +700,11 @@ erDiagram
     USERS |o--o{ ANNOUNCEMENTS : "cancels"
     USERS |o--o{ EVENT_INVITATIONS : "invites"
     USERS |o--o{ MEETINGS : "organizes"
+    USERS |o--o{ CALENDAR_CONNECTIONS : "connected"
 
     EVENTS ||--o{ SEAT_HOLDS : "holds"
     ORDERS |o--o{ SEAT_HOLDS : "reserves"
-    TICKET_TYPES |o--o{ SEAT_HOLDS : "held for"
+    TICKET_TYPES |o--o{ SEAT_HOLDS : "held under"
     SEATS |o--o{ SEAT_HOLDS : "held as"
 ```
 
@@ -862,9 +871,10 @@ erDiagram
   carries **no foreign-key constraint**, so a user row can point at an attendee id
   that was never created or has since been hard-deleted. It is the only unenforced
   reference in this view; see [Unenforced references](#unenforced-references).
-- Uniqueness on `users` is the triple `(organization_id, email, persona)`, so the
-  same address can exist once as an organizer and once as a portal attendee within
-  one tenant.
+- Uniqueness on `users` is the triple `(organization_id, email, persona)` among
+  live rows (`deleted_at IS NULL`), so the same address can exist once as an
+  organizer and once as a portal attendee within one tenant, and a removed or
+  deleted account frees its address.
 
 ### Organization & Settings
 
@@ -952,8 +962,8 @@ erDiagram
 
 - `api_keys.created_by → users` is `ON DELETE RESTRICT` (the issuer requires
   `setIntegrations` and cannot be deleted out from under a live key).
-- `notification_preferences` is unique per `(user_id, category)` and gates whether
-  a `message_deliveries` row is generated for that category. `users` is defined in
+- `notification_preferences` is unique per `(user_id, category)`; so far only the
+  attendee event reminder reads it, leaving out anyone who switched it off. `users` is defined in
   *Identity & Access*. Its companion `notification_reads`, which records how far a
   member has read the in-app feed, is drawn in *Engagement & Messaging*.
 - `payment_settings` is optional and unique per organization; it stores only
@@ -1166,13 +1176,19 @@ erDiagram
   same order a no-op, and drives the `used` counter. `discount_code_id` is
   `RESTRICT`, `order_id` is `CASCADE`. `events` and `orders` are defined in their
   own views.
+- `ticket_types.total` is the quantity the organizer sets, except on a reserved
+  event whose seats have ticket types: there it is the count of seats carrying
+  the type, written by the seating save and not editable here (US-EVT-05). The
+  `seats` it counts are drawn in *Registration, Orders & Seating*; see
+  [Design notes → Each seat sells its own ticket type](#seat-ticket-types).
 
 ### Registration, Orders & Seating
 
 The commerce core: cross-organizer `saved_events`, the attendee CRM, the `orders`
 booking header, its `order_items` lines, the issued `tickets` (one per admitted
 seat, carrying the QR token), and the reserved-seating model (`seat_maps` →
-`seats` → `seat_assignments`).
+`seats` → `seat_assignments`), in which each seat is sold under one of the
+event's ticket types, given a whole row at a time or seat by seat.
 
 ![Registration, Orders & Seating](erd/orders.png)
 
@@ -1308,7 +1324,7 @@ erDiagram
     ATTENDEES |o--o{ TICKETS : "holds (attendee_id)"
     EVENTS ||--o| SEAT_MAPS : "seats"
     SEAT_MAPS ||--o{ SEATS : "holds"
-    TICKET_TYPES |o--o{ SEATS : "tiers (ticket_type_id)"
+    TICKET_TYPES |o--o{ SEATS : "sells per seat (ticket_type_id)"
     SEATS ||--o{ SEAT_ASSIGNMENTS : "assigned in"
     TICKETS ||--o| SEAT_ASSIGNMENTS : "bound to"
 ```
@@ -1329,6 +1345,18 @@ erDiagram
   `seat_assignments` resolves the **seats ⇄ tickets** M:N with a partial unique
   `uq_seat_active (seat_id) WHERE released_at IS NULL` (one live holder per seat)
   and `UNIQUE (ticket_id)` (one seat per ticket).
+- **Each seat sells its own ticket type** (US-EVT-05). `seats.ticket_type_id` is
+  written seat by seat — a whole row at a time only as a shortcut — so the seats
+  sharing a `row_label` may carry different types (row 7 seats 1–5 Free, seats
+  6–16 Normal); it is null on a seat not yet typed. A seat sells only under its
+  own type. On a map where any seat has a type, an untyped seat is not on sale; a
+  map with no typed seat at all (on an event published before seats had types)
+  still sells any seat under any of the event's types. On a seat-typed
+  event (reserved, with at least one typed seat) each type's `ticket_types.total`
+  is the count of its seats, not a number the organizer types. The checkout hold
+  that reserves a seat is drawn in *Platform & Infrastructure* (`seat_holds`,
+  which records the type being bought). None of this needed a schema change; see
+  [Design notes → Each seat sells its own ticket type](#seat-ticket-types).
 - **Three staff attributions on one order.** Beyond `created_by` (who keyed the
   booking), `orders` carries `decided_by` for the approve/reject decision on an
   event with `requires_approval`, and `offered_by` for the organizer who offered a
@@ -1835,7 +1863,8 @@ erDiagram
 
 ### Meetings
 
-Operational coordination meetings, optionally tied to an event.
+Operational coordination meetings, optionally tied to an event, and the
+workspace's Google Calendar connection that sends their invites.
 
 ![Meetings](erd/meetings.png)
 
@@ -1878,9 +1907,29 @@ erDiagram
         uuid id PK
         citext email
     }
+    ORGANIZATIONS {
+        bigint id PK
+        text name
+    }
+    CALENDAR_CONNECTIONS {
+        bigint id PK
+        bigint organization_id FK,UK
+        calendar_connection_status status
+        citext account_email
+        bytea refresh_token_cipher
+        uuid connected_by FK
+        timestamptz connected_at
+        timestamptz disconnected_at
+        text oauth_state_hash
+        uuid oauth_state_user_id
+        bytea oauth_verifier_cipher
+        timestamptz oauth_state_expires_at
+    }
 
     EVENTS |o--o{ MEETINGS : "coordinates (event_id)"
     USERS |o--o{ MEETINGS : "organizes (created_by)"
+    ORGANIZATIONS ||--o| CALENDAR_CONNECTIONS : "connects (organization_id)"
+    USERS |o--o{ CALENDAR_CONNECTIONS : "connected (connected_by)"
 ```
 
 </details>
@@ -1894,8 +1943,23 @@ erDiagram
   groups by is derived from `meeting_date` at read time, exactly as
   [Design notes](#design-notes) says derived values should be.
 - `sync_status`, `external_event_id` and `sync_error` track the one-way push to the
-  organizer's external calendar; `idempotency_key`, unique per organization, keeps
-  a retried create from booking the same slot twice.
+  workspace's Google Calendar; `idempotency_key`, unique per organization, keeps
+  a retried create from booking the same slot twice. eventa-api writes
+  `sync_status = 'pending'` on every write; eventa-worker writes `synced`, `failed`
+  or `not_connected`, `sync_error` and `link` only while `updated_at` is the one it
+  read, and `external_event_id` unconditionally — always the meeting's `id` without
+  hyphens — and never `version` or `updated_at` (ADR-15).
+- `calendar_connections` is the workspace's single Google Calendar connection:
+  `uq_calendar_connections_org` makes `ORGANIZATIONS ||--o| CALENDAR_CONNECTIONS` a
+  1:1, the schema's second after `payment_settings`, and no row means
+  disconnected. `connected_by → users` is `SET NULL`. `refresh_token_cipher` and
+  `oauth_verifier_cipher` are AES-256-GCM ciphertext under
+  `SECRET_ENCRYPTION_KEY`, write-only. `oauth_state_user_id` holds a `users.id`
+  with **no foreign key on purpose** — a pending connect lives ten minutes and is
+  cleared on first use — so it is drawn as an attribute, not an edge, and is not
+  one of the [Unenforced references](#unenforced-references). eventa-worker writes
+  only `status` → `expired` (and `updated_at`), and only while the row still holds
+  the cipher it used (ADR-15).
 
 ### System & Audit
 
@@ -2013,7 +2077,7 @@ erDiagram
     ORGANIZATIONS |o--o{ WEBHOOK_EVENTS : "receives"
     EVENTS ||--o{ SEAT_HOLDS : "holds"
     ORDERS |o--o{ SEAT_HOLDS : "reserves"
-    TICKET_TYPES |o--o{ SEAT_HOLDS : "held for"
+    TICKET_TYPES |o--o{ SEAT_HOLDS : "held under (ticket_type_id)"
     SEATS |o--o{ SEAT_HOLDS : "held as"
 ```
 
@@ -2029,6 +2093,15 @@ erDiagram
   `event_id`/`ticket_type_id`/`seat_id` are `CASCADE`; `order_id` is `SET NULL`
   (a hold may be cart-only). `events`, `orders`, `ticket_types`, `seats` are defined
   in their own views.
+- `seat_holds.ticket_type_id` is the ticket type the hold was taken under
+  (US-DISC-04). A GA quantity hold always carried it; a reserved-seat hold
+  (`seat_id` set, `quantity` 1) now writes it too, so the column is nullable in
+  the schema but filled by every hold the application writes today. Placing the
+  order is refused (409) unless the held seats are exactly the seats that were
+  priced and each one's own type (`seats.ticket_type_id`) is the order's type —
+  or, on a map with no typed seat, is null — so a buyer cannot hold a VIP seat and
+  pay the Normal price, even in a row split between the two. See
+  [Design notes → Each seat sells its own ticket type](#seat-ticket-types).
 - `webhook_events` gives exactly-once processing via
   `UNIQUE (provider, provider_event_id)`; its nullable `organization_id` is the
   resolved tenant (`SET NULL`).
@@ -2046,9 +2119,9 @@ end is `o|` when a single-column unique index makes the child at-most-one.
 **Identifying?** = existential ownership (composition/junction = Yes; optional or
 merely-referential = No).
 
-Rows 1–10 cover the tenant `organization_id` fan, which is 50 of the 129
-constraints and would otherwise swamp the table; rows 11–89 are the remaining 79
-constraints, one row each; rows 90–96 are the conceptual many-to-many edges that
+Rows 1–10 cover the tenant `organization_id` fan, which is 51 of the 131
+constraints and would otherwise swamp the table; rows 11–90 are the remaining 80
+constraints, one row each; rows 91–97 are the conceptual many-to-many edges that
 junction tables resolve. The six **unenforced** reference columns are not foreign
 keys and are tabulated separately below.
 
@@ -2063,7 +2136,7 @@ keys and are tabulated separately below.
 | 7 | organizations | payment_credentials | `\|\|--o{` | payment_credentials.organization_id | CASCADE | No |
 | 8 | organizations | audit_events | `\|\|--o{` | audit_events.organization_id | RESTRICT | No |
 | 9 | organizations | webhook_events | `\|o--o{` | webhook_events.organization_id | SET NULL | No |
-| 10 | organizations | *(all 50 tenant-scoped tables)* | `\|\|--o{` — except `\|\|--o\|` for payment_settings (`UNIQUE (organization_id)`) | `organization_id` | CASCADE (RESTRICT for audit_events, SET NULL for webhook_events) | No |
+| 10 | organizations | *(all 51 tenant-scoped tables)* | `\|\|--o{` — except `\|\|--o\|` for payment_settings and calendar_connections (each `UNIQUE (organization_id)`) | `organization_id` | CASCADE (RESTRICT for audit_events, SET NULL for webhook_events) | No |
 | 11 | attendees | check_ins | `\|o--o{` | check_ins.attendee_id | SET NULL | No |
 | 12 | attendees | orders | `\|o--o{` | orders.attendee_id | SET NULL | No |
 | 13 | attendees | tickets | `\|o--o{` | tickets.attendee_id | SET NULL | No |
@@ -2126,45 +2199,64 @@ keys and are tabulated separately below.
 | 70 | users | api_keys | `\|\|--o{` | api_keys.created_by | RESTRICT | No |
 | 71 | users | audit_events | `\|o--o{` | audit_events.actor_user_id | SET NULL | No |
 | 72 | users | auth_sessions | `\|\|--o{` | auth_sessions.user_id | CASCADE | Yes |
-| 73 | users | check_ins | `\|o--o{` | check_ins.checked_in_by | SET NULL | No |
-| 74 | users | event_invitations | `\|o--o{` | event_invitations.invited_by | SET NULL | No |
-| 75 | users | events | `\|o--o{` | events.created_by | SET NULL | No |
-| 76 | users | invoices | `\|o--o{` | invoices.voided_by | SET NULL | No |
-| 77 | users | meetings | `\|o--o{` | meetings.created_by | SET NULL | No |
-| 78 | users | memberships | `\|\|--o{` | memberships.user_id | CASCADE | Yes |
-| 79 | users | notification_preferences | `\|\|--o{` | notification_preferences.user_id | CASCADE | Yes |
-| 80 | users | notification_reads | `\|\|--o{` | notification_reads.user_id | CASCADE | Yes |
-| 81 | users | orders | `\|o--o{` | orders.created_by | SET NULL | No |
-| 82 | users | orders | `\|o--o{` | orders.decided_by | SET NULL | No |
-| 83 | users | orders | `\|o--o{` | orders.offered_by | SET NULL | No |
-| 84 | users | refunds | `\|\|--o{` | refunds.issued_by | RESTRICT | No |
-| 85 | users | saved_events | `\|\|--o{` | saved_events.user_id | CASCADE | Yes |
-| 86 | users | scan_attempts | `\|o--o{` | scan_attempts.scanned_by | SET NULL | No |
-| 87 | users | social_identities | `\|\|--o{` | social_identities.user_id | CASCADE | Yes |
-| 88 | users | survey_responses | `\|\|--o{` | survey_responses.user_id | CASCADE | Yes |
-| 89 | users | two_factors | `\|\|--o\|` | two_factors.user_id (UK) | CASCADE | Yes |
-| 90 | roles ⇄ permissions | role_permissions | `}o--o{` | junction role_permissions | CASCADE / RESTRICT | Yes |
-| 91 | users ⇄ organizations | memberships | `}o--o{` | junction memberships | CASCADE | Yes |
-| 92 | sessions ⇄ speakers | session_speakers | `}o--o{` | junction session_speakers | CASCADE | Yes |
-| 93 | discount_codes ⇄ orders | discount_redemptions | `}o--o{` | junction discount_redemptions | RESTRICT / CASCADE | Yes |
-| 94 | seats ⇄ tickets | seat_assignments | `}o--o{` | junction seat_assignments | RESTRICT / CASCADE | Yes |
-| 95 | payments ⇄ payouts | payout_items | `}o--o{` | junction payout_items | RESTRICT / CASCADE | Yes |
-| 96 | users ⇄ events | saved_events | `}o--o{` | junction saved_events | CASCADE | Yes |
+| 73 | users | calendar_connections | `\|o--o{` | calendar_connections.connected_by | SET NULL | No |
+| 74 | users | check_ins | `\|o--o{` | check_ins.checked_in_by | SET NULL | No |
+| 75 | users | event_invitations | `\|o--o{` | event_invitations.invited_by | SET NULL | No |
+| 76 | users | events | `\|o--o{` | events.created_by | SET NULL | No |
+| 77 | users | invoices | `\|o--o{` | invoices.voided_by | SET NULL | No |
+| 78 | users | meetings | `\|o--o{` | meetings.created_by | SET NULL | No |
+| 79 | users | memberships | `\|\|--o{` | memberships.user_id | CASCADE | Yes |
+| 80 | users | notification_preferences | `\|\|--o{` | notification_preferences.user_id | CASCADE | Yes |
+| 81 | users | notification_reads | `\|\|--o{` | notification_reads.user_id | CASCADE | Yes |
+| 82 | users | orders | `\|o--o{` | orders.created_by | SET NULL | No |
+| 83 | users | orders | `\|o--o{` | orders.decided_by | SET NULL | No |
+| 84 | users | orders | `\|o--o{` | orders.offered_by | SET NULL | No |
+| 85 | users | refunds | `\|\|--o{` | refunds.issued_by | RESTRICT | No |
+| 86 | users | saved_events | `\|\|--o{` | saved_events.user_id | CASCADE | Yes |
+| 87 | users | scan_attempts | `\|o--o{` | scan_attempts.scanned_by | SET NULL | No |
+| 88 | users | social_identities | `\|\|--o{` | social_identities.user_id | CASCADE | Yes |
+| 89 | users | survey_responses | `\|\|--o{` | survey_responses.user_id | CASCADE | Yes |
+| 90 | users | two_factors | `\|\|--o\|` | two_factors.user_id (UK) | CASCADE | Yes |
+| 91 | roles ⇄ permissions | role_permissions | `}o--o{` | junction role_permissions | CASCADE / RESTRICT | Yes |
+| 92 | users ⇄ organizations | memberships | `}o--o{` | junction memberships | CASCADE | Yes |
+| 93 | sessions ⇄ speakers | session_speakers | `}o--o{` | junction session_speakers | CASCADE | Yes |
+| 94 | discount_codes ⇄ orders | discount_redemptions | `}o--o{` | junction discount_redemptions | RESTRICT / CASCADE | Yes |
+| 95 | seats ⇄ tickets | seat_assignments | `}o--o{` | junction seat_assignments | RESTRICT / CASCADE | Yes |
+| 96 | payments ⇄ payouts | payout_items | `}o--o{` | junction payout_items | RESTRICT / CASCADE | Yes |
+| 97 | users ⇄ events | saved_events | `}o--o{` | junction saved_events | CASCADE | Yes |
 
-> **Note on rows 90–96.** These are the *conceptual* M:N edges; each is physically
+> **Note on rows 91–97.** These are the *conceptual* M:N edges; each is physically
 > realized by its junction table's two constituent foreign keys, which also appear
-> as their own numbered rows (e.g. 48+50 realize 90; 85+27 realize 96). The
+> as their own numbered rows (e.g. 48+50 realize 91; 86+27 realize 97). The
 > `On delete` column lists the two junction-arm behaviors.
 
-> **Note on row 10 — one cardinality exception.** Row 10 carves out exceptions for
+> **Note on rows 61–62 — the seat's ticket type.** Both foreign keys are
+> nullable, hence `|o--o{`, and neither row changed when seats gained ticket
+> types (US-EVT-05, US-DISC-04): the columns, their nullability and their
+> `ON DELETE` rules were already in the schema, and no migration was written —
+> not when rows were first typed whole, and not when they could be split seat by
+> seat. What changed is what writes them. **Row 62** (`seats.ticket_type_id`,
+> drawn "sells (seat's ticket type)") is written seat by seat by the reserved
+> seating save, a whole row at a time only as a shortcut, so the seats of one row
+> may carry different types; null means an untyped seat. Its `SET NULL` is a
+> backstop, not a path the product takes: removing a ticket type that still has
+> seats is refused (US-TKT-05), because letting the foreign key fire would quietly
+> untype seats of a published map. **Row 61**
+> (`seat_holds.ticket_type_id`, drawn "held under") records the type a hold was
+> taken under, now on reserved-seat holds as well as GA quantity holds. Its
+> `CASCADE` is unchanged: a hold is a short-lived reservation, not history. See
+> [Design notes → Each seat sells its own ticket type](#seat-ticket-types).
+
+> **Note on row 10 — two cardinality exceptions.** Row 10 carves out exceptions for
 > `ON DELETE` behaviour, but the tenant fan is not uniform in *cardinality*
-> either. `payment_settings` is the only one of the 50 tenant-scoped tables whose
-> `organization_id` carries a single-column `UNIQUE` index
-> (`uq_payment_settings_org`), so an organization has **at most one**
-> `payment_settings` row: that edge is `||--o|`, a 1:1, not the `||--o{` 1:N every
-> other tenant table gets. The diagrams already draw it that way
-> (`ORGANIZATIONS ||--o| PAYMENT_SETTINGS : "configures"` in the Master ERD and in
-> *Organization & Settings*). Its near-namesakes are genuinely 1:N and are **not**
+> either. `payment_settings` and `calendar_connections` are the only two of the 51
+> tenant-scoped tables whose `organization_id` carries a single-column `UNIQUE`
+> index (`uq_payment_settings_org`, `uq_calendar_connections_org`), so an
+> organization has **at most one** row in each: those edges are `||--o|`, a 1:1,
+> not the `||--o{` 1:N every other tenant table gets. The diagrams draw them that
+> way (`ORGANIZATIONS ||--o| PAYMENT_SETTINGS : "configures"` in the Master ERD and
+> in *Organization & Settings*; `ORGANIZATIONS ||--o| CALENDAR_CONNECTIONS` in the
+> Master ERD and in *Meetings*). Its near-namesakes are genuinely 1:N and are **not**
 > exceptions: `payment_credentials` (row 7) is unique on
 > `(organization_id, mode)`, one credential row per live/test mode, and
 > `payment_method_settings` on `(organization_id, method)`, one row per enabled
@@ -2172,8 +2264,10 @@ keys and are tabulated separately below.
 > touching an `organization_id` in this schema is composite
 > (`uq_memberships_org_user`, `uq_orders_org_reference`, `uq_invoices_org_number`,
 > `uq_events_org_slug`, …), which constrains a natural key *within* a tenant and
-> leaves the tenant edge 1:N. `uq_payment_settings_org` is the single exception,
-> so `payment_settings` is the schema's only 1:1 with `organizations`.
+> leaves the tenant edge 1:N. `uq_payment_settings_org` was the single exception
+> until migration `0075` added `uq_calendar_connections_org` — one Google Calendar
+> connection per workspace — so `payment_settings` and `calendar_connections` are
+> the schema's only 1:1s with `organizations`.
 
 <a id="unenforced-references"></a>
 ### Unenforced references
@@ -2199,6 +2293,15 @@ added without the `REFERENCES` clause their siblings carry rather than for any
 deliberate reason, so adding the constraints (after a one-off orphan sweep) is the
 obvious follow-up. Deciding that is a schema change and therefore out of scope for
 this document; recording it is not.
+
+One further column holds a `users.id` with no constraint and is **not** counted
+here, because it is deliberate rather than a gap:
+`calendar_connections.oauth_state_user_id` records who started a pending Google
+Calendar connect. It lives at most ten minutes, is cleared on its first matching
+use, and the callback re-checks that user's `setIntegrations` before anything is
+written — a removed member simply fails there — and on success its value is copied
+into `connected_by`, which *is* a foreign key. See
+[The 58th table](#the-58th-table).
 
 ---
 
@@ -2232,7 +2335,7 @@ like a contradiction to be adjudicated, so drift could sit unresolved while the
 two documents disagreed in public. Under the new rule a difference is simply a
 defect in whichever document is behind, with a known fix: read the database and
 correct the document. Counts are measured, never copied between documents — the
-57 in this file was taken from `pg_catalog`, and so was every figure derived from
+58 in this file was taken from `pg_catalog`, and so was every figure derived from
 it.
 
 **The drift that remains is one-directional and in the catalog's column.** One
@@ -2250,7 +2353,8 @@ docker exec eventa-postgres-1 psql -U eventa -d eventa -At -c \
 ```
 
 and check each name against both documents. `scan_attempts` was the newest such
-table when this pass ran; see [The 57th table](#the-57th-table).
+table when this pass ran; see [The 57th table](#the-57th-table). The newest table
+is now `calendar_connections`; see [The 58th table](#the-58th-table).
 
 <a id="designed-but-not-built"></a>
 ### Designed but not built
@@ -2399,6 +2503,148 @@ the schema rather than a second copy of this diagram. It needs regenerating; tha
 is recorded in the [Master ERD](#master-erd) preamble so a reader comparing the two
 is not misled in the meantime.
 
+<a id="seat-ticket-types"></a>
+### Each seat sells its own ticket type
+
+On a reserved event the organizer gives each seat one of the event's ticket
+types (Free, Normal, VIP, …) — a whole row at a time as a shortcut, or seat by
+seat, so a row can be split (row 7 seats 1–5 Free, seats 6–16 Normal) — and a
+seat sells only as its own type (US-EVT-05, US-DISC-04). **It needed no
+migration.** Every column it uses was already in the schema, re-read on
+2026-10-20 from `information_schema.columns` and `pg_constraint`:
+`seats.ticket_type_id` (nullable, `SET NULL`, indexed by
+`ix_seats_ticket_type`), `seat_holds.ticket_type_id` (nullable, `CASCADE`) and
+`ticket_types.total` (`NOT NULL DEFAULT 0`, `CHECK sold BETWEEN 0 AND total`).
+The counts did not move: 57 tables, 129 enforced foreign keys. Going from whole
+rows to single seats changed no column either, because `seats.ticket_type_id`
+was always stored per seat; only the rule about who writes it changed. The
+diagrams changed only in what two edges say — `TICKET_TYPES |o--o{ SEATS` is
+"sells (seat's ticket type)" in the master diagram and "sells per seat
+(ticket_type_id)" in *Registration, Orders & Seating* (it said "tiers" before
+seats carried types, then "sells (row's ticket type)" / "sells whole rows" while
+rows were typed whole), and `TICKET_TYPES |o--o{ SEAT_HOLDS` is "held under"
+where it said "held for" — plus the notes under the *Registration, Orders &
+Seating* and *Platform & Infrastructure* views and under rows 61–62 of the
+[Relationship matrix](#relationship-matrix). The diagrams that draw the seats
+edge were re-rendered (`erd/full.png`, `erd/orders.png`); `erd/platform.png`,
+which draws only the hold's edge, was re-rendered and came out byte for byte the
+same. In `erd.tldr` the same labels were edited in place on the *Master ERD* and
+*Registration, Orders & Seating* pages rather than regenerated, so the canvas
+still lacks the four entities recorded [above](#what-this-pass-changed).
+`erd/eventa-full.drawio` draws its edges without labels and none of the columns
+it draws changed, so it needed nothing.
+
+- **Seat by seat, rows as a shortcut.** The seating save
+  (`PUT /events/:eventId/seating/reserved`) takes `seatTicketTypes`, one list per
+  row holding one ticket type id or `null` per seat, and writes each entry to its
+  seat. It still takes `rowTicketTypes`, one entry per row written to every seat
+  of that row, but not both in one request (422). A row is not an entity: it is
+  the seats of one map that share a `row_label`, and a row whose seats share one
+  type is only a reading of those seats (`ticketTypeId` on the read side). Sending
+  neither keeps every surviving seat's type and gives new seats none. A seat that
+  is booked or held cannot change type; the rest of its row can.
+- **The quantity follows the seats.** On a *seat-typed* event — reserved, with at
+  least one typed seat — each type's `ticket_types.total` is the number of seats
+  carrying it, `0` for a type with none. The seating save writes it in the same
+  transaction as the seats, and refuses a layout that would leave a type with
+  fewer seats than it has sold. Sending a different quantity for such a type is
+  refused (409). The locks are taken map, then ticket types, then seats, the same
+  ticket-types-before-seats order checkout uses, so a save and a sale do not
+  deadlock.
+- **Holds carry the type.** A reserved-seat hold now writes
+  `seat_holds.ticket_type_id`, as a GA quantity hold always did. Placing the
+  order checks that the held seats are the priced seats and that each sells under
+  the order's type, and answers 409 otherwise — seat by seat, so in a split row a
+  Free seat cannot be bought as Normal or the other way round.
+- **Legacy untyped maps.** A map with no typed seat on an event published before
+  seats had types still sells any seat under any of the event's types, and its
+  quantities stay typed by hand. A map copied onto a duplicated event also starts
+  with untyped seats and hand-typed quantities, but the copy is a draft that
+  cannot publish until every seat has a type, so it never sells untyped. Once any
+  seat on a map has a type — a single seat is enough — an untyped seat is not on
+  sale.
+- **Publishing and removal.** A reserved event publishes only when every seat has
+  a type and every live ticket type has at least one seat; the events module reads
+  that through its seating-readiness port, which counts seats, not rows
+  (`seatsWithoutType`). A published map whose seats are typed cannot have a seat
+  left untyped. A ticket type that still has seats cannot be removed, checked
+  under the type's lock (US-TKT-05). That is why the `SET NULL` on
+  `seats.ticket_type_id` is a backstop rather than a path the product takes.
+- **Read side.** The public event page's read-only seat map reads the same
+  columns and adds no table (US-PAGE-05). `GET /public/events/:slug` returns it
+  as `seatMap`, `{ seatsPerRow, rows: [{ label, ticketTypeId, seatTicketTypes }] }`:
+  every row in row-number order, `label` the row's `row_label`,
+  `seatTicketTypes` each seat's type in seat-number order — one of the page's
+  `tickets[].id`, or null for an untyped seat — and `ticketTypeId` the type when
+  every seat of the row shares it, null otherwise. It is sent for an in-person
+  reserved event with at least one typed seat and is `null` otherwise, and it
+  carries no seat status, holds or sales. The page lists `tickets` in creation
+  order (`created_at`, then `id`), and a type's colour on the map is its place in
+  that order, the same rule the wizard's preview uses, so a type is one colour in
+  both and keeps it when its price or seats change.
+
+Two consequences belong to the data model rather than the flow, and are recorded
+under [Normalization (3NF)](#normalization-3nf): `ticket_types.total` is now a
+stored derived value on seat-typed events, and `seats.ticket_type_id` is a fact
+about the seat itself, so the row-level repetition it used to carry is gone.
+
+<a id="the-58th-table"></a>
+### The 58th table — `calendar_connections`
+
+**Why there is a 58th table.** Every meeting write has queued a
+`meeting.sync_requested` request on the outbox since meetings shipped, and nothing
+could answer it, because there was no calendar to send an invite from. Migration
+`0075_calendar_connections.sql` adds the workspace's Google Calendar connection
+(US-MTG-08): an Admin connects it on Settings → Integrations, and eventa-worker
+uses it to create, move and cancel each meeting's Google event with a Meet link,
+the guest invite and a 15-minute reminder (US-MTG-04 to US-MTG-07). One row per
+workspace, and no row means disconnected. Its purpose and lifecycle are in
+[entities.md](entities.md#calendar_connections).
+
+**Why its own table and not columns on `organizations` or `payment_settings`.** It
+holds an encrypted OAuth refresh token and a pending PKCE verifier, both
+write-only, and a short-lived pending-connect state. It follows the
+`payment_settings` / `payment_credentials` precedent — tenant-scoped, RLS
+`tenant_isolation`, secrets as AES-256-GCM `bytea`, no `version` — rather than
+widening the tenant root with credential columns every read of `organizations`
+would carry. Being one row per workspace, it is the schema's **second 1:1 with
+`organizations`**, which is why row 10 of the
+[Relationship matrix](#relationship-matrix) and the note below it now name two
+exceptions.
+
+**What moved in this document.** `CALENDAR_CONNECTIONS` was added to the
+[Master ERD](#master-erd) and to the *Meetings* domain view, with its columns,
+keys and two foreign keys read from `information_schema.columns` and
+`pg_constraint` on 2026-10-20, from a scratch database migrated through `0075`.
+Its tenant edge joins row 10 (`||--o|`, like `payment_settings`); its one other
+foreign key, `connected_by → users` (`SET NULL`), is the new matrix row 73,
+inserted after `users → auth_sessions`, so the old rows 73–96 are now 74–97 and
+the cross-references into them were repointed: the matrix preamble (rows 11–90
+are the remaining 80 constraints, rows 91–97 the conceptual many-to-many edges),
+the note on rows 91–97 (48+50 realize 91; 86+27 realize 97) and the
+`saved_events` paragraph under [How to read this ERD](#how-to-read-this-erd)
+(row 97, rows 27 and 86). `oauth_state_user_id` holds a `users.id` with no
+foreign key **on purpose** and adds no edge; it is explained under
+[Unenforced references](#unenforced-references) rather than counted there. Each
+count was re-measured rather than incremented: **58** tables, **51** carrying
+`organization_id`, **131** enforced foreign keys, at the *Measured scale*
+headline, the tenancy-edge line, the [Master ERD](#master-erd) preamble, the
+matrix preamble, row 10 and the multi-tenancy paragraph under
+[Normalization (3NF)](#normalization-3nf). The seven tables with no tenant
+column are unchanged.
+
+**Derived artifacts.** `erd/full.png` and `erd/meetings.png` were re-rendered
+from the updated Mermaid. `erd/eventa-full.drawio` was again deliberately not
+touched and is now **two** tables behind (56 entities, 124 edges against 58 and
+131), for the reason given [above](#the-57th-table): it must be regenerated from
+the database, never patched by hand. `erd.tldr` was not regenerated either, so it
+lacks `calendar_connections` along with the entities recorded
+[earlier](#what-this-pass-changed).
+
+The 56-table pass, `#the-57th-table` and the seat note above are left as they
+were written: they record what those passes measured, and their figures are
+superseded by this one.
+
 ### Renames the diagrams had missed
 
 Ten drawn columns existed under a different name. These were corrected in place —
@@ -2432,7 +2678,19 @@ kept for hot-path booking checks, with `CHECK` constraints
 One documented exception: `events.bucket` *is* a stored `event_bucket` column
 (`active`, `completed`), not a read-time derivation.
 
-**Multi-tenancy via `organization_id`.** 50 of 57 tables carry
+One more follows from each seat selling its own ticket type (see
+[Each seat sells its own ticket type](#seat-ticket-types)). On a seat-typed event
+`ticket_types.total` is a stored derived value — the count of `seats` carrying
+the type — kept, like `sold`, because the booking check reads it on the hot path;
+it is written in the same transaction as the seats it counts, so the two cannot
+disagree. `seats.ticket_type_id`, by contrast, is no longer an exception. While
+rows were typed whole it depended on the seat's row (`seat_map_id`,
+`row_label`) rather than on the seat, repeating the row's type on each of its
+seats; now each seat carries its own type, a fact about that seat alone, so it
+depends on the seat's key and nothing else. A row whose seats share one type is
+a reading of those seats, not a stored fact, so no row table is missing.
+
+**Multi-tenancy via `organization_id`.** 51 of 58 tables carry
 `organization_id … REFERENCES organizations(id)` (NOT NULL except the inbound
 `webhook_events` log, whose tenant is resolved after signature verification), and
 every read/write is filtered by the caller's org (row-level tenant isolation). The
@@ -2458,7 +2716,8 @@ monthly `tax_periods`.
 **Reserved-seating model.** When `events.seating_mode = reserved`, a single
 `seat_maps` row (1:1, `UNIQUE (event_id)`) holds the geometry; individual `seats`
 carry a `seat_status` lifecycle (`available → held → reserved → sold`/`blocked`)
-and an optional tier (`ticket_type_id`). Binding an issued ticket to a physical
+and the ticket type each one sells (`ticket_type_id`, set seat by seat so a row
+can be split between types, null on an untyped seat). Binding an issued ticket to a physical
 seat is the `seat_assignments` junction, whose partial unique index
 `uq_seat_active (seat_id) WHERE released_at IS NULL` guarantees at most one *live*
 holder per seat while preserving historical assignments (a released seat can be

@@ -96,13 +96,15 @@ Could→Low). Beyond these, exploratory testing supplements scripted cases in hi
 | **Test / Staging** | System, integration, regression, performance | Production-like; **Stripe & PromptPay sandbox**; email/SMS sandbox |
 | UAT | PO/stakeholder acceptance | Stable release candidate |
 | Perf | Load & spike tests | Isolated, production-sized data |
+| Google Calendar (meetings, E12) | Invites, Meet links, reminders, connect/disconnect | **Fake provider** (`CALENDAR_PROVIDER=fake` in api and worker) in Dev and CI — no Google account. Test/Staging uses a dedicated **Google Cloud test project** with an OAuth client whose consent screen is in **Testing** status, the testers' Google accounts listed as test users, and that environment's redirect URI registered; its refresh tokens lapse after 7 days, so expect "Reconnect needed" weekly |
 
 **Configuration:** locale THB (฿), VAT 7%, timezone Asia/Bangkok, EN + TH; feature flags per release.
 **Test data:** ≥2 seed organizations (tenant-isolation tests), events across states
 (draft/published/live/completed), ticket types (free/paid/reserved/GA), **Stripe test cards** &
 **PromptPay sandbox**, waitlisted/checked-in attendees, and a large attendee set (tens of thousands)
 for performance. **Prerequisites:** sandbox credentials, seeded data, test accounts per role
-(Admin/Organizer/Staff/Attendee), signed QR test tickets for check-in.
+(Admin/Organizer/Staff/Attendee), signed QR test tickets for check-in, and for meetings a Google test
+account on the staging OAuth client plus a guest mailbox that can receive its invites.
 
 ## 6. Test execution (step 5)
 Execute test cases, record **actual vs expected**, mark Pass/Fail/Blocked, and log defects for

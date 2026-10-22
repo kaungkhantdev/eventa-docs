@@ -1,0 +1,28 @@
+%% Handling a parked message in eventa.worker.dlq.
+%% Source of truth for dead-letter-handling.png and .tldr — regenerate both after editing.
+%% See ../devops-observability-sre.md §8.1 for the full path that leads here.
+flowchart TD
+    P["Message parked<br/><b>eventa.worker.dlq</b><br/>durable · no TTL · no consumer<br/>nothing drains it on its own"]
+
+    P --> N["<b>1 · Notice</b><br/>error log: 'parking in the dead-letter queue'<br/>messages_handled_total · outcome=parked<br/>DLQ depth (RabbitMQ exporter): &gt;0 warn, &gt;10 or rising 15 min page"]
+
+    N --> I["<b>2 · Inspect</b> — non-destructive<br/>Management UI → Queues → eventa.worker.dlq → Get messages<br/>Ack Mode = <b>Nack message requeue true</b><br/>(Automatic ack or reject-requeue-false CONSUMES it)"]
+
+    I --> C{"<b>3 · Classify</b><br/>what does the parked<br/>error say?"}
+
+    C -->|"dependency was down<br/>longer than the 12 min ladder"| A["Handler is fine<br/><b>Fix the dependency</b><br/>(SMTP, Postgres, Redis)"]
+    C -->|"poison payload<br/>or handler bug"| B["<b>Fix the handler, deploy</b><br/>replaying first only re-parks it"]
+    C -->|"unprocessable —<br/>referent no longer exists"| D["<b>Drop after review</b><br/>Purge Messages, or<br/>DELETE /api/queues/%2F/eventa.worker.dlq/contents<br/>record what was dropped"]
+
+    A --> R["<b>4 · Replay</b><br/>republish to eventa.worker<br/><b>strip x-attempt</b> — else attempt=5 parks it at once<br/>mind IDEMPOTENCY_TTL_SECONDS (24 h): past it a<br/>half-succeeded handler repeats its side effect"]
+    B --> R
+
+    R --> V["<b>5 · Verify</b><br/>DLQ depth back to 0<br/>handler logs 'Message handled'<br/>the side effect actually happened"]
+    D --> V
+
+    classDef parked fill:#fde8e8,stroke:#c53030,color:#1a202c
+    classDef act fill:#e8f0fe,stroke:#3182ce,color:#1a202c
+    classDef done fill:#e8f5e9,stroke:#2f855a,color:#1a202c
+    class P parked
+    class A,B,D,R act
+    class V done

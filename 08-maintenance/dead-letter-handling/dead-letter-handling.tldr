@@ -1,0 +1,1472 @@
+{
+	"tldrawFileFormatVersion": 1,
+	"schema": {
+		"schemaVersion": 2,
+		"sequences": {
+			"com.tldraw.store": 5,
+			"com.tldraw.asset": 1,
+			"com.tldraw.camera": 1,
+			"com.tldraw.document": 2,
+			"com.tldraw.instance": 26,
+			"com.tldraw.instance_page_state": 5,
+			"com.tldraw.page": 1,
+			"com.tldraw.instance_presence": 6,
+			"com.tldraw.pointer": 1,
+			"com.tldraw.shape": 4,
+			"com.tldraw.user": 1,
+			"com.tldraw.asset.image": 6,
+			"com.tldraw.asset.video": 5,
+			"com.tldraw.asset.bookmark": 2,
+			"com.tldraw.shape.arrow": 8,
+			"com.tldraw.shape.bookmark": 2,
+			"com.tldraw.shape.draw": 5,
+			"com.tldraw.shape.embed": 4,
+			"com.tldraw.shape.frame": 1,
+			"com.tldraw.shape.geo": 11,
+			"com.tldraw.shape.group": 0,
+			"com.tldraw.shape.highlight": 4,
+			"com.tldraw.shape.image": 5,
+			"com.tldraw.shape.line": 5,
+			"com.tldraw.shape.note": 13,
+			"com.tldraw.shape.text": 4,
+			"com.tldraw.shape.video": 4,
+			"com.tldraw.binding.arrow": 1
+		}
+	},
+	"records": [
+		{
+			"gridSize": 10,
+			"name": "",
+			"meta": {},
+			"id": "document:document",
+			"typeName": "document"
+		},
+		{
+			"typeName": "page",
+			"id": "page:dlqhandling",
+			"name": "Dead-letter handling",
+			"index": "a1",
+			"meta": {}
+		},
+		{
+			"id": "shape:dlq_p",
+			"typeName": "shape",
+			"type": "geo",
+			"x": 330,
+			"y": 0,
+			"rotation": 0,
+			"index": "a1",
+			"parentId": "page:dlqhandling",
+			"isLocked": false,
+			"opacity": 1,
+			"meta": {},
+			"props": {
+				"geo": "rectangle",
+				"dash": "solid",
+				"url": "",
+				"w": 360,
+				"h": 118,
+				"growY": 0,
+				"scale": 1,
+				"labelColor": "black",
+				"color": "red",
+				"fill": "semi",
+				"size": "s",
+				"font": "sans",
+				"align": "middle",
+				"verticalAlign": "middle",
+				"richText": {
+					"type": "doc",
+					"content": [
+						{
+							"type": "paragraph",
+							"content": [
+								{
+									"type": "text",
+									"text": "Message parked"
+								}
+							]
+						},
+						{
+							"type": "paragraph",
+							"content": [
+								{
+									"type": "text",
+									"text": "eventa.worker.dlq"
+								}
+							]
+						},
+						{
+							"type": "paragraph",
+							"content": [
+								{
+									"type": "text",
+									"text": "durable \u00b7 no TTL \u00b7 no consumer"
+								}
+							]
+						},
+						{
+							"type": "paragraph",
+							"content": [
+								{
+									"type": "text",
+									"text": "nothing drains it on its own"
+								}
+							]
+						}
+					]
+				}
+			}
+		},
+		{
+			"id": "shape:dlq_n",
+			"typeName": "shape",
+			"type": "geo",
+			"x": 150,
+			"y": 190,
+			"rotation": 0,
+			"index": "a2",
+			"parentId": "page:dlqhandling",
+			"isLocked": false,
+			"opacity": 1,
+			"meta": {},
+			"props": {
+				"geo": "rectangle",
+				"dash": "solid",
+				"url": "",
+				"w": 720,
+				"h": 118,
+				"growY": 0,
+				"scale": 1,
+				"labelColor": "black",
+				"color": "violet",
+				"fill": "semi",
+				"size": "s",
+				"font": "sans",
+				"align": "middle",
+				"verticalAlign": "middle",
+				"richText": {
+					"type": "doc",
+					"content": [
+						{
+							"type": "paragraph",
+							"content": [
+								{
+									"type": "text",
+									"text": "1 \u00b7 Notice"
+								}
+							]
+						},
+						{
+							"type": "paragraph",
+							"content": [
+								{
+									"type": "text",
+									"text": "error log: 'parking in the dead-letter queue'"
+								}
+							]
+						},
+						{
+							"type": "paragraph",
+							"content": [
+								{
+									"type": "text",
+									"text": "messages_handled_total \u00b7 outcome=parked"
+								}
+							]
+						},
+						{
+							"type": "paragraph",
+							"content": [
+								{
+									"type": "text",
+									"text": "DLQ depth (RabbitMQ exporter): >0 warn, >10 or rising 15 min page"
+								}
+							]
+						}
+					]
+				}
+			}
+		},
+		{
+			"id": "shape:dlq_i",
+			"typeName": "shape",
+			"type": "geo",
+			"x": 150,
+			"y": 380,
+			"rotation": 0,
+			"index": "a3",
+			"parentId": "page:dlqhandling",
+			"isLocked": false,
+			"opacity": 1,
+			"meta": {},
+			"props": {
+				"geo": "rectangle",
+				"dash": "solid",
+				"url": "",
+				"w": 720,
+				"h": 140,
+				"growY": 0,
+				"scale": 1,
+				"labelColor": "black",
+				"color": "violet",
+				"fill": "semi",
+				"size": "s",
+				"font": "sans",
+				"align": "middle",
+				"verticalAlign": "middle",
+				"richText": {
+					"type": "doc",
+					"content": [
+						{
+							"type": "paragraph",
+							"content": [
+								{
+									"type": "text",
+									"text": "2 \u00b7 Inspect \u2014 non-destructive"
+								}
+							]
+						},
+						{
+							"type": "paragraph",
+							"content": [
+								{
+									"type": "text",
+									"text": "Management UI \u2192 Queues \u2192 eventa.worker.dlq \u2192 Get messages"
+								}
+							]
+						},
+						{
+							"type": "paragraph",
+							"content": [
+								{
+									"type": "text",
+									"text": "Ack Mode = Nack message requeue true"
+								}
+							]
+						},
+						{
+							"type": "paragraph",
+							"content": [
+								{
+									"type": "text",
+									"text": "(Automatic ack or reject-requeue-false CONSUMES it)"
+								}
+							]
+						}
+					]
+				}
+			}
+		},
+		{
+			"id": "shape:dlq_c",
+			"typeName": "shape",
+			"type": "geo",
+			"x": 400,
+			"y": 590,
+			"rotation": 0,
+			"index": "a4",
+			"parentId": "page:dlqhandling",
+			"isLocked": false,
+			"opacity": 1,
+			"meta": {},
+			"props": {
+				"geo": "diamond",
+				"dash": "solid",
+				"url": "",
+				"w": 220,
+				"h": 180,
+				"growY": 0,
+				"scale": 1,
+				"labelColor": "black",
+				"color": "violet",
+				"fill": "semi",
+				"size": "s",
+				"font": "sans",
+				"align": "middle",
+				"verticalAlign": "middle",
+				"richText": {
+					"type": "doc",
+					"content": [
+						{
+							"type": "paragraph",
+							"content": [
+								{
+									"type": "text",
+									"text": "3 \u00b7 Classify"
+								}
+							]
+						},
+						{
+							"type": "paragraph",
+							"content": [
+								{
+									"type": "text",
+									"text": "what does the"
+								}
+							]
+						},
+						{
+							"type": "paragraph",
+							"content": [
+								{
+									"type": "text",
+									"text": "parked error say?"
+								}
+							]
+						}
+					]
+				}
+			}
+		},
+		{
+			"id": "shape:dlq_a",
+			"typeName": "shape",
+			"type": "geo",
+			"x": 10,
+			"y": 880,
+			"rotation": 0,
+			"index": "a5",
+			"parentId": "page:dlqhandling",
+			"isLocked": false,
+			"opacity": 1,
+			"meta": {},
+			"props": {
+				"geo": "rectangle",
+				"dash": "solid",
+				"url": "",
+				"w": 300,
+				"h": 118,
+				"growY": 0,
+				"scale": 1,
+				"labelColor": "black",
+				"color": "blue",
+				"fill": "semi",
+				"size": "s",
+				"font": "sans",
+				"align": "middle",
+				"verticalAlign": "middle",
+				"richText": {
+					"type": "doc",
+					"content": [
+						{
+							"type": "paragraph",
+							"content": [
+								{
+									"type": "text",
+									"text": "Handler is fine"
+								}
+							]
+						},
+						{
+							"type": "paragraph",
+							"content": [
+								{
+									"type": "text",
+									"text": "Fix the dependency"
+								}
+							]
+						},
+						{
+							"type": "paragraph",
+							"content": [
+								{
+									"type": "text",
+									"text": "(SMTP, Postgres, Redis)"
+								}
+							]
+						}
+					]
+				}
+			}
+		},
+		{
+			"id": "shape:dlq_b",
+			"typeName": "shape",
+			"type": "geo",
+			"x": 360,
+			"y": 880,
+			"rotation": 0,
+			"index": "a6",
+			"parentId": "page:dlqhandling",
+			"isLocked": false,
+			"opacity": 1,
+			"meta": {},
+			"props": {
+				"geo": "rectangle",
+				"dash": "solid",
+				"url": "",
+				"w": 300,
+				"h": 118,
+				"growY": 0,
+				"scale": 1,
+				"labelColor": "black",
+				"color": "blue",
+				"fill": "semi",
+				"size": "s",
+				"font": "sans",
+				"align": "middle",
+				"verticalAlign": "middle",
+				"richText": {
+					"type": "doc",
+					"content": [
+						{
+							"type": "paragraph",
+							"content": [
+								{
+									"type": "text",
+									"text": "Fix the handler, deploy"
+								}
+							]
+						},
+						{
+							"type": "paragraph",
+							"content": [
+								{
+									"type": "text",
+									"text": "replaying first only re-parks it"
+								}
+							]
+						}
+					]
+				}
+			}
+		},
+		{
+			"id": "shape:dlq_d",
+			"typeName": "shape",
+			"type": "geo",
+			"x": 710,
+			"y": 880,
+			"rotation": 0,
+			"index": "a7",
+			"parentId": "page:dlqhandling",
+			"isLocked": false,
+			"opacity": 1,
+			"meta": {},
+			"props": {
+				"geo": "rectangle",
+				"dash": "solid",
+				"url": "",
+				"w": 330,
+				"h": 140,
+				"growY": 0,
+				"scale": 1,
+				"labelColor": "black",
+				"color": "blue",
+				"fill": "semi",
+				"size": "s",
+				"font": "sans",
+				"align": "middle",
+				"verticalAlign": "middle",
+				"richText": {
+					"type": "doc",
+					"content": [
+						{
+							"type": "paragraph",
+							"content": [
+								{
+									"type": "text",
+									"text": "Drop after review"
+								}
+							]
+						},
+						{
+							"type": "paragraph",
+							"content": [
+								{
+									"type": "text",
+									"text": "Purge Messages, or"
+								}
+							]
+						},
+						{
+							"type": "paragraph",
+							"content": [
+								{
+									"type": "text",
+									"text": "DELETE /api/queues/%2F/eventa.worker.dlq/contents"
+								}
+							]
+						},
+						{
+							"type": "paragraph",
+							"content": [
+								{
+									"type": "text",
+									"text": "record what was dropped"
+								}
+							]
+						}
+					]
+				}
+			}
+		},
+		{
+			"id": "shape:dlq_r",
+			"typeName": "shape",
+			"type": "geo",
+			"x": 110,
+			"y": 1080,
+			"rotation": 0,
+			"index": "a8",
+			"parentId": "page:dlqhandling",
+			"isLocked": false,
+			"opacity": 1,
+			"meta": {},
+			"props": {
+				"geo": "rectangle",
+				"dash": "solid",
+				"url": "",
+				"w": 520,
+				"h": 160,
+				"growY": 0,
+				"scale": 1,
+				"labelColor": "black",
+				"color": "blue",
+				"fill": "semi",
+				"size": "s",
+				"font": "sans",
+				"align": "middle",
+				"verticalAlign": "middle",
+				"richText": {
+					"type": "doc",
+					"content": [
+						{
+							"type": "paragraph",
+							"content": [
+								{
+									"type": "text",
+									"text": "4 \u00b7 Replay"
+								}
+							]
+						},
+						{
+							"type": "paragraph",
+							"content": [
+								{
+									"type": "text",
+									"text": "republish to eventa.worker"
+								}
+							]
+						},
+						{
+							"type": "paragraph",
+							"content": [
+								{
+									"type": "text",
+									"text": "strip x-attempt \u2014 else attempt=5 parks it at once"
+								}
+							]
+						},
+						{
+							"type": "paragraph",
+							"content": [
+								{
+									"type": "text",
+									"text": "mind IDEMPOTENCY_TTL_SECONDS (24 h): past it a"
+								}
+							]
+						},
+						{
+							"type": "paragraph",
+							"content": [
+								{
+									"type": "text",
+									"text": "half-succeeded handler repeats its side effect"
+								}
+							]
+						}
+					]
+				}
+			}
+		},
+		{
+			"id": "shape:dlq_v",
+			"typeName": "shape",
+			"type": "geo",
+			"x": 330,
+			"y": 1310,
+			"rotation": 0,
+			"index": "a9",
+			"parentId": "page:dlqhandling",
+			"isLocked": false,
+			"opacity": 1,
+			"meta": {},
+			"props": {
+				"geo": "rectangle",
+				"dash": "solid",
+				"url": "",
+				"w": 420,
+				"h": 118,
+				"growY": 0,
+				"scale": 1,
+				"labelColor": "black",
+				"color": "green",
+				"fill": "semi",
+				"size": "s",
+				"font": "sans",
+				"align": "middle",
+				"verticalAlign": "middle",
+				"richText": {
+					"type": "doc",
+					"content": [
+						{
+							"type": "paragraph",
+							"content": [
+								{
+									"type": "text",
+									"text": "5 \u00b7 Verify"
+								}
+							]
+						},
+						{
+							"type": "paragraph",
+							"content": [
+								{
+									"type": "text",
+									"text": "DLQ depth back to 0"
+								}
+							]
+						},
+						{
+							"type": "paragraph",
+							"content": [
+								{
+									"type": "text",
+									"text": "handler logs 'Message handled'"
+								}
+							]
+						},
+						{
+							"type": "paragraph",
+							"content": [
+								{
+									"type": "text",
+									"text": "the side effect actually happened"
+								}
+							]
+						}
+					]
+				}
+			}
+		},
+		{
+			"id": "shape:dlq_a_pn",
+			"typeName": "shape",
+			"type": "arrow",
+			"x": 510.0,
+			"y": 59.0,
+			"rotation": 0,
+			"index": "aA",
+			"parentId": "page:dlqhandling",
+			"isLocked": false,
+			"opacity": 1,
+			"meta": {},
+			"props": {
+				"kind": "arc",
+				"labelColor": "black",
+				"color": "black",
+				"fill": "none",
+				"dash": "draw",
+				"size": "s",
+				"arrowheadStart": "none",
+				"arrowheadEnd": "arrow",
+				"font": "sans",
+				"start": {
+					"x": 0,
+					"y": 0
+				},
+				"end": {
+					"x": 0.0,
+					"y": 190.0
+				},
+				"bend": 0,
+				"richText": {
+					"type": "doc",
+					"content": []
+				},
+				"labelPosition": 0.5,
+				"scale": 1,
+				"elbowMidPoint": 0.5
+			}
+		},
+		{
+			"typeName": "binding",
+			"id": "binding:dlq_pn_start",
+			"type": "arrow",
+			"fromId": "shape:dlq_a_pn",
+			"toId": "shape:dlq_p",
+			"meta": {},
+			"props": {
+				"terminal": "start",
+				"normalizedAnchor": {
+					"x": 0.5,
+					"y": 0.5
+				},
+				"isExact": false,
+				"isPrecise": false,
+				"snap": "none"
+			}
+		},
+		{
+			"typeName": "binding",
+			"id": "binding:dlq_pn_end",
+			"type": "arrow",
+			"fromId": "shape:dlq_a_pn",
+			"toId": "shape:dlq_n",
+			"meta": {},
+			"props": {
+				"terminal": "end",
+				"normalizedAnchor": {
+					"x": 0.5,
+					"y": 0.5
+				},
+				"isExact": false,
+				"isPrecise": false,
+				"snap": "none"
+			}
+		},
+		{
+			"id": "shape:dlq_a_ni",
+			"typeName": "shape",
+			"type": "arrow",
+			"x": 510.0,
+			"y": 249.0,
+			"rotation": 0,
+			"index": "aB",
+			"parentId": "page:dlqhandling",
+			"isLocked": false,
+			"opacity": 1,
+			"meta": {},
+			"props": {
+				"kind": "arc",
+				"labelColor": "black",
+				"color": "black",
+				"fill": "none",
+				"dash": "draw",
+				"size": "s",
+				"arrowheadStart": "none",
+				"arrowheadEnd": "arrow",
+				"font": "sans",
+				"start": {
+					"x": 0,
+					"y": 0
+				},
+				"end": {
+					"x": 0.0,
+					"y": 201.0
+				},
+				"bend": 0,
+				"richText": {
+					"type": "doc",
+					"content": []
+				},
+				"labelPosition": 0.5,
+				"scale": 1,
+				"elbowMidPoint": 0.5
+			}
+		},
+		{
+			"typeName": "binding",
+			"id": "binding:dlq_ni_start",
+			"type": "arrow",
+			"fromId": "shape:dlq_a_ni",
+			"toId": "shape:dlq_n",
+			"meta": {},
+			"props": {
+				"terminal": "start",
+				"normalizedAnchor": {
+					"x": 0.5,
+					"y": 0.5
+				},
+				"isExact": false,
+				"isPrecise": false,
+				"snap": "none"
+			}
+		},
+		{
+			"typeName": "binding",
+			"id": "binding:dlq_ni_end",
+			"type": "arrow",
+			"fromId": "shape:dlq_a_ni",
+			"toId": "shape:dlq_i",
+			"meta": {},
+			"props": {
+				"terminal": "end",
+				"normalizedAnchor": {
+					"x": 0.5,
+					"y": 0.5
+				},
+				"isExact": false,
+				"isPrecise": false,
+				"snap": "none"
+			}
+		},
+		{
+			"id": "shape:dlq_a_ic",
+			"typeName": "shape",
+			"type": "arrow",
+			"x": 510.0,
+			"y": 450.0,
+			"rotation": 0,
+			"index": "aC",
+			"parentId": "page:dlqhandling",
+			"isLocked": false,
+			"opacity": 1,
+			"meta": {},
+			"props": {
+				"kind": "arc",
+				"labelColor": "black",
+				"color": "black",
+				"fill": "none",
+				"dash": "draw",
+				"size": "s",
+				"arrowheadStart": "none",
+				"arrowheadEnd": "arrow",
+				"font": "sans",
+				"start": {
+					"x": 0,
+					"y": 0
+				},
+				"end": {
+					"x": 0.0,
+					"y": 230.0
+				},
+				"bend": 0,
+				"richText": {
+					"type": "doc",
+					"content": []
+				},
+				"labelPosition": 0.5,
+				"scale": 1,
+				"elbowMidPoint": 0.5
+			}
+		},
+		{
+			"typeName": "binding",
+			"id": "binding:dlq_ic_start",
+			"type": "arrow",
+			"fromId": "shape:dlq_a_ic",
+			"toId": "shape:dlq_i",
+			"meta": {},
+			"props": {
+				"terminal": "start",
+				"normalizedAnchor": {
+					"x": 0.5,
+					"y": 0.5
+				},
+				"isExact": false,
+				"isPrecise": false,
+				"snap": "none"
+			}
+		},
+		{
+			"typeName": "binding",
+			"id": "binding:dlq_ic_end",
+			"type": "arrow",
+			"fromId": "shape:dlq_a_ic",
+			"toId": "shape:dlq_c",
+			"meta": {},
+			"props": {
+				"terminal": "end",
+				"normalizedAnchor": {
+					"x": 0.5,
+					"y": 0.5
+				},
+				"isExact": false,
+				"isPrecise": false,
+				"snap": "none"
+			}
+		},
+		{
+			"id": "shape:dlq_a_ca",
+			"typeName": "shape",
+			"type": "arrow",
+			"x": 510.0,
+			"y": 680.0,
+			"rotation": 0,
+			"index": "aD",
+			"parentId": "page:dlqhandling",
+			"isLocked": false,
+			"opacity": 1,
+			"meta": {},
+			"props": {
+				"kind": "arc",
+				"labelColor": "black",
+				"color": "black",
+				"fill": "none",
+				"dash": "draw",
+				"size": "s",
+				"arrowheadStart": "none",
+				"arrowheadEnd": "arrow",
+				"font": "sans",
+				"start": {
+					"x": 0,
+					"y": 0
+				},
+				"end": {
+					"x": -350.0,
+					"y": 259.0
+				},
+				"bend": 0,
+				"richText": {
+					"type": "doc",
+					"content": [
+						{
+							"type": "paragraph",
+							"content": [
+								{
+									"type": "text",
+									"text": "dependency was down"
+								}
+							]
+						},
+						{
+							"type": "paragraph",
+							"content": [
+								{
+									"type": "text",
+									"text": "longer than the 12 min ladder"
+								}
+							]
+						}
+					]
+				},
+				"labelPosition": 0.5,
+				"scale": 1,
+				"elbowMidPoint": 0.5
+			}
+		},
+		{
+			"typeName": "binding",
+			"id": "binding:dlq_ca_start",
+			"type": "arrow",
+			"fromId": "shape:dlq_a_ca",
+			"toId": "shape:dlq_c",
+			"meta": {},
+			"props": {
+				"terminal": "start",
+				"normalizedAnchor": {
+					"x": 0.5,
+					"y": 0.5
+				},
+				"isExact": false,
+				"isPrecise": false,
+				"snap": "none"
+			}
+		},
+		{
+			"typeName": "binding",
+			"id": "binding:dlq_ca_end",
+			"type": "arrow",
+			"fromId": "shape:dlq_a_ca",
+			"toId": "shape:dlq_a",
+			"meta": {},
+			"props": {
+				"terminal": "end",
+				"normalizedAnchor": {
+					"x": 0.5,
+					"y": 0.5
+				},
+				"isExact": false,
+				"isPrecise": false,
+				"snap": "none"
+			}
+		},
+		{
+			"id": "shape:dlq_a_cb",
+			"typeName": "shape",
+			"type": "arrow",
+			"x": 510.0,
+			"y": 680.0,
+			"rotation": 0,
+			"index": "aE",
+			"parentId": "page:dlqhandling",
+			"isLocked": false,
+			"opacity": 1,
+			"meta": {},
+			"props": {
+				"kind": "arc",
+				"labelColor": "black",
+				"color": "black",
+				"fill": "none",
+				"dash": "draw",
+				"size": "s",
+				"arrowheadStart": "none",
+				"arrowheadEnd": "arrow",
+				"font": "sans",
+				"start": {
+					"x": 0,
+					"y": 0
+				},
+				"end": {
+					"x": 0.0,
+					"y": 259.0
+				},
+				"bend": 0,
+				"richText": {
+					"type": "doc",
+					"content": [
+						{
+							"type": "paragraph",
+							"content": [
+								{
+									"type": "text",
+									"text": "poison payload"
+								}
+							]
+						},
+						{
+							"type": "paragraph",
+							"content": [
+								{
+									"type": "text",
+									"text": "or handler bug"
+								}
+							]
+						}
+					]
+				},
+				"labelPosition": 0.5,
+				"scale": 1,
+				"elbowMidPoint": 0.5
+			}
+		},
+		{
+			"typeName": "binding",
+			"id": "binding:dlq_cb_start",
+			"type": "arrow",
+			"fromId": "shape:dlq_a_cb",
+			"toId": "shape:dlq_c",
+			"meta": {},
+			"props": {
+				"terminal": "start",
+				"normalizedAnchor": {
+					"x": 0.5,
+					"y": 0.5
+				},
+				"isExact": false,
+				"isPrecise": false,
+				"snap": "none"
+			}
+		},
+		{
+			"typeName": "binding",
+			"id": "binding:dlq_cb_end",
+			"type": "arrow",
+			"fromId": "shape:dlq_a_cb",
+			"toId": "shape:dlq_b",
+			"meta": {},
+			"props": {
+				"terminal": "end",
+				"normalizedAnchor": {
+					"x": 0.5,
+					"y": 0.5
+				},
+				"isExact": false,
+				"isPrecise": false,
+				"snap": "none"
+			}
+		},
+		{
+			"id": "shape:dlq_a_cd",
+			"typeName": "shape",
+			"type": "arrow",
+			"x": 510.0,
+			"y": 680.0,
+			"rotation": 0,
+			"index": "aF",
+			"parentId": "page:dlqhandling",
+			"isLocked": false,
+			"opacity": 1,
+			"meta": {},
+			"props": {
+				"kind": "arc",
+				"labelColor": "black",
+				"color": "black",
+				"fill": "none",
+				"dash": "draw",
+				"size": "s",
+				"arrowheadStart": "none",
+				"arrowheadEnd": "arrow",
+				"font": "sans",
+				"start": {
+					"x": 0,
+					"y": 0
+				},
+				"end": {
+					"x": 365.0,
+					"y": 270.0
+				},
+				"bend": 0,
+				"richText": {
+					"type": "doc",
+					"content": [
+						{
+							"type": "paragraph",
+							"content": [
+								{
+									"type": "text",
+									"text": "unprocessable \u2014"
+								}
+							]
+						},
+						{
+							"type": "paragraph",
+							"content": [
+								{
+									"type": "text",
+									"text": "referent no longer exists"
+								}
+							]
+						}
+					]
+				},
+				"labelPosition": 0.5,
+				"scale": 1,
+				"elbowMidPoint": 0.5
+			}
+		},
+		{
+			"typeName": "binding",
+			"id": "binding:dlq_cd_start",
+			"type": "arrow",
+			"fromId": "shape:dlq_a_cd",
+			"toId": "shape:dlq_c",
+			"meta": {},
+			"props": {
+				"terminal": "start",
+				"normalizedAnchor": {
+					"x": 0.5,
+					"y": 0.5
+				},
+				"isExact": false,
+				"isPrecise": false,
+				"snap": "none"
+			}
+		},
+		{
+			"typeName": "binding",
+			"id": "binding:dlq_cd_end",
+			"type": "arrow",
+			"fromId": "shape:dlq_a_cd",
+			"toId": "shape:dlq_d",
+			"meta": {},
+			"props": {
+				"terminal": "end",
+				"normalizedAnchor": {
+					"x": 0.5,
+					"y": 0.5
+				},
+				"isExact": false,
+				"isPrecise": false,
+				"snap": "none"
+			}
+		},
+		{
+			"id": "shape:dlq_a_ar",
+			"typeName": "shape",
+			"type": "arrow",
+			"x": 160.0,
+			"y": 939.0,
+			"rotation": 0,
+			"index": "aG",
+			"parentId": "page:dlqhandling",
+			"isLocked": false,
+			"opacity": 1,
+			"meta": {},
+			"props": {
+				"kind": "arc",
+				"labelColor": "black",
+				"color": "black",
+				"fill": "none",
+				"dash": "draw",
+				"size": "s",
+				"arrowheadStart": "none",
+				"arrowheadEnd": "arrow",
+				"font": "sans",
+				"start": {
+					"x": 0,
+					"y": 0
+				},
+				"end": {
+					"x": 210.0,
+					"y": 221.0
+				},
+				"bend": 0,
+				"richText": {
+					"type": "doc",
+					"content": []
+				},
+				"labelPosition": 0.5,
+				"scale": 1,
+				"elbowMidPoint": 0.5
+			}
+		},
+		{
+			"typeName": "binding",
+			"id": "binding:dlq_ar_start",
+			"type": "arrow",
+			"fromId": "shape:dlq_a_ar",
+			"toId": "shape:dlq_a",
+			"meta": {},
+			"props": {
+				"terminal": "start",
+				"normalizedAnchor": {
+					"x": 0.5,
+					"y": 0.5
+				},
+				"isExact": false,
+				"isPrecise": false,
+				"snap": "none"
+			}
+		},
+		{
+			"typeName": "binding",
+			"id": "binding:dlq_ar_end",
+			"type": "arrow",
+			"fromId": "shape:dlq_a_ar",
+			"toId": "shape:dlq_r",
+			"meta": {},
+			"props": {
+				"terminal": "end",
+				"normalizedAnchor": {
+					"x": 0.5,
+					"y": 0.5
+				},
+				"isExact": false,
+				"isPrecise": false,
+				"snap": "none"
+			}
+		},
+		{
+			"id": "shape:dlq_a_br",
+			"typeName": "shape",
+			"type": "arrow",
+			"x": 510.0,
+			"y": 939.0,
+			"rotation": 0,
+			"index": "aH",
+			"parentId": "page:dlqhandling",
+			"isLocked": false,
+			"opacity": 1,
+			"meta": {},
+			"props": {
+				"kind": "arc",
+				"labelColor": "black",
+				"color": "black",
+				"fill": "none",
+				"dash": "draw",
+				"size": "s",
+				"arrowheadStart": "none",
+				"arrowheadEnd": "arrow",
+				"font": "sans",
+				"start": {
+					"x": 0,
+					"y": 0
+				},
+				"end": {
+					"x": -140.0,
+					"y": 221.0
+				},
+				"bend": 0,
+				"richText": {
+					"type": "doc",
+					"content": []
+				},
+				"labelPosition": 0.5,
+				"scale": 1,
+				"elbowMidPoint": 0.5
+			}
+		},
+		{
+			"typeName": "binding",
+			"id": "binding:dlq_br_start",
+			"type": "arrow",
+			"fromId": "shape:dlq_a_br",
+			"toId": "shape:dlq_b",
+			"meta": {},
+			"props": {
+				"terminal": "start",
+				"normalizedAnchor": {
+					"x": 0.5,
+					"y": 0.5
+				},
+				"isExact": false,
+				"isPrecise": false,
+				"snap": "none"
+			}
+		},
+		{
+			"typeName": "binding",
+			"id": "binding:dlq_br_end",
+			"type": "arrow",
+			"fromId": "shape:dlq_a_br",
+			"toId": "shape:dlq_r",
+			"meta": {},
+			"props": {
+				"terminal": "end",
+				"normalizedAnchor": {
+					"x": 0.5,
+					"y": 0.5
+				},
+				"isExact": false,
+				"isPrecise": false,
+				"snap": "none"
+			}
+		},
+		{
+			"id": "shape:dlq_a_rv",
+			"typeName": "shape",
+			"type": "arrow",
+			"x": 370.0,
+			"y": 1160.0,
+			"rotation": 0,
+			"index": "aI",
+			"parentId": "page:dlqhandling",
+			"isLocked": false,
+			"opacity": 1,
+			"meta": {},
+			"props": {
+				"kind": "arc",
+				"labelColor": "black",
+				"color": "black",
+				"fill": "none",
+				"dash": "draw",
+				"size": "s",
+				"arrowheadStart": "none",
+				"arrowheadEnd": "arrow",
+				"font": "sans",
+				"start": {
+					"x": 0,
+					"y": 0
+				},
+				"end": {
+					"x": 170.0,
+					"y": 209.0
+				},
+				"bend": 0,
+				"richText": {
+					"type": "doc",
+					"content": []
+				},
+				"labelPosition": 0.5,
+				"scale": 1,
+				"elbowMidPoint": 0.5
+			}
+		},
+		{
+			"typeName": "binding",
+			"id": "binding:dlq_rv_start",
+			"type": "arrow",
+			"fromId": "shape:dlq_a_rv",
+			"toId": "shape:dlq_r",
+			"meta": {},
+			"props": {
+				"terminal": "start",
+				"normalizedAnchor": {
+					"x": 0.5,
+					"y": 0.5
+				},
+				"isExact": false,
+				"isPrecise": false,
+				"snap": "none"
+			}
+		},
+		{
+			"typeName": "binding",
+			"id": "binding:dlq_rv_end",
+			"type": "arrow",
+			"fromId": "shape:dlq_a_rv",
+			"toId": "shape:dlq_v",
+			"meta": {},
+			"props": {
+				"terminal": "end",
+				"normalizedAnchor": {
+					"x": 0.5,
+					"y": 0.5
+				},
+				"isExact": false,
+				"isPrecise": false,
+				"snap": "none"
+			}
+		},
+		{
+			"id": "shape:dlq_a_dv",
+			"typeName": "shape",
+			"type": "arrow",
+			"x": 875.0,
+			"y": 950.0,
+			"rotation": 0,
+			"index": "aJ",
+			"parentId": "page:dlqhandling",
+			"isLocked": false,
+			"opacity": 1,
+			"meta": {},
+			"props": {
+				"kind": "arc",
+				"labelColor": "black",
+				"color": "black",
+				"fill": "none",
+				"dash": "draw",
+				"size": "s",
+				"arrowheadStart": "none",
+				"arrowheadEnd": "arrow",
+				"font": "sans",
+				"start": {
+					"x": 0,
+					"y": 0
+				},
+				"end": {
+					"x": -335.0,
+					"y": 419.0
+				},
+				"bend": 0,
+				"richText": {
+					"type": "doc",
+					"content": []
+				},
+				"labelPosition": 0.5,
+				"scale": 1,
+				"elbowMidPoint": 0.5
+			}
+		},
+		{
+			"typeName": "binding",
+			"id": "binding:dlq_dv_start",
+			"type": "arrow",
+			"fromId": "shape:dlq_a_dv",
+			"toId": "shape:dlq_d",
+			"meta": {},
+			"props": {
+				"terminal": "start",
+				"normalizedAnchor": {
+					"x": 0.5,
+					"y": 0.5
+				},
+				"isExact": false,
+				"isPrecise": false,
+				"snap": "none"
+			}
+		},
+		{
+			"typeName": "binding",
+			"id": "binding:dlq_dv_end",
+			"type": "arrow",
+			"fromId": "shape:dlq_a_dv",
+			"toId": "shape:dlq_v",
+			"meta": {},
+			"props": {
+				"terminal": "end",
+				"normalizedAnchor": {
+					"x": 0.5,
+					"y": 0.5
+				},
+				"isExact": false,
+				"isPrecise": false,
+				"snap": "none"
+			}
+		}
+	]
+}

@@ -8,7 +8,10 @@ documentation set (the build/ship half is in [Stage 7 — Deployment](../07-depl
   the three pillars (metrics/logs/traces via Prometheus / Grafana / Loki / OpenTelemetry / Sentry),
   **domain SLIs** (checkout, check-in, outbox lag, RabbitMQ queue depth), **SLOs & error budgets**,
   alerting & on-call, incident management with **blameless postmortems**, the shift-left **security
-  gates + PCI/PDPA controls**, **backups / PITR / DR**, and a runbooks index.
+  gates + PCI/PDPA controls**, **backups / PITR / DR**, and a runbooks index — including **§8.1
+  dead-letter handling**, the one runbook with no automation behind it.
+- **[dead-letter-handling/](dead-letter-handling/)** — diagram sources for §8.1 (Mermaid source,
+  rendered PNG, tldraw canvas) and how to regenerate them.
 
 The DevOps **overview, CI/CD, and infrastructure** docs are in
 [Stage 7 — Deployment](../07-deployment/devops-architecture.md). Together they form the platform's

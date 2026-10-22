@@ -103,7 +103,7 @@ Service Level Indicators are measured from telemetry, tenant-agnostic in aggrega
 | **Check-in scan latency** | p95 `POST /check-ins` response time | check-in pool histogram | Queue-at-the-door experience |
 | **Outbox lag** | age (seconds) of the oldest unpublished `outbox` row | relay gauge / DB query exporter | Async side-effects freshness; relay health |
 | **RabbitMQ queue depth** | ready + unacked messages per queue | RabbitMQ exporter | Consumer keeping up; backpressure signal |
-| **DLQ depth** | messages parked in `eventa.dlx` dead-letter/parking queues | RabbitMQ exporter | Poison messages / failing handlers |
+| **DLQ depth** | messages parked in `eventa.worker.dlq` (via the `eventa.events.dlx` dead-letter exchange) | RabbitMQ exporter | Poison messages / failing handlers |
 | **Discovery latency** | p95 `GET /discover` and `GET /events/:slug` (cache + replica path) | api / web SSR histogram | First impression; SEO landing speed |
 | **Payment webhook processing** | success rate & p95 latency of signature-verified Stripe/PromptPay webhooks reaching a terminal state | api webhook handler metrics | Payment = source of truth (SAD §7.1); reconciliation |
 | **Notification delivery** | order-confirmed email/SMS dispatched ÷ orders confirmed (within 5 min) | worker metrics + delivery log | Attendee gets ticket/receipt |
@@ -277,7 +277,8 @@ stores a PAN (SAD §9). The pipeline enforces the scope boundary:
 | Concern | Control |
 |---|---|
 | **Secret storage** | Managed secrets manager; surfaced to K8s via **External Secrets**; never in Git (SAD/[overview](../07-deployment/devops-architecture.md)) |
-| **Rotation** | DB/Redis/RabbitMQ creds and API keys rotated on schedule (≤ 90 days) + on-demand after any suspected exposure; Stripe keys rotated per Stripe guidance |
+| **Rotation** | DB/Redis/RabbitMQ creds and API keys rotated on schedule (≤ 90 days) + on-demand after any suspected exposure; Stripe keys rotated per Stripe guidance; the **Google OAuth client secret** (`GOOGLE_CALENDAR_CLIENT_SECRET`) by adding a second secret in Google Cloud, rolling eventa-api and eventa-worker onto it together, then disabling the old one — a refresh made with a disabled secret fails as `invalid_client`, which the worker parks as refused rather than marking the connection expired |
+| **Encryption key** | `SECRET_ENCRYPTION_KEY` has no re-encryption tool, so rotating it **orphans every cipher written under the old key**: `payment_credentials` (Stripe secret and webhook secret), `two_factors.secret_encrypted`, and `calendar_connections.refresh_token_cipher` — every workspace's Admin must then reconnect Google Calendar, and until they do each sync ends "The Google Calendar connection could not be read." and parks. eventa-api and eventa-worker must change it together, to the same value; find every cipher column by name in `information_schema.columns` before rotating |
 | **Leaked-secret response** | gitleaks hit → revoke + rotate immediately, rewrite history if needed, postmortem |
 | **Least privilege** | Per-workload IAM roles / service accounts; check-in pool scoped to its needs; no shared "god" credentials |
 | **Audit** | Business **audit log** (SAD §9) + infra audit trail (cloud audit logs, K8s API audit, Argo CD sync history, Git history) retained in-region; who-changed-what for infra, deploys, and secret access |
@@ -339,7 +340,7 @@ Runbooks live in the ops repo (`/runbooks`), are linked from every alert rule, a
 | **Payment webhook backlog** | Webhook processing SLO breach | Inspect signature failures, replay from Stripe dashboard, scale api |
 | **Failed payout / Stripe Connect issue** | Payout error alert / finance report | Reconcile ledger vs. Stripe, retry payout, escalate to finance + Stripe |
 | **RabbitMQ backlog / queue depth high** | Queue depth > 5× baseline | Scale worker HPA, check consumer errors, inspect slow handler, add temporary consumers |
-| **DLQ / poison messages** | DLQ depth > 0 rising | Inspect parked messages, fix handler, **replay** from parking queue, drop confirmed-bad after review |
+| **DLQ / poison messages** | DLQ depth > 0 rising | Inspect parked messages, fix handler, **replay** from parking queue, drop confirmed-bad after review — drawn in full in §8.1 |
 | **Outbox lag / relay stalled** | Outbox lag > 120 s | Check relay health & DB poll, restart relay, verify publisher confirms, check RabbitMQ reachability |
 | **DB failover / primary unreachable** | Postgres primary down (Sev1) | Trigger/confirm managed failover, verify app reconnect, check replica lag, PITR if corruption |
 | **DB migration failure** | Gated pre-deploy migration job fails | Halt deploy (auto), roll migration back, restore from PITR if partial, re-run after fix |
@@ -349,6 +350,81 @@ Runbooks live in the ops repo (`/runbooks`), are linked from every alert rule, a
 | **Redis outage / cache cold** | Redis unreachable / hit-rate collapse | Fail over managed Redis, protect DB (rate-limit/shed), warm cache, verify sessions |
 | **Elevated 5xx / bad release** | Golden-signal error spike post-deploy | GitOps revert to last-good SHA (automated rollback), confirm canary metrics |
 | **Region / AZ degradation** | Multi-AZ health alarms | Execute DR plan, shift traffic, validate data-tier standby, comms + status page |
+| **Calendar sync failing / connection expired / provider mismatch between api and worker** | Meetings stuck `failed` or `not_connected`; parked `meeting.sync_requested` messages; the worker's boot line `Calendar provider: <name>` differs from what eventa-api resolves | Read the meeting's `sync_error`: *unavailable* → check Google's status, let the ladder run, then **Send it now** or replay; *expired* → an Admin reconnects on Settings → Integrations, whose resync re-sends every unsynced meeting; *could not be read* → eventa-api and eventa-worker have different `SECRET_ENCRYPTION_KEY`s, align them and reconnect; *refused (HTTP n)* → fix the Google Cloud project (Calendar API enabled, client valid), then replay; `not_connected` with no `sync_error` under a "Connected" card → the two services resolve different `CALENDAR_PROVIDER`s, align them and restart the worker. Meetings published before the worker first bound `meeting.sync_requested` were dropped unrouted — **Send it now** or a reconnect re-sends them |
+
+### 8.1 Dead-letter handling
+
+The **DLQ / poison messages** row above is the one runbook with no automation behind it — past the
+parking queue every step is a person — so the path is drawn here in full. Queue names come from the
+consumer's own config (`${RABBITMQ_EXCHANGE}.dlx`, `${RABBITMQ_QUEUE}.dlq`), which in every
+environment to date resolve to `eventa.events.dlx` and `eventa.worker.dlq`. The **handling**
+procedure on its own — what a person does once a message has parked — is drawn separately in
+[`dead-letter-handling/`](dead-letter-handling/), as a PNG and an editable tldraw canvas.
+
+```mermaid
+flowchart TD
+    R["relay<br/>publisher confirms"] --> X["eventa.events<br/>topic exchange"]
+    X --> Q["eventa.worker<br/>work queue"]
+    Q --> H{"handler outcome"}
+    H -->|success| ACK["ack<br/>+ record message id completed"]
+    H -->|throws| C{"retryable<br/>and ladder left?"}
+    C -->|"yes, attempts 1-4"| D[("eventa.worker.retry.5000 · .30000<br/>· .120000 · .600000<br/>TTL per rung, no consumer")]
+    D -->|"TTL lapses, dead-letters back"| Q
+    C -->|"no: 5th attempt, or poison"| DLX["eventa.events.dlx<br/>fanout exchange"]
+    DLX --> DLQ[("eventa.worker.dlq<br/>durable · persistent · no TTL · no consumer")]
+    DLQ --> T{"triage, by hand"}
+    T -->|"dependency was down past the ladder"| F1["fix the dependency"]
+    T -->|"poison payload or handler bug"| F2["fix the handler, deploy"]
+    T -->|"unprocessable, referent gone"| F3["drop after review"]
+    F1 --> RP["replay: republish to eventa.worker<br/>stripping x-attempt"]
+    F2 --> RP
+    RP --> Q
+```
+
+**The ladder is the automated half.** Four rungs — 5 s, 30 s, 2 min, 10 min — give a message five
+attempts across roughly twelve and a half minutes. Each rung is a queue with a message TTL and *no
+consumer*, whose own dead-letter settings return the message to the work queue once the TTL lapses;
+that is how the delay happens without a scheduler. The bound is deliberate: it covers the failures that
+fix themselves — a restarting database, a greylisting mail server, a brief partition — and declares
+anything slower a human's problem rather than holding a message so long nobody looks at it.
+
+**Two routes reach the parking queue:** the ladder running out, or a failure classified permanent on
+arrival (a body that will not parse, an SMTP envelope rejection). The second skips the ladder entirely,
+because retrying a message that cannot parse only delays the diagnosis.
+
+**Meeting sync (`meeting.sync_requested`) classifies by Google's answer.** `invalid_grant` on the
+token refresh and `insufficientPermissions` from Calendar are **neither retried nor parked**: the
+handler marks the workspace's connection `expired` (only while it still holds the token it used),
+writes the meeting `not_connected` and **acks**, because only an Admin's reconnect can fix them. A
+401 from the Calendar API (the next attempt refreshes a new access token), a 429, a 5xx, a quota 403
+(`rateLimitExceeded`, `userRateLimitExceeded`, `quotaExceeded`, `dailyLimitExceeded`), a network error
+or a timeout goes through the ladder, and so do a busy per-meeting lock and a Meet link Google has not
+finished making. Any other 4xx — a non-quota 403 such as `accessNotConfigured` included — is
+permanent: the meeting reads "Google Calendar refused the request (HTTP n)." and the message parks at
+once. That includes any 400 or 401 from the **token endpoint** other than `invalid_grant`, such as
+`invalid_client` after the client secret was disabled (§6.3): a 401 is retried only when the Calendar
+API sends it, never when the token refresh does. A refresh token that will not decrypt also parks at
+once. Replaying a parked meeting message is safe at any age: the handler reconciles from the
+meeting's current row rather than the payload, and **Send it now** on the meeting does the same
+without touching the queue.
+
+**Parking is terminal and durable.** Messages are published persistent and the queue is durable with no
+TTL, no max-length and no consumer, so a parked message survives a broker restart and waits
+indefinitely. That is the design intent — a parking queue, not a buffer — and the operational
+consequence is that nothing drains it on its own.
+
+**Two traps on replay.** A parked message still carries `x-attempt` at its final value, so its next
+failure parks it again at once: strip the header or the replay buys exactly one attempt. And completion
+is recorded only *after* a handler succeeds, while the idempotency record expires
+(`IDEMPOTENCY_TTL_SECONDS`, 24 h by default) — so replaying something parked for longer than that will
+repeat the side effect of a handler that half-succeeded, sending the mail a second time.
+
+**What tells you it happened.** The worker logs the park at error level with a redacted error summary
+(`name`, `code`, `reason`, `at`, plus `correlation_id`, `message_id`, `routing_key`) and counts it as
+`messages_handled_total{outcome="parked"}`. The payload is deliberately *not* in the log, so reading a
+parked body means peeking the queue. Depth itself is not a worker metric — it comes from the RabbitMQ
+exporter against the DLQ-depth SLI in §2, with the `> 0` warn / `> 10` or rising 15 min page thresholds
+from §3.
 
 ---
 
