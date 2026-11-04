@@ -309,8 +309,8 @@ NFRs · no known S1/S2 defects · PO-accepted in staging. (Matches the [project 
 
 ## Appendix A — Engineering standards (house rules)
 
-The enforced standard for all backend code (`eventa-api` + `eventa-worker`); mirrored in each repo's
-`CLAUDE.md`. Built for long-term maintainability — **priority order: Correctness → Maintainability →
+The enforced standard for all backend code (`eventa-api` + `eventa-worker`); each repo's `AGENTS.md`
+points here. Built for long-term maintainability — **priority order: Correctness → Maintainability →
 Readability → Testability → Performance → Developer Experience.** Never sacrifice architecture for
 short-term speed. Stack-adapted: **Drizzle ORM** + Postgres (not TypeORM), **RabbitMQ** for events/jobs,
 **pino** logging, `ConfigService` (zod) for config, `DomainException`/`ErrorCode` for errors.

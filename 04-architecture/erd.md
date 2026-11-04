@@ -18,8 +18,8 @@
 > and cardinalities exist right now; it says nothing about *why* any of them
 > exist. The repository guide now draws the same line — the live schema is the
 > reference for the data model, and both this ERD and the design catalog
-> [entities.md](entities.md) **describe** it (`CLAUDE.md`, *Architecture is
-> layered*) — so the catalog is not a rival inventory to be out-counted but the
+> [entities.md](entities.md) **describe** it (`AGENTS.md`, *The live schema is the
+> data model*) — so the catalog is not a rival inventory to be out-counted but the
 > data dictionary a reader goes to for a table's purpose. The 58 here is the
 > implementation inventory, and a shipped table needs an entry in both documents;
 > where either lags the schema, the document is what gets corrected. See
@@ -2317,7 +2317,7 @@ Derivation note claimed the database wins. Both could not govern, and the
 disagreement was left open here because it was a decision for whoever owned those
 files, not a fact readable out of `pg_catalog`.
 
-`CLAUDE.md` (*Architecture is layered*) now settles it, and the ruling is not that
+`AGENTS.md` (*The live schema is the data model*) now settles it, and the ruling is not that
 one document beat the other:
 
 - **The live PostgreSQL schema is the reference for the data model.** Where a
