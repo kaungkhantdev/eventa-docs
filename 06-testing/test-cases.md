@@ -5,28 +5,28 @@
 | **Author** | QA Engineer |
 | **Version** | 1.0 · 2026-07-23 |
 | **Companion** | [test-plan.md](test-plan.md) |
-| **Scope** | 354 test cases across 13 epics, tracing to the 162 user stories in the [product backlog](../01-requirements-and-features/functional-requirements.md) |
+| **Scope** | 374 test cases across 13 epics, tracing to the 165 user stories in the [product backlog](../01-requirements-and-features/functional-requirements.md) |
 
-> Each test case is derived from a user story's Given/When/Then acceptance criteria, and lists its traceability (`US-*`), priority, type, preconditions, test data, steps, and expected result. Priority defaults from MoSCoW (Must→High, Should→Medium, Could→Low). See [test-plan.md](test-plan.md) for strategy, environment, defect process, and closure.
+> Each test case is derived from a user story's Given/When/Then acceptance criteria, and lists its traceability (`US-*`), priority, type, preconditions, test data, steps, and expected result. Priority defaults from MoSCoW (Must→High, Should→Medium, Could→Low); a case of a **Won't** (withdrawn) story keeps its id, takes priority Won't and is not run. See [test-plan.md](test-plan.md) for strategy, environment, defect process, and closure.
 
 ## Coverage & traceability
 
-| # | Epic (test cases) | Stories covered | Test cases | High | Med | Low |
-|---|------|:---:|:---:|:---:|:---:|:---:|
-| 1 | [Accounts & Sign-in](#tc-e01) | 12 | 24 | 19 | 5 | 0 |
-| 2 | [Configure the Workspace & Team](#tc-e02) | 13 | 29 | 16 | 11 | 2 |
-| 3 | [Create & Manage Events](#tc-e03) | 15 | 39 | 24 | 13 | 2 |
-| 4 | [Public Event Pages](#tc-e04) | 10 | 22 | 12 | 9 | 1 |
-| 5 | [Sell Tickets & Run Promotions](#tc-e05) | 12 | 25 | 9 | 13 | 3 |
-| 6 | [Discover & Register for Events](#tc-e06) | 15 | 42 | 31 | 9 | 2 |
-| 7 | [Communicate with Attendees](#tc-e07) | 10 | 20 | 3 | 13 | 4 |
-| 8 | [Manage Registrations & Admit Attendees](#tc-e08) | 14 | 30 | 17 | 13 | 0 |
-| 9 | [Get Paid & Manage Finances](#tc-e09) | 14 | 27 | 20 | 7 | 0 |
-| 10 | [Build the Event Program](#tc-e10) | 13 | 24 | 14 | 9 | 1 |
-| 11 | [Organizer Home & Dashboard](#tc-e11) | 13 | 25 | 14 | 9 | 2 |
-| 12 | [Coordinate Meetings](#tc-e12) | 9 | 22 | 8 | 12 | 2 |
-| 13 | [Measure Performance (Reports)](#tc-e13) | 12 | 25 | 10 | 13 | 2 |
-| | **Total** | **162** | **354** | **197** | **136** | **21** |
+| # | Epic (test cases) | Stories covered | Test cases | High | Med | Low | Won't |
+|---|------|:---:|:---:|:---:|:---:|:---:|:---:|
+| 1 | [Accounts & Sign-in](#tc-e01) | 12 | 24 | 19 | 5 | 0 | 0 |
+| 2 | [Configure the Workspace & Team](#tc-e02) | 13 | 29 | 16 | 11 | 2 | 0 |
+| 3 | [Create & Manage Events](#tc-e03) | 15 | 39 | 24 | 13 | 2 | 0 |
+| 4 | [Public Event Pages](#tc-e04) | 10 | 22 | 12 | 9 | 1 | 0 |
+| 5 | [Sell Tickets & Run Promotions](#tc-e05) | 12 | 25 | 9 | 13 | 3 | 0 |
+| 6 | [Discover & Register for Events](#tc-e06) | 15 | 42 | 31 | 9 | 2 | 0 |
+| 7 | [Communicate with Attendees](#tc-e07) | 10 | 21 | 3 | 14 | 4 | 0 |
+| 8 | [Manage Registrations & Admit Attendees](#tc-e08) | 14 | 30 | 17 | 13 | 0 | 0 |
+| 9 | [Get Paid & Manage Finances](#tc-e09) | 14 | 27 | 20 | 7 | 0 | 0 |
+| 10 | [Build the Event Program](#tc-e10) | 13 | 24 | 14 | 9 | 1 | 0 |
+| 11 | [Organizer Home & Dashboard](#tc-e11) | 16 | 44 | 21 | 18 | 3 | 2 |
+| 12 | [Coordinate Meetings](#tc-e12) | 9 | 22 | 8 | 12 | 2 | 0 |
+| 13 | [Measure Performance (Reports)](#tc-e13) | 12 | 25 | 10 | 13 | 2 | 0 |
+| | **Total** | **165** | **374** | **204** | **146** | **22** | **2** |
 
 ---
 
@@ -2323,12 +2323,22 @@ Epic E7 — Communicate with Attendees. Area code: MSG. Locale: Thai market (฿
 
 ### TC-MSG-08 — Staff/Team member sees only own feed and has no compose/broadcast/log access
 - **Traces:** US-MSG-03  ·  **Priority:** Medium  ·  **Type:** Negative
-- **Preconditions:** A Staff/Team member account without finance access, part of an organizer's workspace.
-- **Test data:** Staff member "Aran"; workspace has payment and payout notifications belonging to finance-access members.
+- **Preconditions:** A Staff/Team member account with the default Staff role (no finance access; may not approve or reject registrations or manage ticket types), part of an organizer's workspace.
+- **Test data:** Staff member "Aran"; workspace has payment and payout notifications belonging to finance-access members, and registrations awaiting approval and a declined payment are outstanding.
 - **Steps:**
   1. Sign in as the Staff member and open the notification feed.
-  2. Look for other members' activity, payment/payout items, and controls to compose messages, edit templates, broadcast, view the delivery log, or manage feedback.
-- **Expected result:** Only the staff member's own personal activity is shown; payment/payout items (needing finance access) are not visible. No controls to compose, edit templates, broadcast, view the delivery log, or manage feedback are available. Ties to the Staff-scope acceptance criterion.
+  2. Look for other members' activity, payment/payout items, operational alerts, and controls to compose messages, edit templates, broadcast, view the delivery log, or manage feedback.
+- **Expected result:** Only the staff member's own personal activity is shown; payment/payout items (needing finance access) are not visible, and neither is any operational alert, because a default Staff member can act on none of them (US-DASH-06). No controls to compose, edit templates, broadcast, view the delivery log, or manage feedback are available. Ties to the Staff-scope acceptance criterion.
+
+### TC-MSG-08b — The feed lists every unresolved alert the member can act on, and drops one once it is resolved
+- **Traces:** US-MSG-03  ·  **Priority:** Medium  ·  **Type:** Functional
+- **Preconditions:** Case A: signed in as Admin. Case B: signed in as an Organizer whose finance access has been removed (US-SET-12), who still approves registrations and manages ticket types.
+- **Test data:** The outstanding issues of TC-DASH-10: two declined payments for Tech Summit 2026, three Bangkok Jazz Night registrations awaiting approval, one nearly-sold-out Thai Street Food Festival ticket type and one Tech Summit 2026 registration awaiting approval — four alerts, one more than home's To do card shows.
+- **Steps:**
+  1. Case A: open the notification feed and look for each of the four alerts; choose the Bangkok Jazz Night approvals alert.
+  2. Case A: approve or reject the three registrations in the registrations module, then reopen the feed.
+  3. Case B: open the notification feed.
+- **Expected result:** (1) All four alerts are listed, each with its text and a link — including the Tech Summit 2026 approval alert that home's To do card leaves out — and the link opens the registrations module on the Bangkok Jazz Night registrations awaiting approval. (2) The Bangkok Jazz Night alert is no longer listed; the other three still are. (3) The two approval alerts and the ticket-type alert are listed; the declined-payment alert is not, and nothing stands in for it. Ties to the operational-alerts acceptance criterion.
 
 ---
 
@@ -3535,30 +3545,52 @@ Locale defaults: Currency ฿ (THB), VAT 7% tracked separately, timezone Asia/Ba
 
 ## US-DASH-02 — Today's registrations at a glance
 
-### TC-DASH-04 — Today's sign-up count and newest previews shown for team member with registration access
+### TC-DASH-04 — Today's count, the 3 newest of today's sign-ups, and "See all"
 - **Traces:** US-DASH-02 · **Priority:** High · **Type:** Functional
-- **Preconditions:** Signed in as a team member permitted to view registrations. Several registrations exist for events, some created today (Bangkok calendar day), some earlier.
-- **Test data:** 3 registrations today at 09:05, 11:40, 14:20 (Bangkok); 1 registration from yesterday 23:50 Bangkok that must NOT count as today.
+- **Preconditions:** Signed in as a team member permitted to view registrations. Registrations exist from today (Bangkok calendar day) and from earlier days.
+- **Test data:** 4 registrations today at 09:05, 09:47, 10:02 and 10:24 (Bangkok); 1 registration from yesterday 23:50 Bangkok that must NOT count as today.
 - **Steps:**
-  1. Open home and read the registrations panel count badge.
-  2. Inspect the previewed newest sign-ups.
-  3. Choose "View all registrations".
-- **Expected result:** Count badge shows 3 (today only, Bangkok calendar day; yesterday's late entry excluded). Newest sign-ups preview each show attendee name, their event + ticket type, and the time (Bangkok, in the UI language). "View all registrations" navigates to the registrations list.
+  1. Open home and read the Today's Registrations count badge.
+  2. Inspect the listed sign-ups and their order.
+  3. Choose "See all".
+- **Expected result:** Count badge shows 4 (today only, Bangkok calendar day; yesterday's late entry excluded). Exactly 3 sign-ups are listed, newest first — 10:24, 10:02, 09:47; the 09:05 one is not listed — each with attendee name, event · ticket type, and the time (Bangkok, in the UI language). "See all" navigates to the registrations list.
 
-### TC-DASH-05 — Empty state when no one has registered today
+### TC-DASH-05 — Empty state with no sign-ups today; earlier days never fill the list
 - **Traces:** US-DASH-02 · **Priority:** Medium · **Type:** Edge
-- **Preconditions:** Signed in as a team member with registration access. No registrations exist with a Bangkok "today" timestamp (older registrations may exist).
-- **Test data:** Last registration was yesterday 22:00 Bangkok.
+- **Preconditions:** Signed in as a team member with registration access.
+- **Test data:** Case A: the last registration was yesterday 22:00 Bangkok; none today. Case B: one registration today at 08:10 Bangkok, plus three from yesterday.
 - **Steps:**
-  1. Open home and view the today's-registrations panel.
-- **Expected result:** Panel clearly shows "no registrations yet today" (not a zero-count list of previews and not stale entries).
+  1. Case A: open home and view the today's-registrations panel.
+  2. Case B: open home and view the panel.
+- **Expected result:** Case A — the panel clearly shows "no registrations yet today" (not a zero-count list of previews and not stale entries). Case B — the badge shows 1 and only the 08:10 sign-up is listed; none of yesterday's three is used to fill the empty places.
+
+### TC-DASH-05b — "Add registration" opens a hand-added registration for members who may add one, and is not offered to Staff
+- **Traces:** US-DASH-02 · **Priority:** High · **Type:** Functional
+- **Preconditions:** "Tech Summit 2026" is open for registration. Two team members: an Organizer and a Staff member, both on their default roles (Staff can view registrations but not add them).
+- **Test data:** —
+- **Steps:**
+  1. As the Organizer, open home and choose "Add registration".
+  2. Close the form without saving and return to home.
+  3. As the Staff member, open home and look for "Add registration".
+- **Expected result:** (1) The add-a-registration-by-hand form of US-REG-03 opens. (2) No registration was created and today's count is unchanged — home created nothing. (3) Staff sees today's registrations and "See all", but no "Add registration" action.
+
+### TC-DASH-05c — Only confirmed registrations are counted and listed
+- **Traces:** US-DASH-02 · **Priority:** High · **Type:** Edge
+- **Preconditions:** Signed in as a team member permitted to view registrations. Tech Summit 2026 requires approval for its VIP ticket.
+- **Test data:** Today (Bangkok): confirmed registrations at 09:10 and 09:40; a VIP registration awaiting approval at 10:05; a waitlisted registration at 10:20; a registration rejected at 10:30.
+- **Steps:**
+  1. Open home and read the Today's Registrations badge and list.
+  2. Approve the 10:05 VIP registration in the registrations module; refresh home.
+- **Expected result:** (1) The badge reads 2 and only the 09:40 and 09:10 sign-ups are listed; the awaiting-approval, waitlisted and rejected registrations appear nowhere on the card. (2) The badge reads 3 and the 10:05 sign-up now heads the list.
 
 ---
 
-## US-DASH-03 — Today's meetings
+## US-DASH-03 — Today's meetings  ·  **Won't**
+
+_Withdrawn with US-DASH-03 on 2026-11-04 (Home redesign); kept so its id stays valid — not run._
 
 ### TC-DASH-06 — Today's meetings previewed earliest-first with empty-state and schedule shortcut verified
-- **Traces:** US-DASH-03 · **Priority:** Medium · **Type:** Functional
+- **Traces:** US-DASH-03 · **Priority:** Won't · **Type:** Functional
 - **Preconditions:** Signed in as organizer.
 - **Test data:** Two meetings scheduled today (Bangkok): "Sponsor sync" 15:00–15:30 with counterpart "Nok"; "Vendor call" 10:00–10:45 with counterpart "Arun". No meetings scheduled after these for today.
 - **Steps:**
@@ -3571,15 +3603,16 @@ Locale defaults: Currency ฿ (THB), VAT 7% tracked separately, timezone Asia/Ba
 
 ## US-DASH-04 — Upcoming events progress
 
-### TC-DASH-07 — Upcoming event card shows days-remaining chip, attendee preview, and capacity progress
+### TC-DASH-07 — The 3 soonest upcoming events with days-left chip, attendee preview and progress; "See all"
 - **Traces:** US-DASH-04 · **Priority:** Medium · **Type:** Functional
-- **Preconditions:** Signed in as organizer. Multiple upcoming events exist. Today's Bangkok date is 2026-07-27.
-- **Test data:** Event A starts 2026-08-01 (5 days out), capacity 100, sold 83; Event B starts 2026-08-10; some attendees registered on Event A.
+- **Preconditions:** Signed in as organizer. Today's Bangkok date is 2026-07-19.
+- **Test data:** Four upcoming events: Tech Summit 2026 starts 2026-07-22 (capacity 100, 83 sold, some attendees registered); Bangkok Jazz Night starts 2026-07-31; Thai Street Food Festival starts 2026-08-03; UX Bangkok Meetup starts 2026-08-20.
 - **Steps:**
-  1. Open home and view the upcoming-events panel.
-  2. Read Event A's days-remaining chip, attendee preview, and progress bar.
-  3. Confirm ordering of cards.
-- **Expected result:** Event A card shows a days-remaining chip ("5 days" / Thai equivalent), a preview of who's attending, and a progress bar reading 83% (83 of 100 seats). Soonest-starting event (A) appears before B; only a small number of cards shown, with a link to the full events list.
+  1. Open home and view the Upcoming Events panel.
+  2. Read Tech Summit 2026's days-remaining chip, attendee preview, and progress bar.
+  3. Note which cards are shown and in what order.
+  4. Choose "See all".
+- **Expected result:** Exactly 3 cards, soonest first: Tech Summit 2026, Bangkok Jazz Night, Thai Street Food Festival; UX Bangkok Meetup is not shown. Tech Summit 2026 shows a days-remaining chip ("3 days left" / Thai equivalent), a preview of who's attending, and a progress bar reading 83% (83 of 100 seats). "See all" navigates to the events list.
 
 ### TC-DASH-08 — Event starting today shows "Today" chip; empty state when no upcoming events
 - **Traces:** US-DASH-04 · **Priority:** Medium · **Type:** Edge
@@ -3592,47 +3625,101 @@ Locale defaults: Currency ฿ (THB), VAT 7% tracked separately, timezone Asia/Ba
 
 ---
 
-## US-DASH-05 — Active-events activity share
+## US-DASH-05 — Seats sold across active events
 
-### TC-DASH-09 — Activity-share ring shows per-event share, legend, and total; empty state
+### TC-DASH-09 — Ring shows each active event's sold seats as a share of combined capacity, "Seats left", a legend and a bare count
 - **Traces:** US-DASH-05 · **Priority:** Low · **Type:** Functional
 - **Preconditions:** Signed in as organizer.
-- **Test data:** Case A: 3 active events with differing sign-up activity. Case B: 0 active events.
+- **Test data:** Three active events — Tech Summit 2026 (100 seats, 50 sold), Bangkok Jazz Night (200 seats, 100 sold), Thai Street Food Festival (200 seats, 150 sold); plus a draft event with 300 seats, a completed event and a cancelled event.
 - **Steps:**
-  1. Case A: open home; inspect the ring, its color-keyed legend of event names, and the center number.
-  2. Choose "See all".
-  3. Case B: with no active events, view the panel.
-- **Expected result:** Case A — ring shows each event's share of activity, a color-keyed legend of event names, and the total count of active events (3) in the center; "See all" navigates to the events list. Case B — panel shows "no active events".
+  1. Open home and inspect the ring's segments.
+  2. Read the legend and the centre of the ring.
+  3. Choose "See all".
+- **Expected result:** Three coloured segments, largest first — Thai Street Food Festival 30%, Bangkok Jazz Night 20%, Tech Summit 2026 10% — and a grey "Seats left" track of 40%; the draft, completed and cancelled events add nothing (the draft's 300 seats are not in the combined capacity). The legend names the three events in the same order, then "Seats left". The centre shows "3" and no label. "See all" navigates to the events list.
+
+### TC-DASH-09b — Ring agrees with the dashboard's capacity filled; unlimited tickets add no segment; empty state
+- **Traces:** US-DASH-05 · **Priority:** Low · **Type:** Edge
+- **Preconditions:** Signed in as Admin.
+- **Test data:** Case A: the three events of TC-DASH-09, plus Sunrise Yoga Retreat — active, whose only ticket type has no seat limit (40 sold). Case B: no active events (only drafts and completed events).
+- **Steps:**
+  1. Case A: open home and read the ring, legend and centre.
+  2. Case A: open the dashboard and read the capacity-filled KPI.
+  3. Case B: open home and view the panel.
+- **Expected result:** Case A — Sunrise Yoga Retreat draws no segment, is not in the legend and adds nothing to the combined capacity, so the segments stay 10%, 20% and 30% and "Seats left" 40%; the centre shows 4. The sold segments together (60%) equal the dashboard's capacity-filled figure (60%). Case B — the panel shows "no active events".
+
+### TC-DASH-09c — More than 6 active events fold into "Other events"; no seat limits shows a neutral note
+- **Traces:** US-DASH-05 · **Priority:** Low · **Type:** Edge
+- **Preconditions:** Signed in as organizer.
+- **Test data:** Case A: eight active events of 100 seats each, which have sold 80, 70, 60, 50, 40, 30, 20 and 10 (combined capacity 800). Case B: two active events whose tickets all have no seat limit (25 and 40 sold).
+- **Steps:**
+  1. Case A: open home and read the ring, legend and centre.
+  2. Case B: open home and read the panel.
+- **Expected result:** Case A — six coloured segments, largest first: the five largest events at 10%, 8.75%, 7.5%, 6.25% and 5%, then one "Other events" segment of 7.5% (the remaining three events' 60 seats); "Seats left" is 55%. The legend lists the same five events, "Other events", then "Seats left"; the centre shows 8. Case B — the centre shows 2 and, in place of segments, a neutral "no seat limits set" note; no 0% figure appears.
 
 ---
 
-## US-DASH-06 — Operational alerts
+## US-DASH-06 — To do: the most urgent operational alerts
 
-### TC-DASH-10 — Alerts listed most-urgent-first, each linking to its module; resolved alert clears on refresh
+### TC-DASH-10 — The 3 most urgent alerts on To do, each with priority, date raised, event and link; a resolved alert clears and the next moves up
 - **Traces:** US-DASH-06 · **Priority:** High · **Type:** Functional
-- **Preconditions:** Signed in as organizer with full access. Multiple unresolved actionable issues exist (e.g. a pending approval, an unconfirmed speaker, a pending reply).
-- **Test data:** At least three alerts of differing severity.
+- **Preconditions:** Signed in as Admin (can act on every alert: finance access, approves registrations, manages ticket types). Today's Bangkok date is 2026-07-19.
+- **Test data:** Outstanding — two declined payments for Tech Summit 2026 (declined 2026-07-17 and 2026-07-18); three Bangkok Jazz Night registrations awaiting approval (since 2026-07-15, 2026-07-16 and 2026-07-18); one Thai Street Food Festival ticket type, on sale with a seat limit, nearly sold out (80% of its seats sold) since 2026-07-16; one Tech Summit 2026 registration awaiting approval (since 2026-07-18). That makes four alerts.
 - **Steps:**
-  1. Open home and read the alerts panel: severity indicators, text, and ordering.
-  2. Click one alert and confirm it links to the correct resolving module.
-  3. Resolve that issue in its owning module, return to home, and refresh.
-- **Expected result:** Each alert shows a clear severity indicator + text, most urgent first, with a link to the right module. Resolving is done only in the module (never on home). After the issue is resolved, the alert is gone on the next home refresh.
+  1. Open home and read the To do card: which alerts are listed, in what order, and each one's badge, date and event.
+  2. Choose the Bangkok Jazz Night approvals alert.
+  3. Approve or reject the three registrations in the registrations module, return to home and refresh.
+- **Expected result:** (1) Exactly three alerts, in this order: the 2 declined payments — High, raised 2026-07-17, Tech Summit 2026; the 3 registrations awaiting approval — Medium, 2026-07-15, Bangkok Jazz Night; the nearly-sold-out ticket type — Medium, 2026-07-16, Thai Street Food Festival. Dates read as Bangkok calendar dates in the UI language. The Tech Summit 2026 approval alert (Medium, 2026-07-18) is not on home. (2) The registrations module opens on the Bangkok Jazz Night registrations awaiting approval; home offered no way to resolve, dismiss or edit the alert. (3) The Bangkok Jazz Night alert is gone and the card lists the declined payments, the nearly-sold-out ticket type, then the Tech Summit 2026 approval alert (Medium, 2026-07-18).
 
-### TC-DASH-11 — Finance alert hidden from user without finance access; all-caught-up empty state
+### TC-DASH-11 — Alerts hidden from members who could not resolve them, with the next alert taking the place; "You're all caught up"
 - **Traces:** US-DASH-06 · **Priority:** High · **Type:** Negative
-- **Preconditions:** A declined-payment (finance) alert exists in the workspace.
-- **Test data:** Case A: signed in as a staff member WITHOUT finance access. Case B: a user with no outstanding actionable items.
+- **Preconditions:** Case A and C: signed in as an Organizer whose finance access has been removed (US-SET-12), who still approves registrations and manages ticket types. Case B: signed in as Admin. Case D: signed in as a Staff member with the default role (views registrations and checks attendees in; may not approve or reject registrations, manage ticket types or see finance).
+- **Test data:** Case A and D: the outstanding issues of TC-DASH-10. Case B: nothing outstanding in the workspace. Case C: the only outstanding issue is one declined payment for Bangkok Jazz Night.
 - **Steps:**
-  1. Case A: open home; scan the alerts panel for the declined-payment (finance) alert.
-  2. Case B: with nothing outstanding, view the alerts panel.
-- **Expected result:** Case A — the finance/declined-payment alert is NOT shown to the user without finance access (non-finance alerts still show normally). Case B — panel shows "you're all caught up".
+  1. Case A: open home and read the To do card; where the release has the notification feed (US-MSG-03), choose "View all" and scan the feed for a declined payment.
+  2. Case B: open home and view the To do card.
+  3. Case C: open home and view the To do card; then sign in as Admin and view it again.
+  4. Case D: open home and view the To do card.
+- **Expected result:** Case A — no declined-payment alert appears on the card or in the feed, and nothing stands in for it (no ฿0, blank row or locked placeholder); the card lists the Bangkok Jazz Night approvals (Medium, 2026-07-15), the Thai Street Food Festival ticket type (Medium, 2026-07-16) and the Tech Summit 2026 approval (Medium, 2026-07-18). Case B — the card shows "You're all caught up". Case C — the Organizer sees "You're all caught up"; the Admin sees the declined-payment alert (High). Case D — the card shows "You're all caught up": Staff may resolve none of the four alerts, so the approvals and the nearly-sold-out ticket type are hidden as well as the declined payments.
+
+### TC-DASH-11b — Priority badge follows severity, and a High alert outranks an older Medium one
+- **Traces:** US-DASH-06 · **Priority:** High · **Type:** Functional
+- **Preconditions:** Signed in as Admin. Today's Bangkok date is 2026-07-19.
+- **Test data:** Outstanding — one Bangkok Jazz Night registration awaiting approval since 2026-07-10; one Thai Street Food Festival ticket type nearly sold out since 2026-07-12; one declined payment for Tech Summit 2026 on 2026-07-18.
+- **Steps:**
+  1. Open home and read each alert's badge and the order of the To do card.
+  2. Look on the card for any way to change an alert's priority.
+  3. Only once Eventa raises an informational alert (none is raised yet): resolve the declined payment in its module so two alerts remain, create the condition for an informational alert, refresh home and read its badge and place.
+- **Expected result:** (1) The declined payment is first with a **High** badge although it was raised last; then the approval (**Medium**, 2026-07-10), then the nearly-sold-out ticket type (**Medium**, 2026-07-12) — earliest raised first within Medium. (2) There is none: the priority comes from the severity alone. (3) The informational alert shows a **Low** badge and is third, after both Medium alerts. Until an informational alert exists, step 3 is skipped.
+
+### TC-DASH-11c — "View all" opens the notification feed, which lists every alert, including those beyond the 3; not offered without the feed
+- **Traces:** US-DASH-06 · **Priority:** High · **Type:** Functional
+- **Preconditions:** Signed in as Admin, with the four alerts of TC-DASH-10. In a release without the notification feed (US-MSG-03), only step 1 is run.
+- **Test data:** —
+- **Steps:**
+  1. Open home and look for "View all" on the To do card; choose it.
+  2. In the feed, look for each of the four alerts.
+- **Expected result:** (1) With the notification feed of US-MSG-03 in the release, "View all" opens it; without it, the card offers no "View all". (2) All four alerts are listed there — including the Tech Summit 2026 approval alert that home leaves out — together with the feed's other activity.
+
+### TC-DASH-11d — Date raised is a Bangkok date in the user's language; a ticket type is nearly sold out from 80% of its seats
+- **Traces:** US-DASH-06 · **Priority:** High · **Type:** Edge
+- **Preconditions:** Signed in as Admin. Clock set to 2026-07-19 10:00 Bangkok.
+- **Test data:** Two declined payments for Tech Summit 2026, declined at 2026-07-17 23:30 UTC (2026-07-18 06:30 Bangkok) and 2026-07-19 02:00 UTC (09:00 Bangkok). Three ticket types on sale: Thai Street Food Festival "Early Bird", 100 seats, whose 80th seat sold at 2026-07-15 18:30 UTC (2026-07-16 01:30 Bangkok); Bangkok Jazz Night "Standard", 100 seats, 79 sold; Tech Summit 2026 "Day Pass", no seat limit, 500 sold. Nothing else outstanding.
+- **Steps:**
+  1. Open home and read the declined-payments alert's count, event and date.
+  2. Read the To do card for nearly-sold-out alerts, with each one's event and date.
+  3. Switch the interface to Thai and read the alerts again.
+  4. Where the release has the dashboard's Tickets selling fast list (US-DASH-11), open it.
+  5. Only once Eventa raises an alert that concerns no event (none does yet): read that alert.
+- **Expected result:** (1) One alert for the 2 declined payments, naming Tech Summit 2026, dated 2026-07-18 — the Bangkok date of the older decline; not 2026-07-17 (its UTC date) and not 2026-07-19 (the newer decline). (2) One nearly-sold-out alert (Medium), for the Thai Street Food Festival ticket type, dated 2026-07-16 — the Bangkok date it reached 80% sold, not 2026-07-15 (its UTC date); the Bangkok Jazz Night ticket type (79% sold) and the Tech Summit 2026 Day Pass (no seat limit) raise none. (3) The same dates and the alerts' text are formatted in Thai. (4) The list shows the Thai Street Food Festival ticket type and neither of the others. (5) It names no event. Until such an alert exists, step 5 is skipped.
 
 ---
 
-## US-DASH-07 — Website template shortcuts
+## US-DASH-07 — Website template shortcuts  ·  **Won't**
+
+_Withdrawn with US-DASH-07 on 2026-11-04 (Home redesign); kept so its id stays valid — not run._
 
 ### TC-DASH-12 — Template shortcut opens landing-pages area; shortcuts reflect current template set on reload
-- **Traces:** US-DASH-07 · **Priority:** Low · **Type:** Functional
+- **Traces:** US-DASH-07 · **Priority:** Won't · **Type:** Functional
 - **Preconditions:** Signed in as organizer; templates panel is shown with the current set of landing-page templates.
 - **Test data:** Available templates set changes (one added/removed) between the two loads.
 - **Steps:**
@@ -3766,26 +3853,151 @@ Locale defaults: Currency ฿ (THB), VAT 7% tracked separately, timezone Asia/Ba
 
 ## US-DASH-13 — Trustworthy, always-current overview
 
-### TC-DASH-24 — New confirmed registration updates and reconciles total, ticket-type breakdown, and recent table
+### TC-DASH-24 — New confirmed registration updates and reconciles the dashboard's and home's figures
 - **Traces:** US-DASH-13 · **Priority:** High · **Type:** Functional
-- **Preconditions:** Signed in as organizer with finance + registration access, viewing the dashboard. Known starting totals.
+- **Preconditions:** Signed in as organizer with finance + registration access, with the dashboard open in one tab and home in another. Known starting totals. In a release whose home does not yet show Recent orders (US-DASH-16) or the check-in insight (US-DASH-15), the reads of that card are skipped.
 - **Test data:** Confirm a new registration for ticket type "VIP" for ฿1,500 in another session/module.
 - **Steps:**
-  1. Note the current registration total, VIP share in the ticket-type breakdown, and the top of the recent-registrations table.
+  1. Note the dashboard's registration total, the VIP share in the ticket-type breakdown, and the top of the recent-registrations table; on home, note today's registrations count, the top of Recent orders, and today's value of Registrations in the check-in insight.
   2. Confirm a new VIP registration in the owning module.
-  3. Within the refresh window (or after a manual refresh), re-read the three surfaces.
-- **Expected result:** Within a short refresh window the total registrations KPI increments, the VIP share in the ticket-type breakdown increases, and the new row appears at the top of the recent table — and all three agree with each other. Home/dashboard themselves changed no data.
+  3. Within the refresh window (or after a manual refresh), re-read all six.
+- **Expected result:** Within a short refresh window, on the dashboard the total registrations KPI increments, the VIP share increases and the new row appears at the top of the recent table; on home today's count increments, the new order (฿1,500, Paid) heads Recent orders, and today's Registrations value in the check-in insight increments and equals today's count. All of them agree with each other. Home and the dashboard themselves changed no data.
 
 ### TC-DASH-25 — Single panel failure is isolated; refresh cadences and permission-based hiding hold
 - **Traces:** US-DASH-13 · **Priority:** High · **Type:** Edge
-- **Preconditions:** Signed in as organizer. Simulate one panel's data source failing (e.g. selling-fast) while others succeed.
+- **Preconditions:** Signed in as organizer. Simulate one panel's data source failing (e.g. selling-fast on the dashboard, today's registrations on home) while others succeed. Cards home does not yet show in the release under test (US-DASH-14 to US-DASH-16) are skipped.
 - **Test data:** One panel forced into an error/unavailable condition; user lacks finance access for a revenue figure and lacks rights to attendee personal data in one panel.
 - **Steps:**
   1. Load the surface with one panel's source failing.
   2. Observe the failed panel vs the others.
   3. Trigger a manual refresh and compare operational feeds vs analytics behavior.
   4. Inspect a finance/personal-data figure the user is not permitted to see.
-- **Expected result:** Only the failing panel shows an "unavailable / retry" state; every other panel works normally. Operational feeds (today's sign-ups, alerts, selling-fast) refresh near-real-time while analytics refresh on a slightly longer cadence, and a manual refresh is available. Any figure the user isn't permitted to see (finance or attendee personal data) is hidden — never shown as zero or a placeholder. All dates, "today", days-remaining, and times read in Bangkok time and in the user's language (EN/TH).
+- **Expected result:** Only the failing panel shows an "unavailable / retry" state; every other panel works normally. Operational feeds (today's sign-ups — including today's registrations in the check-in insight — recent orders, the alerts on the To do card, selling-fast) refresh near-real-time while analytics (ticket revenue, the rest of the check-in insight, KPIs and trends) refresh on a slightly longer cadence, and a manual refresh is available. Any figure the user isn't permitted to see (finance or attendee personal data) is hidden — never shown as zero or a placeholder. All dates (including the date an alert was raised), "today", days-remaining, and times read in Bangkok time and in the user's language (EN/TH).
+
+---
+
+## US-DASH-14 — Ticket revenue on Home
+
+### TC-DASH-26 — Finance user sees last-30-days net revenue, two daily lines and the change pill
+- **Traces:** US-DASH-14 · **Priority:** Medium · **Type:** Functional
+- **Preconditions:** Signed in as Admin (finance access). Today's Bangkok date is 2026-07-19. Paid orders exist in both 30-day windows, including one refunded order in the last 30 days.
+- **Test data:** Net ticket revenue (after VAT and refunds) for 2026-06-20…2026-07-19 = ฿48,290; for 2026-05-21…2026-06-19 = ฿42,925 (a rise of 12.5%).
+- **Steps:**
+  1. Open home and read the Ticket revenue card's figure and caption.
+  2. Inspect the chart's lines.
+  3. Read the change pill.
+- **Expected result:** The card shows ฿48,290 for the last 30 days across all events — the figure the dashboard's revenue rule (US-DASH-08) gives for those 30 days: VAT excluded, the refunded order not counted, and no VAT figure surfaced. The chart draws two lines of 30 daily points each: the last 30 days and the 30 days before them. The pill reads "+12.5%" and is positive-coloured.
+
+### TC-DASH-27 — Ticket revenue card absent without finance access
+- **Traces:** US-DASH-14 · **Priority:** High · **Type:** Negative
+- **Preconditions:** Signed in as a Staff member (default role, no finance access). Ticket revenue exists in the last 30 days.
+- **Test data:** —
+- **Steps:**
+  1. Open home and inspect the first row of cards.
+  2. Search the page, including with a screen reader, for any revenue figure.
+- **Expected result:** There is no Ticket revenue card — not ฿0, not a blank tile, not a locked placeholder — and Today's Registrations and Active events lay out normally with no gap. No revenue figure is present anywhere on the page.
+
+### TC-DASH-28 — Falling, neutral and zero revenue
+- **Traces:** US-DASH-14 · **Priority:** Medium · **Type:** Edge
+- **Preconditions:** Signed in as Admin (finance access).
+- **Test data:** Case A: last 30 days ฿30,000, previous 30 days ฿40,000. Case B: last 30 days ฿12,000, previous 30 days ฿0. Case C: no revenue in either period.
+- **Steps:**
+  1. For each case, open home and read the Ticket revenue card.
+- **Expected result:** Case A — ฿30,000 with a warning-coloured "−25%" pill. Case B — ฿12,000 with a neutral change; no percentage is invented. Case C — the card is still shown, reading ฿0 with a neutral change.
+
+---
+
+## US-DASH-15 — Check-in insight on Home
+
+### TC-DASH-29 — Check-in rate shows by default; the dots switch metric without a reload
+- **Traces:** US-DASH-15 · **Priority:** Medium · **Type:** Functional
+- **Preconditions:** Signed in as organizer. Today's Bangkok date is 2026-07-19. An event started on each of the last 12 days and had ticket holders checked in.
+- **Test data:** Daily check-in rates for 2026-07-08…2026-07-19: 82, 85, 79, 88, 84, 90, 86, 83, 89, 85, 88, 87 (%).
+- **Steps:**
+  1. Open home and read the check-in insight's headline, label and candles.
+  2. Point at the first and the last candle; repeat with a screen reader.
+  3. Choose the second dot, then the third.
+  4. Note whether the page reloaded.
+- **Expected result:** By default the card shows check-in rate: headline 87% (today's value), labelled as the check-in rate over the last 12 days, with 12 candles from 2026-07-08 on the left to 2026-07-19 on the right. The first candle reads 82% and the last 87%, by pointer and by screen reader; the 2026-07-09 candle (82 → 85) is green and the 2026-07-10 one (85 → 79) grey. The second dot switches the headline, label and candles to capacity filled (%), the third to registrations (a count), and the highlighted dot follows. The page does not reload.
+
+### TC-DASH-30 — Insight values agree with the dashboard's KPIs and Today's Registrations
+- **Traces:** US-DASH-15 · **Priority:** Medium · **Type:** Functional
+- **Preconditions:** Signed in as Admin. Today's Bangkok date is 2026-07-19.
+- **Test data:** 48 registrations today; the dashboard's capacity-filled KPI reads 78%; one event started on 2026-07-15 with 200 ticket holders, 170 of them checked in, and no other event started that day.
+- **Steps:**
+  1. Switch the insight to registrations; compare today's headline with the Today's Registrations count badge.
+  2. Switch to capacity filled; compare today's headline with the dashboard's capacity-filled KPI.
+  3. Switch to check-in rate; read the 2026-07-15 candle.
+- **Expected result:** Registrations today reads 48, the same as the badge. Capacity filled today reads 78%, the same as the dashboard. The 2026-07-15 check-in candle reads 85% — 170 of 200, the dashboard's check-in-rate rule applied to that day.
+
+### TC-DASH-31 — Days with nothing to measure show no candle; a day with no registrations shows 0
+- **Traces:** US-DASH-15 · **Priority:** Medium · **Type:** Edge
+- **Preconditions:** Signed in as organizer. Today's Bangkok date is 2026-07-19.
+- **Test data:** Case A: in the last 12 days events started only on 2026-07-12 and 2026-07-15, none today; nobody registered on 2026-07-10. Case B: the only active event, Sunrise Yoga Retreat, sells tickets with no seat limit.
+- **Steps:**
+  1. Case A: view check-in rate, then registrations.
+  2. Case B: view capacity filled.
+- **Expected result:** Case A — check-in rate has candles only for 2026-07-12 and 2026-07-15; every other day has none (not a 0% candle), and the headline shows "—", never 0%. Registrations shows 0 for 2026-07-10, a true zero. Case B — capacity filled shows no candles and a "—" headline, never 0%.
+
+### TC-DASH-31b — A past day's capacity filled uses today's active events and capacity
+- **Traces:** US-DASH-15 · **Priority:** Medium · **Type:** Functional
+- **Preconditions:** Signed in as Admin. Today's Bangkok date is 2026-07-19.
+- **Test data:** Active events today: Tech Summit 2026 (capacity 100, 60 seats sold now, 40 of them by the end of 2026-07-14) and Bangkok Jazz Night (capacity raised from 150 to 200 on 2026-07-17; 120 seats sold now, 80 of them by the end of 2026-07-14). One further Tech Summit 2026 seat was sold on 2026-07-12 and refunded on 2026-07-16. Thai Street Food Festival was active until it completed on 2026-07-16 (100 of 100 seats sold by 2026-07-14).
+- **Steps:**
+  1. Switch the insight to capacity filled; read the 2026-07-14 candle and today's.
+  2. Open the dashboard and read the capacity-filled KPI.
+- **Expected result:** The 2026-07-14 candle reads 40% — 120 of the 300 seats the two active events have today; the refunded seat counts on no day, Bangkok Jazz Night's old capacity of 150 is not used, and the completed Thai Street Food Festival adds nothing. Today's candle reads 60% (180 of 300), the same as the dashboard's capacity-filled KPI.
+
+---
+
+## US-DASH-16 — Recent orders on Home
+
+### TC-DASH-32 — Three newest orders with buyer, event, date, amount and status; "View all" opens payments
+- **Traces:** US-DASH-16 · **Priority:** Medium · **Type:** Functional
+- **Preconditions:** Signed in as Admin (finance access and permitted to view registrations). Today's Bangkok date is 2026-07-19.
+- **Test data:** Orders — Anong Pattana (anong.p@example.com), Tech Summit 2026, 2026-07-18, ฿1,250, Paid; James Wong (james.w@example.com), Bangkok Jazz Night, 2026-07-17, ฿480, Refunded; Nutcha Wongsa (nutcha.w@example.com), Bangkok Jazz Night, 2026-07-15, ฿480, Pending; an older order on 2026-07-12 for ฿2,000, Paid.
+- **Steps:**
+  1. Open home and read the Recent orders card.
+  2. Choose "View all".
+- **Expected result:** Three rows, newest first: Anong Pattana (Jul 18), James Wong (Jul 17), Nutcha Wongsa (Jul 15); the 2026-07-12 order is not shown. Each row shows the buyer's name and email, the event, the date (Bangkok, in the UI language), the VAT-inclusive amount in ฿ and a Paid / Refunded / Pending badge respectively. "View all" opens the payments list.
+
+### TC-DASH-33 — Date and Amount sort, reverse on a second click, and never bring in other orders
+- **Traces:** US-DASH-16 · **Priority:** Medium · **Type:** Functional
+- **Preconditions:** As TC-DASH-32.
+- **Test data:** The orders of TC-DASH-32.
+- **Steps:**
+  1. With the card as it opens (newest first), choose the Date heading.
+  2. Choose the Amount heading.
+  3. Choose the Amount heading again.
+  4. Choose the Date heading.
+  5. Choose the Date heading again.
+- **Expected result:** (1) The card was already sorted by date, so it reverses: oldest first — Jul 15, Jul 17, Jul 18. (2) Largest first: Anong Pattana's ฿1,250, then the two ฿480 orders. (3) Reversed: the two ฿480 orders, then ฿1,250. (4) Newest first: Jul 18, Jul 17, Jul 15. (5) Oldest first: Jul 15, Jul 17, Jul 18. Throughout, only these three orders are shown; the ฿2,000 order of 2026-07-12 never appears.
+
+### TC-DASH-34 — Amounts and buyer details hidden by permission; "View all" only with finance access
+- **Traces:** US-DASH-16 · **Priority:** High · **Type:** Negative
+- **Preconditions:** The orders of TC-DASH-32. Member A: Staff on the default role (views registrations, no finance access). Member B: a role fine-tuned (US-SET-12) to view payments but not registrations and attendees.
+- **Test data:** —
+- **Steps:**
+  1. As A, open home, inspect the Recent orders card, try to sort by amount and by date, and look for "View all".
+  2. As B, open home and inspect the card; choose "View all".
+- **Expected result:** A — buyer names and emails, event, date and status show; there is no Amount column (not ฿0, not masked) and nothing to sort by amount, while sorting by date works; "View all" is not offered. B — event, date, amount and status show; no buyer name or email appears anywhere on the card; "View all" opens the payments list.
+
+### TC-DASH-35 — "No orders yet" empty state
+- **Traces:** US-DASH-16 · **Priority:** Medium · **Type:** Edge
+- **Preconditions:** Signed in as Admin in a workspace with a published event and no orders.
+- **Test data:** —
+- **Steps:**
+  1. Open home and view the Recent orders card.
+- **Expected result:** The card shows "no orders yet" instead of an empty table.
+
+### TC-DASH-35b — Failed attempts and free registrations take no place; a refund keeps its original amount
+- **Traces:** US-DASH-16 · **Priority:** Medium · **Type:** Edge
+- **Preconditions:** Signed in as Admin. Today's Bangkok date is 2026-07-19.
+- **Test data:** Newest first: a failed card attempt by Kittisak Boon for Tech Summit 2026 (2026-07-19 11:00, ฿1,250); a free registration by Mali Sri for UX Bangkok Meetup (2026-07-19 10:30); a waitlisted registration for Bangkok Jazz Night (2026-07-19 10:00); Anong Pattana, Tech Summit 2026, 2026-07-18, ฿1,250, Paid; James Wong, Bangkok Jazz Night, 2026-07-17, ฿480, fully refunded on 2026-07-18; Nutcha Wongsa, Bangkok Jazz Night, 2026-07-15, ฿480, Pending.
+- **Steps:**
+  1. Open home and read the Recent orders card.
+  2. Choose "View all" and compare the top of the payments list.
+- **Expected result:** (1) The three rows are Anong Pattana, James Wong and Nutcha Wongsa; the failed attempt, the free registration and the waitlisted registration take no place. James Wong's row shows ฿480 with a Refunded badge. (2) The three orders are the newest Paid, Pending and Refunded payments in the payments list, which lists the failed attempt separately as Failed.
 
 
 ---

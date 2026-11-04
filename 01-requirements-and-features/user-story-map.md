@@ -73,7 +73,7 @@ repeat organizer re-enters the journey there rather than at activity 1.
 | 10 | Decide to come | Attendee | Public page: identity, about, highlights, agenda, tiers, FAQ, add-to-calendar | [E4](functional-requirements.md#epic-e04) |
 | 11 | Register, pay, get the ticket | Attendee | Guest or signed-in checkout, tickets/seats, card & PromptPay, discount code, **confirmation + QR ticket** | [E6](functional-requirements.md#epic-e06), [E1](functional-requirements.md#epic-e01), [E5](functional-requirements.md#epic-e05), [E7](functional-requirements.md#epic-e07) |
 | 12 | Manage my tickets | Attendee | Attendee sign-in, upcoming & past tickets, receipts, profile, prefs, deletion | [E6](functional-requirements.md#epic-e06) |
-| 13 | Watch the sign-ups | Organizer | Queue, approvals, waitlist, invites, attendee directory, tagging, exports, dashboard, alert feed | [E8](functional-requirements.md#epic-e08), [E11](functional-requirements.md#epic-e11), [E3](functional-requirements.md#epic-e03), [E7](functional-requirements.md#epic-e07) |
+| 13 | Watch the sign-ups | Organizer | Queue, approvals, waitlist, invites, attendee directory, tagging, exports, home & dashboard, alerts, notification feed | [E8](functional-requirements.md#epic-e08), [E11](functional-requirements.md#epic-e11), [E3](functional-requirements.md#epic-e03), [E7](functional-requirements.md#epic-e07) |
 | 14 | Run the door | Both | Manual check-in list, live QR station, manual fallback, live turnout | [E8](functional-requirements.md#epic-e08) |
 | 15 | Settle the money | Organizer | Payments, refunds, balances & payouts, invoices, VAT ledger & returns, cancellation | [E9](functional-requirements.md#epic-e09), [E3](functional-requirements.md#epic-e03) |
 | 16 | **Learn & relaunch** | Both | Reports & exports, attendee feedback & surveys, speaker ratings, duplicate the event | [E13](functional-requirements.md#epic-e13), [E7](functional-requirements.md#epic-e07), [E6](functional-requirements.md#epic-e06), [E10](functional-requirements.md#epic-e10), [E3](functional-requirements.md#epic-e03) |
@@ -86,8 +86,8 @@ Cells hold `US-*` ids only — ids are stable and never renumbered, so this map 
 story titles are reworded. Look up any id in [functional-requirements.md](functional-requirements.md).
 
 **Columns are releases, not priorities.** Almost everywhere the two coincide (R1 = Must, R2 = Should,
-R3 = Could), and the two places they *don't* are marked — those are the exceptions worth knowing
-about, recorded in [project-plan.md §4.1](../02-project-plan/project-plan.md):
+R3 = Could, Won't = no release), and the two places they *don't* are marked — those are the exceptions
+worth knowing about, recorded in [project-plan.md §4.1](../02-project-plan/project-plan.md):
 
 - **†** `US-REG-04` is priority **Should** but ships in **R1** — `US-DISC-01` (Must) shows a
   "Waitlist" badge on sold-out events, so organizer-side waitlist management has to exist at launch.
@@ -112,10 +112,14 @@ about, recorded in [project-plan.md §4.1](../02-project-plan/project-plan.md):
 | 11 · Register, pay, get the ticket | `ACC-03` `DISC-04` `DISC-05` `DISC-06` `DISC-07` `DISC-15` `MSG-01` | `TKT-11` `MSG-02` | — |
 | 12 · Manage my tickets | `DISC-08` `DISC-09` `DISC-10` `DISC-11` | `DISC-12` | `DISC-14` |
 | **Act 4 — Run & learn** | | | |
-| 13 · Watch the sign-ups | `REG-01` `REG-02` `REG-03` `REG-05` `REG-06` `REG-04`† `DASH-01` `DASH-02` `DASH-06` `DASH-08` `DASH-09` `DASH-12` `DASH-13` | `REG-07` `REG-08` `REG-09` `REG-10` `DASH-03` `DASH-04` `DASH-10` `DASH-11` `EVT-14` `MSG-03` | `DASH-05` `DASH-07` |
+| 13 · Watch the sign-ups | `REG-01` `REG-02` `REG-03` `REG-05` `REG-06` `REG-04`† `DASH-01` `DASH-02` `DASH-06` `DASH-08` `DASH-09` `DASH-12` `DASH-13` | `REG-07` `REG-08` `REG-09` `REG-10` `DASH-04` `DASH-10` `DASH-11` `DASH-14` `DASH-15` `DASH-16` `EVT-14` `MSG-03` | `DASH-05` |
 | 14 · Run the door | `REG-11` `REG-12` `REG-13` | `REG-14` | — |
 | 15 · Settle the money | `FIN-01` `FIN-02` `FIN-03` `FIN-05` `FIN-06` `FIN-07` `FIN-08` `FIN-10` `FIN-11` `FIN-12` `FIN-14` `EVT-08` | `FIN-04` `FIN-09` `FIN-13` | — |
 | 16 · Learn & relaunch | ⚠ **nothing** | `RPT-01` `RPT-02` `RPT-04` `RPT-05` `RPT-07` `RPT-08` `RPT-09` `RPT-11` `RPT-12` `DISC-13` `MSG-06` `MSG-08` `MSG-09` `PROG-13` `EVT-13` | `RPT-03` `RPT-06` `RPT-10` `MSG-07` `MSG-10` |
+
+**Won't — withdrawn, in no release.** `DASH-03` `DASH-07` left Home in its redesign and are
+priority **Won't**: listed here only so every id stays on the map; anything already built for them is to be
+removed. What replaced each is noted under its title in the [backlog](functional-requirements.md#epic-e11).
 
 ---
 
@@ -192,7 +196,8 @@ that can invalidate it is adding, removing or re-prioritising a story.
 
 When the backlog changes:
 
-1. Place the new/changed `US-*` id in exactly one activity row and one release column.
+1. Place the new/changed `US-*` id in exactly one activity row and one release column — or, for a
+   Won't story, on the Won't line below the §2 table.
 2. Check whether the change empties or fills an activity's R1 cell — if so, update §3.
 3. If a Must/Should exception is created or resolved, update the **†**/**‡** notes here **and**
    [project-plan.md §4.1](../02-project-plan/project-plan.md).

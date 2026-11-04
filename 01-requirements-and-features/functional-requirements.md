@@ -7,32 +7,34 @@
 | **Format** | Product backlog — epics → user stories, with MoSCoW priority & acceptance criteria |
 | **Version** | 1.0 |
 | **Date** | 2026-07-23 |
-| **Scope** | 13 epics · 162 user stories |
+| **Scope** | 13 epics · 165 user stories |
 
 > **How to read this.** This is the functional backlog from the **Product Owner's** point of view — what the product must do and *why it matters to the business*, expressed as user stories (`As a <role>, I want <goal>, so that <benefit>`) with business-observable acceptance criteria. Each story carries a **MoSCoW** priority. The technical detail (data model & ERD) lives in [Stage 4 — Architecture](../04-architecture/); quality bars live in [non-functional-requirements.md](non-functional-requirements.md).
 
 ## Prioritisation & MVP
 
-The backlog holds **162 user stories**: **90 Must**, **57 Should**, **15 Could**. The **Must** stories define the MVP — the core money path *(discover → register → pay → get a QR ticket → check in)* plus creating and publishing an event, sign-in, and getting paid. Should/Could stories deepen finance, insights, engagement, meetings and workspace administration in later releases.
+The backlog holds **165 user stories**: **90 Must**, **59 Should**, **14 Could** and **2 Won't**. The **Must** stories define the MVP — the core money path *(discover → register → pay → get a QR ticket → check in)* plus creating and publishing an event, sign-in, and getting paid. Should/Could stories deepen finance, insights, engagement, meetings and workspace administration in later releases.
+
+**Won't** marks a story withdrawn from the product: it keeps its id, because code and test cases cite it, and a one-line note under its title says what replaced it. A Won't story is not (or no longer) part of the product: anything already built for it is removed, and its test cases are not run.
 
 ## Epics
 
-| # | Epic | Stories | Must | Should | Could |
-|---|------|:-------:|:----:|:------:|:-----:|
-| 1 | [Accounts & Sign-in](#epic-e01) | 12 | 9 | 3 | 0 |
-| 2 | [Configure the Workspace & Team](#epic-e02) | 13 | 8 | 4 | 1 |
-| 3 | [Create & Manage Events](#epic-e03) | 15 | 11 | 4 | 0 |
-| 4 | [Public Event Pages](#epic-e04) | 10 | 6 | 3 | 1 |
-| 5 | [Sell Tickets & Run Promotions](#epic-e05) | 12 | 3 | 7 | 2 |
-| 6 | [Discover & Register for Events (Attendee)](#epic-e06) | 15 | 11 | 3 | 1 |
-| 7 | [Communicate with Attendees](#epic-e07) | 10 | 1 | 6 | 3 |
-| 8 | [Manage Registrations & Admit Attendees](#epic-e08) | 14 | 8 | 6 | 0 |
-| 9 | [Get Paid & Manage Finances](#epic-e09) | 14 | 11 | 3 | 0 |
-| 10 | [Build the Event Program](#epic-e10) | 13 | 9 | 3 | 1 |
-| 11 | [Organizer Home & Dashboard](#epic-e11) | 13 | 7 | 4 | 2 |
-| 12 | [Coordinate Meetings](#epic-e12) | 9 | 6 | 2 | 1 |
-| 13 | [Measure Performance (Reports)](#epic-e13) | 12 | 0 | 9 | 3 |
-| | **Total** | **162** | **90** | **57** | **15** |
+| # | Epic | Stories | Must | Should | Could | Won't |
+|---|------|:-------:|:----:|:------:|:-----:|:-----:|
+| 1 | [Accounts & Sign-in](#epic-e01) | 12 | 9 | 3 | 0 | 0 |
+| 2 | [Configure the Workspace & Team](#epic-e02) | 13 | 8 | 4 | 1 | 0 |
+| 3 | [Create & Manage Events](#epic-e03) | 15 | 11 | 4 | 0 | 0 |
+| 4 | [Public Event Pages](#epic-e04) | 10 | 6 | 3 | 1 | 0 |
+| 5 | [Sell Tickets & Run Promotions](#epic-e05) | 12 | 3 | 7 | 2 | 0 |
+| 6 | [Discover & Register for Events (Attendee)](#epic-e06) | 15 | 11 | 3 | 1 | 0 |
+| 7 | [Communicate with Attendees](#epic-e07) | 10 | 1 | 6 | 3 | 0 |
+| 8 | [Manage Registrations & Admit Attendees](#epic-e08) | 14 | 8 | 6 | 0 | 0 |
+| 9 | [Get Paid & Manage Finances](#epic-e09) | 14 | 11 | 3 | 0 | 0 |
+| 10 | [Build the Event Program](#epic-e10) | 13 | 9 | 3 | 1 | 0 |
+| 11 | [Organizer Home & Dashboard](#epic-e11) | 16 | 7 | 6 | 1 | 2 |
+| 12 | [Coordinate Meetings](#epic-e12) | 9 | 6 | 2 | 1 | 0 |
+| 13 | [Measure Performance (Reports)](#epic-e13) | 12 | 0 | 9 | 3 | 0 |
+| | **Total** | **165** | **90** | **59** | **14** | **2** |
 
 ### Why the epics are in this order
 
@@ -1079,15 +1081,16 @@ _Notes: Message content is personalized with the attendee's and event's details;
 _Notes: Each message exists in English and Thai; an active channel cannot be saved with its language version blank. SMS cost is driven by encoding — Thai text uses shorter segments — and the count reflects the actual text._
 
 ### US-MSG-03 — Triage everything happening across my events in one feed  ·  **Should**
-**As an** Event Organizer, **I want** a single notification feed grouped by recency with an unread filter and a one-click "mark all read", **so that** I can triage new registrations, payments, feedback, and alerts without opening every module.
+**As an** Event Organizer, **I want** one notification feed with an unread filter, "mark all read" and the alerts that need me, **so that** I can triage registrations, payments, feedback and alerts without opening every module.
 
 **Acceptance criteria**
-- Given I have unread notifications, when I open the feed, then I see All and Unread counts and the most recent activity expanded, with older activity available on demand.
-- Given I switch to the Unread filter with nothing unread, when the feed renders, then I see a "you're all caught up" message.
-- Given unread notifications exist, when I click "mark all read", then the unread count drops to zero and stays cleared after I reload.
-- Given I am a Staff/Team member, when I open the feed, then I see only my own personal activity and cannot compose messages, edit templates, broadcast, view the delivery log, or manage feedback.
+- Given unread notifications, when I open the feed, then I see All and Unread counts and the most recent activity, with older activity on demand.
+- Given the Unread filter with nothing unread, then the feed says "you're all caught up".
+- Given I choose "mark all read", then the unread count drops to 0 and stays 0 after a reload.
+- Given alerts I can act on (US-DASH-06), then the feed lists every one, not only home's 3, with its text and a link to where it is resolved. A resolved alert leaves; one I could not resolve never shows.
+- Given I am a Staff/Team member, then I see only my own activity and the alerts I can act on, and cannot compose messages, edit templates, broadcast, view the delivery log or manage feedback.
 
-_Notes: A member only sees notifications they are entitled to — for example, payment and payout items appear only for members with finance access._
+_Notes: Each member sees only what they are entitled to; payment and payout items need finance access._
 
 ### US-MSG-04 — Broadcast a one-off announcement to the right audience  ·  **Should**
 **As an** Event Organizer, **I want** to send a one-off announcement to a chosen audience of an event over email and/or SMS, either immediately or scheduled, **so that** I can reach the right attendees at the right time (e.g. a venue change or last-minute update).
@@ -1645,12 +1648,14 @@ _Notes: Ratings are read-only here and come from the Feedback/Insights module; t
 
 # Epic E11 — Organizer Home & Dashboard
 
-**Goal (business value):** Give organizers a single daily landing place that tells them what needs attention right now (today's sign-ups, meetings, and alerts) and a clear analytics view of how their events are performing (revenue, registrations, ticket mix, and events at risk of selling out) — so they can act fast without digging through every module and never lose money to a missed alert or an overlooked sell-out.
+**Goal (business value):** Give organizers a single daily landing place that tells them what needs attention right now (today's sign-ups, the newest orders, the most urgent alerts, and how their live events are selling and checking in) and a clear analytics view of how their events are performing (revenue, registrations, ticket mix, and events at risk of selling out) — so they can act fast without digging through every module and never lose money to a missed alert or an overlooked sell-out.
 
 **Primary users:** Event Organizer, Admin, Staff/Team member (Attendees have no access).
 
+**Home, top to bottom:** greeting and "New event" (US-DASH-01) · Today's Registrations (02), Ticket revenue (14), Active events ring (05) · Check-in insight (15), Upcoming Events (04) · Recent orders (16), To do (06). Today's meetings (03) and template shortcuts (07) are **Won't**.
+
 **Success measures:**
-- Time-to-triage: organizers act on today's alerts and sign-ups without opening multiple screens.
+- Time-to-triage: organizers act on today's sign-ups, newest orders and most urgent alerts without opening multiple screens.
 - Fewer at-risk events reaching their date behind on sales (early "selling fast" and progress signals acted on).
 - Revenue visibility: organizers can read short-term momentum and long-term trend at a glance.
 - Check-in rate and capacity-fill awareness improves per-event operational decisions.
@@ -1659,59 +1664,61 @@ _Notes: Ratings are read-only here and come from the Feedback/Insights module; t
 ## User stories
 
 ### US-DASH-01 — Daily operations home  ·  **Must**
-**As an** Event Organizer, **I want** a personalized home screen that greets me and gathers today's most important activity in one place, with a quick way to start a new event, **so that** I can size up my day and act without hunting through separate modules.
+**As an** Event Organizer, **I want** a home screen that greets me and gathers today's activity, **so that** I can size up my day in one place.
 **Acceptance criteria**
-- Given I sign in, when I land on the home screen, then I see a time-of-day greeting addressed to me by name in my chosen language (English or Thai).
-- Given the local time in Bangkok is morning, afternoon, or evening, when I open home, then the greeting reflects Bangkok time regardless of where my device is.
-- Given I am on the home screen, when I choose "New event", then I am taken to the event creation flow.
-- Given I am an Attendee (not a team member), when I try to open the admin home, then I am refused access.
-_Notes: The home screen only summarizes and links out — it never changes any records itself._
+- Given I sign in, when home opens, then it greets me by name for the Bangkok time of day (morning, afternoon or evening), in English or Thai.
+- Given I choose "New event", then the event creation flow opens.
+- Given I am an Attendee, when I open the admin home, then I am refused.
+_Notes: Home only summarizes and links out; it never changes data._
 
 ### US-DASH-02 — Today's registrations at a glance  ·  **Must**
-**As an** Event Organizer, **I want** to see how many people registered today and a preview of the most recent sign-ups, **so that** I can confirm registrations are flowing and jump straight to the full list when something looks off.
+**As an** Event Organizer, **I want** today's registration count, the three newest, and a quick way to add one, **so that** I know sign-ups are flowing and can record a walk-up on the spot.
 **Acceptance criteria**
-- Given people registered today (Bangkok calendar day), when I view home, then a count badge shows today's total and the newest sign-ups are previewed with attendee name, their event and ticket type, and the time.
-- Given no one has registered yet today, when I view home, then the panel clearly shows "no registrations yet today".
-- Given I want the full picture, when I choose "View all registrations", then I am taken to the registrations list.
-_Notes: Attendee names are personal data — this panel is only shown to team members allowed to view registrations._
+- Given people registered today (Bangkok day), when I view home, then a badge counts today's confirmed registrations and the 3 newest are listed, newest first, with name, event · ticket type and time.
+- Given a registration that is not confirmed (awaiting approval or payment, waitlisted, rejected, cancelled), then it is neither counted nor listed; earlier days never fill the list.
+- Given nobody registered today, then the card says "no registrations yet today".
+- Given I may add registrations, when I choose "Add registration", then the add-registration form opens (US-REG-03); otherwise (for example Staff) it is not offered.
+- Given I choose "See all", then the registrations list opens.
+_Notes: Shown only to members who may view registrations: names are personal data._
 
-### US-DASH-03 — Today's meetings  ·  **Should**
-**As an** Event Organizer, **I want** to see the meetings scheduled for today with their times and who I am meeting, **so that** I stay ahead of my day and can jump to scheduling when needed.
-**Acceptance criteria**
-- Given meetings are scheduled for today, when I view home, then a count badge shows how many and the soonest meetings are previewed earliest-first with title, time range, and the counterpart.
-- Given no meetings are scheduled today, when I view home, then the panel shows "no meetings scheduled today".
-- Given I want to arrange one, when I choose "Schedule meeting", then I am taken to the meeting creation flow.
+### US-DASH-03 — Today's meetings  ·  **Won't**
+_Removed from Home on 2026-11-04: today's meetings are under **Today** on the Meetings page (US-MTG-01). The id stays so references keep working._
+**As an** Event Organizer, **I want** today's meetings on home, **so that** I stay ahead of my day.
 
 ### US-DASH-04 — Upcoming events progress  ·  **Should**
-**As an** Event Organizer, **I want** my next events shown with how many days remain and how full they are, **so that** I can spot an event falling behind on sales before it runs out of runway.
+**As an** Event Organizer, **I want** my next three events with days left and how full they are, **so that** I spot one falling behind before it runs out of time.
 **Acceptance criteria**
-- Given an event is coming up, when I view home, then its card shows a days-remaining chip, a preview of who's attending, and a progress bar for how full it is.
-- Given an event is filled to a given share of its capacity, when I view its card, then the progress reflects that share (for example, 83 of 100 seats reads as 83%).
-- Given an event starts today, when I view its card, then the chip reads "Today".
-- Given I have no upcoming events, when I view home, then the panel shows "no upcoming events".
-_Notes: Shows the soonest-starting events first, a small number at a time, with a link to the full events list._
+- Given I have upcoming events, when I view home, then the 3 soonest show, soonest first, each with a days-left chip, who's attending and a fill bar (83 of 100 seats reads 83%).
+- Given an event starts today, then its chip reads "Today".
+- Given nothing is upcoming, then the card says "no upcoming events".
+- Given I choose "See all", then the events list opens.
 
-### US-DASH-05 — Active-events activity share  ·  **Could**
-**As an** Event Organizer, **I want** a visual breakdown of how my currently active events compare on activity, **so that** I can see at a glance which events are driving the most sign-ups.
+### US-DASH-05 — Seats sold across active events  ·  **Could**
+**As an** Event Organizer, **I want** a ring showing how much of my active events' seats each event has sold, **so that** I see which events are filling and how many seats are left.
 **Acceptance criteria**
-- Given I have active events, when I view home, then a ring shows each event's share of activity with a color-keyed legend of event names and the total number of active events in the center.
-- Given I have no active events, when I view home, then the panel shows "no active events".
-- Given I want more detail, when I choose "See all", then I am taken to the events list.
+- Given active events, when I view home, then the ring has one coloured segment per event (its sold seats ÷ the combined capacity of all active events) and a grey "Seats left" track for the rest. Example: events of 100, 200 and 200 seats that sold 50, 100 and 150 read 10%, 20% and 30%, with 40% left.
+- Given the ring, then segments and legend run largest first, with at most 6 colours: past 6 events, the 5 largest show and the rest merge into "Other events". The legend names each, plus "Seats left"; the centre shows only the number of active events.
+- Given the dashboard's capacity filled (US-DASH-08), then the sold segments together agree with it.
+- Given no active event has a seat limit, then the centre still shows the count and a "no seat limits set" note replaces the segments, never 0% sold. Given no active events, then the card says "no active events".
+- Given I choose "See all", then the events list opens.
+_Notes: Active means not draft, completed or cancelled. Tickets with no seat limit count in neither sold seats nor capacity._
 
-### US-DASH-06 — Operational alerts  ·  **Must**
-**As an** Event Organizer, **I want** a running list of things that need action — approvals, declined payments, unconfirmed speakers, pending replies — each linking straight to where I can fix it, **so that** nothing that costs me money or attendees slips through.
+### US-DASH-06 — To do: the most urgent operational alerts  ·  **Must**
+**As an** Event Organizer, **I want** a To do card with the three most urgent things that need me, each linking to where I fix it, **so that** I start the day on what matters and nothing slips.
 **Acceptance criteria**
-- Given there are unresolved issues I can act on, when I view home, then each appears with a clear severity indicator and text, with the most urgent shown first, and a link to the right place to resolve it.
-- Given I click an alert, when I resolve the issue in that module, then the alert is gone the next time home refreshes.
-- Given an alert concerns finance (for example a declined payment), when I do not have finance access, then that alert is not shown to me.
-- Given there is nothing outstanding, when I view home, then the panel shows "you're all caught up".
-_Notes: Alerts only point me to the right module — resolving always happens there, never on the home screen._
+- Given alerts I can act on, when I view home, then To do lists the 3 most urgent, each with its text, priority badge, date raised, event and a link to where it is resolved.
+- Given an alert's kind, then declined payments read **High**; registrations awaiting approval and ticket types nearly sold out read **Medium**; **Low** is kept for informational alerts (none yet).
+- Given a ticket type on sale with a seat limit, when 80% or more of its seats are sold, then it is nearly sold out: the same types as Tickets selling fast (US-DASH-11).
+- Given several alerts, then High come first, then Medium, then Low; within a priority, the oldest first.
+- Given several items of one kind in one event, then they form one alert with a count ("2 payments declined"), dated by the oldest item; a nearly-sold-out alert is dated when it last crossed 80%. Dates are Bangkok dates in my language.
+- Given an alert I could not resolve in its module (declined payments without finance access; approvals without the right to approve, for example Staff; nearly sold out without the right to manage ticket types), then I do not see it, here or in the feed.
+- Given I resolve an alert in its module, then it leaves To do at the next refresh and the next one moves up. Given nothing is left, then the card says "You're all caught up".
+- Given I choose "View all", then the notification feed (US-MSG-03) opens with every alert I can act on.
+_Notes: Home never dismisses, edits or re-prioritises an alert; its priority comes from its kind._
 
-### US-DASH-07 — Website template shortcuts  ·  **Could**
-**As an** Event Organizer, **I want** quick shortcuts to the available event landing-page templates, **so that** I can move quickly from my overview into building an event's public page.
-**Acceptance criteria**
-- Given the templates panel is shown, when I choose a template, then I am taken to the landing-pages area to work with it.
-- Given the available templates change, when I reload home, then the shortcuts reflect the current set.
+### US-DASH-07 — Website template shortcuts  ·  **Won't**
+_Removed from Home on 2026-11-04: templates are chosen when an event's page is set up (US-EVT-07, US-PAGE-10). The id stays so references keep working._
+**As an** Event Organizer, **I want** shortcuts to the landing-page templates on home, **so that** I can start an event's public page quickly.
 
 ### US-DASH-08 — Performance KPIs at a glance  ·  **Must**
 **As an** Admin, **I want** headline numbers for registrations, ticket revenue, upcoming events, check-in rate, and capacity filled — each with how it moved versus the previous period — **so that** I can judge the health of my events in seconds.
@@ -1758,15 +1765,43 @@ _Notes: Because one booking can hold up to 8 seats, anything at or below 8 remai
 _Notes: Attendee names are only shown to team members allowed to view registrations._
 
 ### US-DASH-13 — Trustworthy, always-current overview  ·  **Must**
-**As an** Event Organizer, **I want** every figure on home and the dashboard to stay current, stay consistent with each other, and only show what I'm allowed to see, **so that** I can trust the numbers and act on them with confidence.
+**As an** Event Organizer, **I want** home and the dashboard to stay current, agree with each other and show only what I may see, **so that** I can trust the numbers.
 **Acceptance criteria**
-- Given I am viewing home or the dashboard, when a new registration is confirmed, then within a short refresh window the registration total, ticket-type breakdown, and recent-registrations table all update and agree with each other.
-- Given operational feeds (today's sign-ups, alerts, selling-fast) versus longer-term analytics, when I view them, then the operational feeds refresh near-real-time while analytics refresh on a slightly longer cadence, and I can force a manual refresh.
-- Given a single panel can't load, when the page renders, then only that panel shows an "unavailable / retry" state while every other panel works normally.
-- Given a figure I'm not permitted to see (finance or attendee personal data), when I view the surface, then it is hidden — never shown as zero or a placeholder value.
-- Given all dates, "today", days-remaining, and times, when I read them, then they are in Bangkok time and formatted in my language (English or Thai).
-_Notes: Home and the dashboard never change data — every actionable item is a link into the module that owns it, which enforces its own permissions and records the change._
+- Given a new confirmed registration, then within a short refresh every figure it touches updates and agrees: on the dashboard the total, ticket-type split and recent table; on home today's registrations, recent orders and the insight's registrations.
+- Given the operational cards (today's sign-ups, recent orders, To do, selling fast), then they refresh near-real-time; analytics (ticket revenue, the rest of the insight, KPIs and trends) refresh more slowly; reloading the page refreshes everything.
+- Given one card fails to load, then only that card shows "unavailable · retry".
+- Given a figure I may not see (finance or attendee personal data), then it is hidden, never shown as 0 or a placeholder.
+- Given any date, "today", days left or time, then it is in Bangkok time and my language (English or Thai).
+_Notes: Home and the dashboard never change data; every action is a link into the module that owns it._
 
+### US-DASH-14 — Ticket revenue on Home  ·  **Should**
+**As an** Event Organizer, **I want** my net ticket revenue for the last 30 days against the 30 before, **so that** each morning I can tell whether sales are speeding up or slowing down.
+**Acceptance criteria**
+- Given I have finance access, when I view home, then the card shows net revenue in ฿ across all events for the last 30 Bangkok days (today included), with two daily lines: these 30 days and the 30 before.
+- Given revenue changed, then a % pill shows it (for example +12.5%): positive-coloured when up, warning-coloured when down. With no revenue in the previous 30 days the change is neutral; with none in either, the card reads ฿0, neutral.
+- Given I have no finance access, then the card is not shown at all (no ฿0, blank or lock) and home lays out without it.
+- Given the same period, then the total agrees with the dashboard's ticket revenue (US-DASH-08).
+_Notes: Net of VAT and refunds, as on the dashboard._
+
+### US-DASH-15 — Check-in insight on Home  ·  **Should**
+**As an** Event Organizer, **I want** one small card that shows my check-in rate, capacity filled or registrations over the last 12 days, **so that** I spot a trend without opening the dashboard.
+**Acceptance criteria**
+- Given I view home, then the card opens on check-in rate: today's value as the headline and one candle per day for the last 12 Bangkok days, today on the right.
+- Given a day's candle, then it runs from the day before's value to that day's: green if it rose or held, grey if it fell. Pointing at it, or a screen reader, reads that day's value.
+- Given the three dots, when I choose one, then the card switches to check-in rate (%), capacity filled (%) or registrations (a count) without a reload, and that dot is highlighted.
+- Given a day with nothing to measure (no event started that day, for check-in rate; no active event with a seat limit, for capacity filled), then it has no candle, and if it is today the headline shows "—", never 0%. A day with no registrations is a true 0.
+- Given the dashboard, then each day's check-in rate and registrations follow its KPI rules (US-DASH-08), today's capacity filled equals its capacity-filled figure, and today's registrations equal the Today's Registrations count (US-DASH-02).
+_Notes: A day's check-in rate is checked-in ÷ ticket holders, for the events that started that day. A day's capacity filled uses today's active events and capacity (as in US-DASH-05): seats sold by the end of that day ÷ that capacity; a refunded or cancelled seat counts on no day. Shown to every member who can open home: none of the three is money or personal data._
+
+### US-DASH-16 — Recent orders on Home  ·  **Should**
+**As an** Event Organizer, **I want** my three newest orders (buyer, event, date, amount, status), sortable by date or amount, **so that** I see money coming in and catch a pending or refunded order.
+**Acceptance criteria**
+- Given orders exist, when I view home, then the 3 newest show, newest first, with the buyer's name and email, event, date, amount in ฿ and a Paid / Pending / Refunded badge.
+- Given the sort headings, when I choose Amount, then the three re-order largest first; when I choose Date, newest first; choosing the current sort again reverses it (so Date, as the card opens, gives oldest first). Sorting never brings in other orders.
+- Given I have no finance access, then there is no Amount column or sort. Given I may not view registrations, then there are no buyer names or emails.
+- Given I choose "View all", then the payments list opens (US-FIN-01); without finance access it is not offered.
+- Given a failed payment attempt or a free registration, then it is not an order here; a refunded order keeps its amount with a Refunded badge. With no orders, the card says "no orders yet".
+_Notes: These are the payments list's Paid, Pending and Refunded payments. The amount is what the buyer paid, VAT included, unlike Ticket revenue, which is net._
 
 ---
 

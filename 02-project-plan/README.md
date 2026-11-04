@@ -7,7 +7,7 @@ resourcing, dependencies, and risk — owned by the Project Manager.
 - **[project-plan.md](project-plan.md)** — the delivery plan built from the
   [product backlog](../01-requirements-and-features/functional-requirements.md):
   - **Phased release plan** — Phase 0 Foundations → Phase 1 **MVP** (90 Must) → Phase 2 Growth
-    (57 Should) → Phase 3 Polish (15 Could).
+    (59 Should) → Phase 3 Polish (14 Could).
   - **Dated milestones** — kickoff 2026-08-03 · 🚀 **MVP launch 2026-12-08** · 🏁 **v1.0 GA 2027-03-16**.
   - **15-sprint schedule** (2-week sprints) with a Gantt timeline and dependency-driven sequencing.
   - **Team & RACI**, **risk register**, **Definition of Done / release criteria**, and governance cadence.

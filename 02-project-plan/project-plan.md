@@ -6,7 +6,7 @@
 | **Author** | Project Manager |
 | **Version** | 1.1 |
 | **Date** | 2026-07-23 |
-| **Planning basis** | [Product backlog](../01-requirements-and-features/functional-requirements.md) — 162 user stories (90 Must / 57 Should / 15 Could) + [46 quality requirements](../01-requirements-and-features/non-functional-requirements.md) |
+| **Planning basis** | [Product backlog](../01-requirements-and-features/functional-requirements.md) — 165 user stories (90 Must / 59 Should / 14 Could / 2 Won't) + [46 quality requirements](../01-requirements-and-features/non-functional-requirements.md) |
 | **Delivery approach** | Agile / Scrum · 2-week sprints |
 | **Target** | MVP public launch **Dec 2026** · v1.0 GA **Mar 2027** |
 
@@ -34,7 +34,7 @@ replacing the current front-end prototype. Objectives are SMART:
 | ID | Objective | Measure (M) | Target (T) |
 |----|-----------|-------------|-----------|
 | **O1** | Launch the MVP taking **real registrations & payments** | MVP live; ≥1 real paid registration & QR check-in in production | **2026-12-08** |
-| **O2** | Deliver **v1.0** (all Must + Should + selected Could) within budget | 147+ of 162 stories accepted; ≤ approved budget (§6) | **2027-03-16** |
+| **O2** | Deliver **v1.0** (all Must + Should + selected Could) within budget | 149+ of the 163 stories not marked Won't accepted; ≤ approved budget (§6) | **2027-03-16** |
 | **O3** | Meet **launch-critical quality bars** | Must-priority NFRs verified (checkout confirm < 2s p95; page load < 2.5s p95; PDPA-compliant) | at **M3** (2026-12-08) |
 | **O4** | Ship at an agreed **quality level** | Zero open Sev-1/Sev-2 defects at each release; ≥ 90% of Must stories accepted first-pass | each release |
 
@@ -42,7 +42,7 @@ replacing the current front-end prototype. Objectives are SMART:
 
 ## 2. Scope statement
 
-**In scope** — the 13 epics / 162 user stories in the backlog; a backend + datastore; real
+**In scope** — the 13 epics / 163 user stories in the backlog (165 less the 2 marked Won't); a backend + datastore; real
 authentication; Stripe + PromptPay payments; email/SMS; and the integrations in the spec.
 
 **Out of scope (this release train)** — native mobile apps; multi-currency beyond THB; a public
@@ -105,15 +105,15 @@ refinement, review/demo + retro (last day). Sequencing is dependency-driven (§4
 |---|---|---|---|
 | **M0** | Project kickoff | **2026-08-03** | Team onboarded, environments provisioned |
 | **M1** | Foundations complete | **2026-08-28** | Auth, data model, CI/CD, Stripe/PromptPay in test |
-| **M2** | MVP feature-complete | **2026-11-20** | **83 of 89** Must stories built & QA-passed in staging (all except the 6 deferred E12 Meetings stories — see note) |
+| **M2** | MVP feature-complete | **2026-11-20** | **84 of 90** Must stories built & QA-passed in staging (all except the 6 deferred E12 Meetings stories — see note) |
 | **M3** | 🚀 **MVP public launch (GA)** | **2026-12-08** | Beta hardening done; launch NFRs met; real payments live |
-| **M4** | Growth release | **2027-02-16** | 57 Should stories + the 6 deferred Must stories delivered |
+| **M4** | Growth release | **2027-02-16** | 59 Should stories + the 6 deferred Must stories delivered |
 | **M5** | 🏁 **v1.0 GA** | **2027-03-16** | Could stories + full accessibility/performance/PDPA sign-off |
 
 **Note — Must stories deferred past M2 (recorded decision).** Six Must stories in **E12 Coordinate
 Meetings** (`US-MTG-01`…`05`, `07`) are scheduled in Phase 2 (sprint 11), *after* M2. They are
 organizer-internal logistics and sit off the core money path, so deferring them does not block the
-M3 launch. M2's exit criterion is scoped accordingly rather than claiming all 89.
+M3 launch. M2's exit criterion is scoped accordingly rather than claiming all 90.
 
 Two consequences of this that are **also** deliberate, and are called out here so they are choices
 rather than arithmetic accidents:
