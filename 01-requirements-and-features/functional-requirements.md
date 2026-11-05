@@ -17,6 +17,8 @@ The backlog holds **165 user stories**: **90 Must**, **59 Should**, **14 Could**
 
 **Won't** marks a story withdrawn from the product: it keeps its id, because code and test cases cite it, and a one-line note under its title says what replaced it. A Won't story is not (or no longer) part of the product: anything already built for it is removed, and its test cases are not run.
 
+Each story describes what the web app does. A story noted **_Not in the web app yet._** is planned: its feature has no screen today, so it lists only the core rules, and test cases for the missing parts are withdrawn until it ships.
+
 ## Epics
 
 | # | Epic | Stories | Must | Should | Could | Won't |
@@ -99,130 +101,122 @@ area — `E1` holds `US-ACC-*`, `E6` holds `US-DISC-*`.
 
 # Epic E1 — Accounts & Sign-in
 
-**Goal (business value):** Give organizers and attendees a fast, trustworthy, bilingual (EN/TH) way to create accounts, sign in, and stay signed in safely — with the two audiences kept cleanly apart — so that access friction never blocks the core money path (discover → register → pay → ticket → check-in) and accounts stay protected from takeover.
+**Goal (business value):** Give organizers and attendees a fast, bilingual (EN/TH) way to sign up, sign in and stay signed in, with the two audiences kept apart, so access never blocks the path from discovery to check-in and accounts resist takeover.
 
-**Primary users:** Event Organizer (including the workspace owner/Admin), Staff / Team member, Registered Attendee, Guest Attendee (no account).
+**Primary users:** Event Organizers (the workspace owner signs up as Admin), Staff and other teammates, Registered Attendees, and Guest Attendees without an account.
 
 **Success measures:**
-- Sign-in success rate (and a low share of failed sign-ins).
-- Account activation rate — sign-ups that confirm their email and reach first use.
-- Self-service password-reset success rate (support tickets avoided).
-- Share of organizer accounts with two-factor turned on.
-- Account-takeover / fraudulent sign-in incidents kept at or near zero.
-- Time-to-first-console-access for a new organizer.
+- Sign-in success rate, with few failed sign-ins.
+- Sign-ups that confirm and reach first use; new organizers' time to the console.
+- Password resets completed self-service, avoiding support tickets.
+- Account takeovers near zero; share of organizers with two-factor on.
 
 ## User stories
 
 ### US-ACC-01 — Create an organizer account · **Must**
-**As an** Event Organizer, **I want** to create a workspace account with my name, email and password and confirm that I own that email, **so that** I can start setting up events, selling tickets and managing registrations.
+**As an** Event Organizer, **I want** to sign up with a workspace name, my name, email and password, **so that** I can start running events.
 **Acceptance criteria**
-- Given I complete the sign-up form with a valid email, a strong-enough password, and I accept the Terms & Privacy, when I submit, then my account is created, I'm told to check my inbox, and I am not signed in until I confirm my email.
-- Given I open the confirmation link in my email while it is still valid, when it loads, then my account becomes active and I can sign in.
-- Given I try to sign up with an email that is already registered, when I submit, then I see the same "check your inbox" confirmation (my existing account is never revealed) and no duplicate account is created.
-- Given I have not accepted the Terms & Privacy, when I try to submit, then I am asked to accept them before I can continue.
-- Given my password is too weak, when I type it, then I see live guidance on making it stronger and I cannot submit until it meets the minimum.
-_(Notes: The first person to register becomes the workspace owner; teammates join an existing workspace by invitation, which is covered by the Access & Team epic. The same password-strength guidance and minimum standard apply wherever a password is set — sign-up, reset and change.)_
+- Given I sign up, then "Check your email" opens and I'm not signed in; an existing organizer's email gets the same page, no new account.
+- Given I open the emailed link within 24 hours, then "Email confirmed" shows and "Sign in" takes me to sign-in; an expired link is refused.
+- Given I type a password, then a meter asks for 8+ characters with a number and a symbol, then rates it Weak, Fair or Strong.
+- Given the password fails that rule, the passwords differ, Terms is unticked or the workspace name is taken, then sign-up stops and I'm told why.
+- Given I choose "Send it again" on "Check your email", then a fresh link is sent and the button waits 60 seconds.
+_Notes: Whoever signs up owns the new workspace; teammates join by invitation (US-SET-11)._
 
 ### US-ACC-02 — Organizer sign-in · **Must**
-**As an** Event Organizer or Staff member, **I want** to sign in with my email and password, **so that** I can reach my organizer console and manage my events.
+**As an** Event Organizer or Staff member, **I want** to sign in with my email and password, **so that** I reach my organizer console.
 **Acceptance criteria**
-- Given my account is active and email-confirmed, when I enter the correct email and password, then I am signed in and taken to my console home.
-- Given I enter a wrong email or password, when I submit, then I see a single neutral message that does not reveal which was wrong or whether the email exists.
-- Given my email is not yet confirmed, when I try to sign in, then I am asked to confirm it first and a fresh confirmation email is sent.
-- Given my access has been suspended, when I sign in with correct details, then I am refused.
-_(Notes: When a sign-in comes from an unrecognized device, the account owner is emailed a "new device" heads-up for reassurance.)_
+- Given my account is active and confirmed, when I sign in on "Welcome back", then I land on Home.
+- Given a wrong email or password, then I'm told my email or password is invalid, the same whether or not the email has an account.
+- Given my email is unconfirmed, when I sign in with the right password, then I'm refused, asked to confirm, and sent a fresh link.
+- Given my access is suspended, when I sign in with the right password, then I'm refused and told my access is suspended.
+_Notes: If one email and password open several workspaces, I pick the workspace before signing in._
 
 ### US-ACC-03 — Attendee sign-in without forcing accounts · **Must**
-**As a** Registered Attendee, **I want** to sign in to the portal, **so that** I can see my tickets and registration history — while still being able to browse events and register without any account.
+**As a** Registered Attendee, **I want** to sign in to see my tickets, **so that** my bookings are in one place.
 **Acceptance criteria**
-- Given I have a confirmed attendee account, when I sign in with correct details, then I land on my "My tickets / My events" page and never inside the organizer console.
-- Given I am a Guest Attendee with no account, when I browse events and register for one, then I can complete registration and receive my ticket without ever creating an account.
-- Given I use an organizer-only email at the attendee sign-in, when I submit, then I see the neutral failure and no attendee session is created.
+- Given a confirmed attendee account, when I sign in, then I land on the "My Events" tab of "My Account", never the organizer console.
+- Given I'm a guest, then I can browse "What's on in Bangkok" and register without an account; the confirmation email links to my ticket.
+- Given my email has only an organizer account, when I use it at the attendee sign-in, then I'm refused as for a wrong password.
 
 ### US-ACC-04 — Reset a forgotten password · **Must**
-**As an** Attendee or Organizer who forgot my password, **I want** to request a reset link by email and set a new password, **so that** I can regain access on my own without contacting support.
+**As an** Organizer or Attendee who forgot my password, **I want** a reset link by email, **so that** I can set a new one myself.
 **Acceptance criteria**
-- Given I have an active account with a password in the audience I am resetting for (organizer or attendee), when I submit my email on that audience's forgot-password screen, then I am told a reset link is on its way and I receive a single-use link that lets me set a new password — one link for each workspace where my address has such an account, each email naming the workspace it opens.
-- Given no account in that audience uses the email I entered, when I submit, then no email is sent and I am told plainly that no organizer (or attendee) account uses that address, with a prompt to check the spelling, try my account in the other audience, or create one.
-- Given I keep asking about an address that has no account in that audience, when the misses reach the same limit that locks sign-in (US-ACC-12), then the form refuses that address for the same cool-off, saying it was too many password-reset attempts and how long is left — and while the lock holds it no longer says whether an account exists.
-- Given my account signs in only through a social provider and has no password, when I submit my email, then no email is sent and I am told there is no password to reset and to continue with the social sign-in that account is linked to, named (Google, Apple or LinkedIn) — never one it does not use.
-- Given my account exists but cannot sign in yet — my email is not confirmed, my teammate invitation is not accepted, or my access is suspended — when I submit my email, then no email is sent and I am told the one thing that unblocks it — whether or not the account has a password yet: open the confirmation link (signing in sends a fresh one), open the invitation email and choose a password there, or ask a workspace admin to reactivate my access.
-- Given I open a valid reset link and set a new, strong-enough password, when I confirm, then my password is changed, every device is signed out, and I must sign in again.
-- Given my reset link has expired or was already used, when I open it, then I am told it is no longer valid and can request a new one.
-- Given I try to set my previous password again, when I submit, then it is rejected.
-_(Notes: If two-factor is turned on, the next sign-in still asks for the second step — a reset does not skip it.)_
-
-_Why this form says when no account matches: it deliberately departs from the usual advice that a reset form answer the same whether or not an account exists — and from sign-up and sign-in, which still do (US-ACC-01, US-ACC-02). Silence for an address with no account looks exactly like a mail that was sent and lost: people wait, ask again, and wait again for a link that could never have been written. Most often the address belongs to the other audience (organizer and attendee accounts are separate, US-ACC-11), which a neutral answer cannot say. The cost is accepted knowingly: this form confirms whether an account exists in that audience._
-
-_What bounds that cost: every miss counts against that address in that audience, on the same limit and cool-off as sign-in (US-ACC-12) but on its own count — probing the reset form never locks anyone's sign-in, and failed sign-ins never lock the reset form, whatever workspace a sign-in attempt names (the two counts are kept apart by the service itself, not by how an address or workspace is spelled). The lock is checked before the account is looked up, so a locked address learns nothing at all. The count limits how often any one address can be asked about; it does not limit how many different addresses one person can try, which would need a separate per-requester limit. Only a miss counts: an account with no password, or one that cannot sign in yet, is the account's own state rather than somebody guessing, so it never uses up the real owner's attempts. If the service that keeps the count is unavailable, the form keeps working (availability over lockout, as for sign-in)._
-
-_Why every account on the address is answered for: an organizer's address can hold accounts in more than one workspace — an owner in one, an unaccepted invitation in another (US-ACC-02). The answer weighs every account in that audience, never whichever is found first. Each one that can sign in with a password gets its own link, because a link resets exactly one account's password, and each email names its workspace so the person can tell them apart. Only when none can use a link is there a refusal, and then it is the one that gets the person in soonest: a social sign-in that already works, then an unconfirmed address, then an unaccepted invitation, then a suspension. The on-screen answer is the same however many links went out, so the form never says how many workspaces an address belongs to — sign-in reveals that only after the password is proven (US-ACC-02). An attendee has one account at most, in the platform-wide realm, so their email names no workspace._
-
-_Why a blocked account gets no link: only an active account can sign in, so a reset for an unconfirmed, invited or suspended account would end in "please sign in" followed by a refusal at the door — a success message that sends people somewhere they will be turned away. Nor does this form send a fresh confirmation email: it asks for no password, so sending from it would let anyone fill a stranger's inbox. Signing in with the correct password resends one (US-ACC-02)._
+- Given I have an account in that audience, when I use "Forgot password?", then I'm told to check my inbox; the link lasts 1 hour.
+- Given no such account exists, or mine is unconfirmed, still invited or suspended, then nothing is sent and I'm told why and what to do.
+- Given 5 misses for one address within 15 minutes, then further requests for it are refused for 15 minutes.
+- Given a valid link, when I choose "Set new password", then "Password reset" shows, every device is signed out and the new password works.
+- Given an expired or used link, or a new password matching my current one, then it's refused; a dead link offers "Request a new link".
+_Notes: An organizer in two workspaces gets a separate email naming each, and a reset leaves two-factor on._
 
 ### US-ACC-05 — Change my password while signed in · **Must**
-**As a** signed-in Organizer or Attendee, **I want** to change my password after confirming my current one, **so that** I can keep my account secure without going through email.
+**As a** signed-in Organizer or Attendee, **I want** to change my password by confirming my current one, **so that** I stay secure without email.
 **Acceptance criteria**
-- Given I enter my correct current password and a new, strong-enough one, when I save, then my password changes and my other devices are signed out while this one stays signed in.
-- Given I enter the wrong current password, when I save, then the change is refused and nothing is signed out.
-- Given my new password is the same as my current one, when I save, then it is rejected.
-
-_Note: the same capability as **US-SET-02** (E2 — Configure the Workspace & Team), which is its Settings surface. **Build it once, here in E1**; E2 only links to it. Both are Must — do not implement twice._
+- Given I choose "Update password" with my current password and the new one twice, then it changes and only my other devices are signed out.
+- Given my password changed, then I get an email, in English or Thai, saying when (Bangkok time) and how many other sign-ins were signed out.
+- Given my current password is wrong, then I'm told so and nothing changes or signs out.
+- Given the new password matches my current one, or the two copies differ, then nothing changes and I'm told why.
+- Given the new password lacks 8+ characters, a number or a symbol, then it's refused, as at sign-up.
+_Notes: Organizers find it in Settings → "Security" (US-SET-02), attendees in "My Account" → "Settings"._
 
 ### US-ACC-06 — Sign in with Google, Apple or LinkedIn · **Should**
-**As an** Attendee or Organizer, **I want** to sign in or sign up using an account I already have, **so that** I can get started in one tap without creating another password.
+**As an** Attendee or Organizer, **I want** to sign up or in with an account I already have, **so that** I skip another password.
 **Acceptance criteria**
-- Given I am new and choose a social provider, when it confirms my email, then an account is created for me already marked as confirmed and I am taken to the right home for my audience.
-- Given I already have a password account with the same email, when I use a social provider, then it links to my existing account and no duplicate is created.
-- Given I cancel the provider's consent screen, when I return, then I am told sign-in was cancelled and I am not signed in.
-_(Notes: Available providers differ by audience (organizer: Google/LinkedIn; attendee: Google/Apple). A social sign-in started from an organizer page only ever creates or links an organizer account; from the attendee portal, only an attendee account — never crossing between the two.)_
+- Given the provider confirms my email, then it links to my account with that email, or creates a confirmed one; never a duplicate.
+- Given I finish the provider's consent screen, then I land on my audience's home; if I cancel it, I'm told so and not signed in.
+- Given an organizer page, then Google or LinkedIn create or link only organizer accounts; on the attendee portal, Google or Apple only attendee ones.
+_Notes: Organizer sign-in and sign-up show a Google button that only says it isn't connected yet._
+_Not in the web app yet._
 
 ### US-ACC-07 — Extra security with two-factor sign-in · **Should**
-**As a** security-conscious Organizer or Attendee, **I want** to add a second step at sign-in — a code from my authenticator app — **so that** a stolen password alone cannot get into my account.
+**As an** Organizer or Attendee, **I want** sign-in to need my authenticator app's code, **so that** a stolen password alone can't get in.
 **Acceptance criteria**
-- Given I have turned on two-factor, when I sign in with the right password, then I am asked for a 6-digit code before I am let in.
-- Given I enter a valid current code, when I submit, then I am signed in.
-- Given I have lost my authenticator, when I enter one of my saved single-use recovery codes, then I am let in and that recovery code can never be used again.
-- Given I choose "trust this device," when I sign in again from that device within 30 days, then I am not asked for a code.
-_(Notes: Turning two-factor on and off and managing recovery codes lives in the security-settings surface; this story covers only the challenge shown at sign-in time.)_
+- Given two-factor is on, when my password is right, then "Enter your code" asks for a 6-digit code before letting me in.
+- Given I enter my app's current code or a recovery code and choose "Verify", then I'm signed in; each recovery code works once.
+- Given a wrong or already-used code, then I'm told it didn't work and to try the next one or a recovery code.
+- Given more than 5 minutes pass after my password, when I enter a code, then I'm told the sign-in expired and must sign in again.
+_Notes: Two-factor and recovery codes are managed in Settings → "Security" (US-SET-03) or the attendee "Settings" tab._
 
 ### US-ACC-08 — Stay signed in on my device · **Must**
-**As an** Organizer or Attendee, **I want** to choose to be remembered on my device, **so that** I can return without re-entering my details every time — while shared or public devices do not stay signed in.
+**As an** Organizer or Attendee, **I want** "Remember me" at sign-in, **so that** I stay signed in for a week, not a day.
 **Acceptance criteria**
-- Given I sign in without ticking "Remember me," when I close and reopen my browser, then I am signed out and must sign in again.
-- Given I sign in with "Remember me," when I come back within the remembered period, then I am still signed in.
-- Given I stay away for a long time, when the remembered period lapses, then I am asked to sign in again.
+- Given I sign in without "Remember me", then I stay signed in on that browser, even after closing it, for up to 1 day.
+- Given I sign in with "Remember me", then I stay signed in for up to 7 days.
+- Given that period has passed since sign-in (not my last visit), when I open a page, then I must sign in again.
+_Notes: On a shared computer, use "Sign out" (US-ACC-10)._
 
 ### US-ACC-09 — See and sign out my other devices · **Should**
-**As an** Organizer or Attendee, **I want** to see where my account is currently signed in and sign out any device other than the one I am using, **so that** I can cut off access from a lost or shared device.
+**As an** Organizer or Attendee, **I want** to see and sign out my other devices, **so that** a lost or shared one loses access.
 **Acceptance criteria**
-- Given I open my active-sessions list, when it loads, then I see each session's device, rough location and how recently it was active, with my current device clearly marked.
-- Given I sign out another device, when I confirm, then that device loses access the next time it is used and disappears from my list.
-- Given I view my current device in the list, when I look at it, then it is marked "This device" and offers no sign-out control there (I use normal sign-out for that).
-
-_Note: the same capability as **US-SET-04** (E2 — Configure the Workspace & Team), which is its Settings surface, plus a bulk 'sign out all other sessions' action. **Build it once, here in E1.**_
+- Given I'm an organizer, then Settings → "Security" → "Active sessions" lists each sign-in's device, IP address and sign-in date and time (Bangkok).
+- Given my current sign-in, then it's marked "This device" with no "Revoke" button.
+- Given I choose "Revoke" or "Sign out everywhere else", then those sessions leave the list and are signed out at their next action.
+- Given I'm an attendee, then "My Account" → "Settings" → "Other devices" counts my other sign-ins and "Sign out" ends them all.
+_Notes: The organizer list is the same screen as US-SET-04._
 
 ### US-ACC-10 — Sign out · **Must**
-**As a** signed-in Organizer or Attendee, **I want** to sign out, **so that** I can end my session and protect my account on this device.
+**As a** signed-in Organizer or Attendee, **I want** to sign out, **so that** my session ends on this device.
 **Acceptance criteria**
-- Given I am signed in, when I choose Sign out, then my session ends and I am returned to the sign-in screen, and protected pages require signing in again.
-- Given I am signed in as both an organizer and an attendee in the same browser, when I sign out of one, then the other stays signed in.
+- Given I'm an organizer, when I choose "Sign out" in my user menu, then the organizer sign-in opens and console pages need sign-in again.
+- Given I'm an attendee, when I choose "Sign out" on "My Account", then my session ends and the attendee sign-in opens.
+- Given I'm an organizer, when I sign in as an attendee in the same browser, then my console sign-in ends: one sign-in per browser.
 
 ### US-ACC-11 — Keep organizer and attendee accounts cleanly separated · **Must**
-**As the** business, **I want** organizer accounts and attendee accounts kept completely separate — even for the same email — **so that** each audience only ever reaches its own area and the two can never be confused or crossed.
+**As the** business, **I want** organizer and attendee accounts kept separate, even for the same email, **so that** each audience only reaches its own area.
 **Acceptance criteria**
-- Given I am signed in as an attendee, when I try to open an organizer console page, then I am sent to the organizer sign-in instead.
-- Given I am signed in as an organizer, when I try to open a personal attendee page, then I am sent to the attendee sign-in instead.
-- Given the same email is registered as both an organizer and an attendee, when I change or reset the password on one, then the other is unaffected, and I can be signed into both at once in the same browser.
-- Given I am not signed in, when I try to open a protected page, then I am taken to the right sign-in and returned to where I was headed once I sign in.
-_(Notes: Event browsing and event registration stay public and never require an account. Detailed team roles and what each organizer teammate may do are covered by the Access & Team / Settings epic; this epic covers only audience-level separation.)_
+- Given I'm an attendee opening an organizer page, or an organizer opening "My Account", then I'm sent to that page's sign-in.
+- Given the same email has an organizer and an attendee account, then each has its own password: changing or resetting one leaves the other unchanged.
+- Given I'm signed out, when I open a protected page, then its audience's sign-in opens and brings me back to that page afterwards.
+_Notes: Browsing and registering never need an account, and team roles are in US-SET-12._
 
 ### US-ACC-12 — Protect accounts from password-guessing · **Must**
-**As an** Attendee or Organizer, **I want** repeated wrong sign-in attempts to be slowed and temporarily blocked, **so that** no one can guess their way into my account.
+**As an** Attendee or Organizer, **I want** repeated wrong passwords to lock sign-in for a while, **so that** no one can guess my password.
 **Acceptance criteria**
-- Given several wrong password attempts in a row, when the limit is reached, then further attempts are refused for a cool-off period and I am told to try again later or reset my password.
-- Given a lockout is in force, when I enter the correct password after the cool-off, then I can sign in again.
-- Given the account does not exist, when the attempt is blocked, then the message is identical to any other failure and never reveals whether the account exists.
+- Given 5 wrong passwords for one email within 15 minutes, then sign-in for that email is locked for 15 minutes, even with the right password.
+- Given the lock is on, when I try to sign in, then I'm told there were too many attempts and how many minutes remain.
+- Given the cool-off has passed, when I enter the correct password, then I am signed in.
+- Given the email has no account, then the failures and the lock read exactly as for a real account, never revealing whether it exists.
+_Notes: Wrong two-factor codes lock the same way._
 
 
 ---
@@ -231,136 +225,141 @@ _(Notes: Event browsing and event registration stay public and never require an 
 
 # Epic E2 — Configure the Workspace & Team
 
-**Goal (business value):** Give every organizer a single place to set up who they are, keep their account secure, present a correct legal and branded identity on tax documents, turn on the ways attendees can pay, and bring the right teammates in with exactly the access their job needs — so the organization can start selling tickets, get paid, and run events safely without waiting on support.
+**Goal (business value):** Let an organization set itself up without waiting on support: secure accounts, the right seller details on invoices and receipts, working payments, and teammates with just the access their job needs. Then it can sell tickets and get paid.
 
-**Primary users:** Admin (owner of workspace, payments, team and roles), Event Organizer, Staff / Team member (self-service on their own account), and indirectly the Attendee (who sees correct receipts, branding and payment options).
+**Primary users:** Admin (workspace, payments, team and roles); Organizer and Staff (their own profile, security and notifications; Organization read-only); attendees indirectly (receipts, ways to pay).
 
 **Success measures:**
-- Time from account creation to "ready to sell" (organization details complete + a payment method live).
-- Share of workspaces that successfully accept a first real payment.
-- Team-onboarding speed: time from inviting a teammate to them completing their first task (e.g. a check-in).
-- Account-security adoption (share of Admins with two-factor turned on) and zero unauthorized-access incidents.
-- Invoice / receipt accuracy (correct seller name, Thai tax ID, VAT 7%) — measured by billing disputes and reissued documents.
+- Time to ready to sell, and share of workspaces taking a first real payment.
+- Time from invite to a teammate's first task, such as a check-in.
+- Admins with two-factor on; zero unauthorized-access incidents.
+- Receipts with the right seller, Tax ID and VAT 7%: few disputes or reissues.
 
 ## User stories
 
 ### US-SET-01 — My profile & preferences  ·  **Must**
-**As a** team member, **I want** to keep my name, contact details, timezone, language and photo up to date, **so that** colleagues can reach me and the console shows dates and copy in the way I read them.
+**As a** team member, **I want** to keep my contact details and language current, **so that** colleagues reach me and emails use my language.
 **Acceptance criteria**
-- Given I open my profile, when the page loads, then it shows my current name, email, phone, timezone, language and photo, ready to edit.
-- Given I edit my name or phone, when I save, then the change is kept and I see a confirmation.
-- Given I change my email, when I save, then my current sign-in email keeps working, my email shows as "unverified", and a confirmation link is sent to the new address so I can prove it's mine.
-- Given I edit fields but change my mind, when I choose Cancel, then everything returns to its last-saved values.
-- Given I set my timezone to Bangkok and language to Thai, when I view any date or menu, then times and copy appear in that timezone and language.
-_Notes: Profile photo (upload/remove, falls back to my initials) is a nice-to-have refinement within this story and can trail the identity fields if needed. A member edits only their own profile here._
+- Given I open Settings → "Profile", then I see my photo or initials and whether my email is verified.
+- Given I change my name, city, timezone, language or bio and choose "Save changes", then they are kept and I'm told so.
+- Given a new phone number, then it's saved only after I enter the 6-digit code texted to it ("Send code", then "Confirm").
+- Given I change my email, then the new address must confirm by link; the old gets a heads-up and keeps signing me in until then.
+- Given I choose ไทย as my language, then my account emails come in Thai; the console always shows Bangkok time.
+_Notes: Members edit only their own profile; photos can't be uploaded here._
 
 ### US-SET-02 — Change my password  ·  **Must**
-**As a** team member, **I want** to change my own password by confirming my current one, **so that** I can keep my account secure if my password is ever guessed or shared.
+**As a** team member, **I want** to change my password after confirming the current one, **so that** my account stays secure.
 **Acceptance criteria**
-- Given I enter my current password correctly and a strong new one (at least 8 characters with a number and a symbol), when I submit, then my password is updated and I see a confirmation.
-- Given my new password is weak or doesn't match its confirmation, when I submit, then I'm told why and nothing changes.
-- Given I enter the wrong current password, when I submit, then the change is refused and my password stays as it was.
-- Given my password changes successfully, when it's done, then I'm signed out everywhere else and receive an email letting me know my password was changed.
+- Given I enter my current password and a new one twice on Settings → "Security" and choose "Update password", then I'm told it's changed.
+- Given the new password isn't 8+ characters with a number and a symbol, or the two entries differ, then I'm told why and nothing changes.
+- Given my current password is wrong, then I'm told so and my password stays as it was.
+- Given the change succeeds, then my other devices are signed out, this one stays signed in, and I'm emailed about it.
 
-_Note: the Settings surface for **US-ACC-05** (E1 — Accounts & Sign-in), which owns the capability. Built in E1; this story is the entry point, not a second implementation._
+_Notes: The Settings side of **US-ACC-05** (E1), which owns this rule._
 
 ### US-SET-03 — Two-factor authentication & recovery codes  ·  **Should**
-**As a** security-conscious member, **I want** to protect my account with an authenticator app and keep backup recovery codes, **so that** a stolen password alone can't get anyone into my account.
+**As a** security-conscious member, **I want** two-factor sign-in with an authenticator app and backup codes, **so that** a stolen password alone can't get anyone in.
 **Acceptance criteria**
-- Given I start setup, when I scan the code with my authenticator app and enter the 6-digit code it shows, then two-factor turns on and I'm given 8 one-time recovery codes to save.
-- Given I enter a wrong or expired code, when I try to finish setup, then two-factor stays off and I'm asked to try again.
-- Given two-factor is on, when I later choose to turn it off, then I must first re-confirm it's me, and I'm emailed that two-factor was disabled.
-- Given I run low on recovery codes, when I regenerate them, then I receive a fresh set of 8 and the old codes stop working.
-_Notes: If the workspace requires two-factor for everyone, an individual member can't switch it off. Recovery codes are shown once and can be downloaded._
+- Given I switch two-factor on and choose "Start setup", then I see a QR code to scan or a key to type.
+- Given I enter the app's 6-digit code ("Enable 2FA"), then it's on and I get 8 one-time recovery codes, shown once to copy or save.
+- Given a wrong or expired code, then I'm told so and two-factor stays off.
+- Given two-factor is on, when I enter a current 6-digit code and choose "Turn off", then it's off and I'm emailed about it.
+_Notes: The code asked for at sign-in is US-ACC-07._
 
 ### US-SET-04 — Review & sign out my active sessions  ·  **Should**
-**As a** team member, **I want** to see everywhere my account is signed in and sign a lost or unfamiliar device out, **so that** I stay in control of where my account is active.
+**As a** team member, **I want** to see where I'm signed in and sign out lost or unknown devices, **so that** I control my account.
 **Acceptance criteria**
-- Given I open my active sessions, when the list loads, then I see each device with its rough location and how recently it was used, and my current device is clearly marked.
-- Given a device I don't recognize, when I sign it out, then that device is logged out on its next attempt and the entry disappears.
-- Given my current device, when I view the list, then it has no "sign out" control (I sign out normally instead).
-- Given I choose "sign out all other sessions", when I confirm, then every device except the one I'm using is signed out.
+- Given "Active sessions" on Settings → "Security", then each session shows its device (like Chrome on macOS), IP and sign-in time, in Bangkok time.
+- Given the session I'm using, then it's marked as this device and can't be revoked.
+- Given another session, when I choose "Revoke", then it leaves the list and that device loses access on its very next action.
+- Given more than one session, when I choose "Sign out everywhere else", then every session but this one is signed out.
 
-_Note: the Settings surface for **US-ACC-09** (E1 — Accounts & Sign-in), which owns the capability; this story adds only the bulk 'sign out all other sessions' action._
+_Notes: The Settings side of **US-ACC-09** (E1); this story adds "Sign out everywhere else"._
 
 ### US-SET-05 — Security & access audit log  ·  **Should**
-**As an** Admin, **I want** a tamper-proof, time-ordered record of sign-ins, role changes, exports and key security events that I can download, **so that** sensitive actions are traceable for compliance and investigations.
+**As an** Admin, **I want** a read-only, downloadable log of sign-ins, role and permission changes and exports, **so that** sensitive actions are traceable.
 **Acceptance criteria**
-- Given a teammate's role was changed, when I open the audit log, then I see an entry showing who changed it, from which role to which, and when.
-- Given I open the log, when it loads, then entries appear newest-first and cannot be edited or deleted from anywhere in the product.
-- Given I export the log for a date range, when the download completes, then I get a file for that range and the export itself is recorded as a new audit entry.
-- Given an entry involves a secret (like a saved payment key), when I view it, then only a masked hint is shown, never the full value.
-_Notes: A member always sees their own security events; workspace-wide events (others' role changes, exports, payment-key changes) are visible to Admins._
+- Given I choose "View log" on Settings → "Security", then the latest 20 entries show newest first: what, who, IP and Bangkok time.
+- Given a teammate's role changed, then an entry names them, the old and new role, who changed it and when.
+- Given I export a date range ("Export log"), then a CSV of those days downloads and the export is logged; a reversed range is refused.
+- Given any entry, then nothing in the product lets anyone edit or delete it.
+- Given I can't manage users, then I see only my own entries; an Admin sees the whole workspace's.
 
 ### US-SET-06 — Notification preferences  ·  **Should**
-**As a** team member, **I want** to choose per topic whether I'm alerted by email and/or SMS, **so that** I hear about what matters to me without noise.
+**As a** team member, **I want** to pick email and SMS alerts per topic, **so that** I hear what matters without noise.
 **Acceptance criteria**
-- Given the topics registrations, payments, reminders and product updates, when I view preferences, then I can switch email and SMS on or off for each independently.
-- Given I turn a channel off for a topic, when a matching event happens, then I'm not alerted on that channel for that topic.
-- Given I have no phone number on file, when I view preferences, then the SMS switches are unavailable with a prompt to add a phone.
-- Given I've turned off payment alerts, when a payment succeeds, then I still receive the receipt and other required legal/transactional messages, which always send.
+- Given Settings → "Notification preferences", then Registrations, Payments, Sales milestones, Feedback, Payouts, Operational alerts and Tasks each have Email and SMS switches.
+- Given I flip one switch, then only that topic's channel changes, saved at once and kept after a reload.
+- Given a topic I never changed, then its Email is on and its SMS is off.
+- Given I have no confirmed phone (US-SET-01), then the SMS column shows a dash, not switches.
+_Notes: Eventa saves these choices but sends no topic alerts yet; receipts and security emails aren't controlled here._
 
 ### US-SET-07 — Organization profile, tax details & branding  ·  **Must**
-**As an** Admin, **I want** to maintain our legal organization name, address, website, currency, Thai tax ID and logo, **so that** every invoice, receipt and public event page shows the correct, VAT-compliant seller identity.
+**As an** Admin, **I want** to keep our organization's name, address, Tax ID and logo correct, **so that** invoices and receipts name the right seller.
 **Acceptance criteria**
-- Given I fill in a valid organization name, address and 13-digit Thai tax ID, when I save, then the details are kept and appear on documents issued from then on.
-- Given a document was already issued, when I later change the organization details, then that past document is unchanged and only future documents use the new details.
-- Given a valid tax ID is on file, when a receipt is issued, then VAT 7% is itemized on it.
-- Given an invalid tax ID or website, when I save, then I'm told what's wrong and nothing is saved.
-- Given I'm an Organizer or Staff, when I open this page, then it's read-only or hidden and I can't change organization settings.
-_Notes: Uploading/removing the organization logo (shown on branded surfaces, applying to future documents only) is included here and is a lower-priority refinement than the legal details._
+- Given I save our details on Settings → "Organization", then I'm told so and new invoices and receipts show our name, address and Tax ID.
+- Given a document was already issued, when our details change, then it keeps the details it was issued with.
+- Given a Tax ID that isn't 13 digits or a website not starting with http:// or https://, then the field says why; nothing is saved.
+- Given I upload a JPEG, PNG or WebP logo up to 5 MB, then it replaces our side-rail initials; I can "Replace" or "Remove" it.
+- Given I'm an Organizer or Staff, then the page is read-only and says only an Admin can change it.
+_Notes: Currency, country and VAT rate are fixed; changing one goes through support._
 
 ### US-SET-08 — Connect our payment account  ·  **Must**
-**As an** Admin, **I want** to connect our payment account in test mode first and then go live, and disconnect it if needed, **so that** we can safely prove payments work before accepting real money from attendees.
+**As an** Admin, **I want** to connect Stripe with test keys, then live ones, **so that** we prove payments work before taking real money.
 **Acceptance criteria**
-- Given I connect a valid live payment account, when I save, then the workspace shows "Connected" and we can accept real payments.
-- Given I'm still in test mode, when I view the payments page, then a banner reminds me no real charges happen until we go live.
-- Given saved payment credentials, when I choose "Test connection", then I'm told whether they work — without any money moving — or given a clear reason they failed.
-- Given payments are connected, when I disconnect and confirm, then paid checkout is switched off, free events keep working, and past orders and payouts are untouched.
-_Notes: Sensitive saved payment details are never shown back in full after saving and never exposed to attendees._
+- Given I save our publishable key, secret key and webhook secret under "Test" or "Live", then Stripe checks them first; refused keys aren't saved.
+- Given saved test keys, then the status reads connected (test) and a banner says no real charges happen; live keys read connected (live), no banner.
+- Given saved keys, when I choose "Test connection", then I'm told it works or Stripe's reason it failed; no money moves.
+- Given a saved secret, then it's never shown again, only a masked tail.
+- Given I choose "Disconnect" and confirm, then paid checkout stops and keys are removed; free events, past orders and payouts are unaffected.
+_Notes: Live keys are accepted only on the production service._
 
 ### US-SET-09 — Choose payment methods at checkout  ·  **Must**
-**As an** Admin, **I want** to turn each payment method (cards, PromptPay, Apple Pay, Google Pay, bank transfer) on or off, **so that** attendees are offered exactly the ways to pay we support.
+**As an** Admin, **I want** to turn each payment method on or off, **so that** attendees are offered exactly the ways to pay we support.
 **Acceptance criteria**
-- Given PromptPay is enabled, when an attendee reaches checkout, then PromptPay is offered as a way to pay.
-- Given I disable a method, when new orders are placed, then that method no longer appears at checkout.
-- Given we still sell paid tickets, when I try to switch off the last remaining method, then I'm blocked and asked to keep at least one enabled.
-- Given a wallet method needs extra setup first, when its prerequisites aren't met, then the switch stays off with guidance on what to complete.
+- Given "Payment methods" on Settings → "Payments", then Card, PromptPay, Bank transfer, Apple Pay and Google Pay have switches; Card and PromptPay start on.
+- Given Card or PromptPay is on, then paid checkouts offer it; once switched off, it no longer appears.
+- Given we sell paid tickets, when I switch off the last method that's on, then I'm told to keep one and it stays on.
+- Given no connected payment account, when I switch on Apple Pay or Google Pay, then I'm told to connect one first; it stays off.
+_Notes: Checkout offers only Card and PromptPay today; the other switches are saved but not offered yet._
 
 ### US-SET-10 — Checkout & receipt preferences  ·  **Must**
-**As an** Admin, **I want** to set our default charge currency, the short label attendees see on their card statement, and whether we save cards and email receipts, **so that** attendees recognize the charge and get a proper receipt every time.
+**As an** Admin, **I want** to set our card-statement label and whether receipts are emailed, **so that** attendees recognize the charge and get a receipt.
 **Acceptance criteria**
-- Given a statement label of 22 characters or fewer, when I save, then it's kept and appears on attendees' card statements for later charges.
-- Given a label that's too long or uses disallowed characters, when I save, then I'm asked to shorten or fix it before it's accepted.
-- Given "email receipts" is on, when a payment succeeds, then the attendee receives a receipt with VAT 7% itemized.
-- Given my default currency differs from the organization currency, when I save, then I'm warned but not blocked.
+- Given I save a statement label, then I'm told it's saved and new card charges carry it; the box stops at 22 characters.
+- Given a card charge, then the statement shows our Stripe prefix plus the label's first 12 letters, numbers and spaces (EVENTA TICKETS → EVENTA TICKE).
+- Given a label with characters other than letters, numbers, spaces or . , ' -, then I'm told which are allowed and it isn't saved.
+- Given email receipts are on, when a payment succeeds, then the buyer is emailed a receipt in English or Thai itemizing the included VAT 7%.
+- Given email receipts are off, when a payment succeeds, then no receipt email is sent.
+_Notes: This label overrides the one on Settings → "Organization"; PromptPay payments carry none._
 
 ### US-SET-11 — Invite & manage teammates  ·  **Must**
-**As an** Admin, **I want** to find, invite, suspend, reactivate and remove teammates, **so that** the right people can work in our workspace and access ends the moment someone should no longer have it.
+**As an** Admin, **I want** to find, invite, suspend, reactivate and remove teammates, **so that** only the right people are in our workspace.
 **Acceptance criteria**
-- Given the team list, when I search or filter by status (all, active, invited, suspended) or role, then I see matching members with their role, status and last-active, and the counts update.
-- Given a new person's name, email and role, when I send an invite, then they appear as "Invited" and receive a join link by email.
-- Given an email that's already invited, when I invite it again, then the invitation is simply re-sent rather than duplicated; an already-active member is rejected as already in the workspace.
-- Given an active member who should pause access, when I suspend them, then they can no longer sign in and are signed out, while their role is preserved so reactivating restores it.
-- Given a member who should leave, when I confirm removal, then their access ends immediately, and their past work (events, exports) is kept for the record; they can be re-invited later.
-- Given the last remaining Admin, when I try to remove, suspend or demote them (or myself), then the action is blocked so the workspace is never left without an Admin.
+- Given Settings → "Users", then I search by name or email, filter by role, or pick a status tab (All, Active, Invited, Suspended) with counts.
+- Given I invite a name, email and role, then they're Invited, emailed a link, and Active once they set a password; re-inviting resends, never duplicates.
+- Given I suspend a member, then they're signed out at once and told they're suspended at sign-in; reactivating restores the same role.
+- Given I remove a member, then access ends at once, past work stays, and the address can be re-invited; an Active member's address can't.
+- Given the last Admin, when anyone tries to suspend, remove or change their role, then it's refused and I'm told to promote someone else first.
 
 ### US-SET-12 — Assign roles & fine-tune permissions  ·  **Must**
-**As an** Admin, **I want** to give each member one of the standard roles (Admin, Organizer, Staff, Attendee) and fine-tune what they can do across events, registrations, finance and settings, **so that** everyone can do exactly their job and nothing more.
+**As an** Admin, **I want** to give each member a role and fine-tune what roles allow, **so that** everyone can do their job, nothing more.
 **Acceptance criteria**
-- Given a Staff member, when I change them to Organizer, then they gain the Organizer capabilities and the change is recorded with before/after and who made it.
-- Given a role change, when the member next uses the console, then their access reflects the new permissions immediately, without them signing out and in.
-- Given the standard roles, when I review them, then Admin can do everything, Organizer can run events but not issue refunds or manage users/settings, Staff can only view registrations and check attendees in, and Attendee has no console access.
-- Given I try to grant myself more access than I currently have, when I save, then it's blocked.
-- Given sensitive capabilities (like exporting attendee data or issuing refunds) are granted, when saved, then the grant is clearly flagged in the record.
+- Given I pick a member's new role (it saves at once) or edit permissions, then access follows on their next action, without signing in again.
+- Given the built-in roles, then Admin can do everything; Staff views registrations and the agenda, and checks people in.
+- Given an Organizer, then they run events, program and registrations but can't refund, void invoices or payouts, or manage users or settings.
+- Given I'm not an Admin, when I assign a role or save permissions with access I don't hold, then it's refused and I'm told why.
+- Given a role or permission change, then it's logged with who, what and when, flagged sensitive if it grants exporting attendee data or issuing refunds.
+_Notes: Attendees have no console role; they use the attendee portal._
 
 ### US-SET-13 — Create custom roles  ·  **Could**
-**As an** Admin, **I want** to see all our roles at a glance and create a custom role by picking exactly which capabilities it has, **so that** I can match access to real-world jobs (e.g. "Volunteer") that the standard roles don't fit.
+**As an** Admin, **I want** to create roles with exactly the permissions a job needs, **so that** jobs like Volunteer fit where built-in roles don't.
 **Acceptance criteria**
-- Given the roles overview, when it loads, then I see each role with its member count, description and headline capabilities, and I can search them.
-- Given a unique role name and a chosen set of capabilities, when I create the role, then it appears as a new role I can assign to teammates.
-- Given a name that matches an existing role, when I try to create it, then it's rejected and I'm asked for a unique name.
-- Given I edit any role's capabilities, when I save, then everyone holding that role picks up the change on their next use, and the workspace is never left without anyone able to manage users and roles.
+- Given Settings → "Roles", then each role shows member count, description, whether it's built-in, and its first three permissions plus a count of the rest.
+- Given I search roles, then they filter by name or description.
+- Given I create a role with a name, description and permissions, then it appears and can be assigned to members; a taken name is refused.
+- Given I choose "Edit role" and save new permissions, then everyone holding it gets them on their next action; the name stays fixed.
+- Given the only role that can manage users and roles, when I switch that off, then it's refused until another role has it.
 
 
 ---
@@ -368,171 +367,158 @@ _Notes: Sensitive saved payment details are never shown back in full after savin
 
 # Epic E3 — Create & Manage Events
 
-**Goal (business value):** Give event organizers a fast, guided way to create, publish, and run events end to end — from first draft to a live public page that sells tickets — so that a great-looking, correctly-priced event can go on sale in minutes and be managed safely afterwards without ever losing money or attendee trust to accidental changes.
+**Goal (business value):** Let organizers create, publish and run an event in minutes, from first draft to a live page selling correctly priced tickets, without ever destroying an event people have paid for.
 
-**Primary users:** Event Organizer (author), Admin (publish, cancel, refunds, categories), Staff/Team member (read-only registration context), Attendee (consumes the public page produced here).
+**Primary users:** Event Organizer (creates, publishes, cancels and runs events), Admin (all of that, plus event categories), Attendee (sees the public page made here).
 
 **Success measures:**
-- Time to create and publish a first event (target: minutes, not hours).
-- Draft-to-published conversion (share of started events that go live).
-- Registration conversion on the published landing page.
-- Revenue collected per published event; correct VAT-inclusive pricing.
-- Zero accidental destruction of events that hold paid registrations (data-safety incidents = 0).
-- Share-driven registrations (traffic/registrations attributable to the share/flyer tools).
+- Minutes, not hours, to create and publish a first event.
+- Share of started drafts that go live.
+- Registrations and revenue per published event, including from share links and flyers.
+- Zero paid events lost to accidental changes; VAT-inclusive prices always correct.
 
 ---
 
 ## User stories
 
 ### US-EVT-01 — Find and manage my events  ·  **Must**
-**As an** Event Organizer, **I want** to browse all my events in one searchable, filterable, sortable list split into Active and Completed, **so that** I can quickly find any event and act on it.
+**As an** Event Organizer, **I want** one searchable, sortable list of my events, **so that** I can find any event and act on it.
 **Acceptance criteria**
-- Given I have many events, when I open my events list, then I see the Active events first, newest activity surfaced, with a clear "Showing X–Y of N events" summary and page controls.
-- Given I search by name, pick an event type, change the sort (by registrations, name, or date), or switch between Active and Completed, then the list narrows to matching events and returns me to the first page of results.
-- Given a filter matches nothing, when the list refreshes, then I see a friendly "No events match" message rather than a blank screen.
-- Given each event row, when it renders, then I see its registrations-vs-capacity progress and a percentage, so I can judge how well it is filling.
-- Given I open a row's action menu, then I can View details, Edit, Duplicate, or Delete that event.
-- Given I delete or duplicate an event, when the list updates, then the Active and Completed counts immediately reflect the change without a page reload.
-_(Notes: This is an organizer/admin surface; Staff and Attendees do not see it. A team member without event-management access is told they don't have permission.)_
+- Given Events, then "Active" shows my events 10 a page, with a total, "Rows per page" and "Prev"/"Next"; "Completed" holds finished and cancelled ones.
+- Given each row, then I see its name, type, date, status and registrations against capacity with a fill bar (45/100 reads 45%).
+- Given I search, pick a type, sort by registrations, name or date, or switch tab, then the list narrows and returns to page 1.
+- Given nothing matches, then I'm told so and offered "Clear filters", never a blank table.
+- Given a row's "More actions", then I can view, edit, duplicate or delete it, and tab counts update after a duplicate or delete without reloading.
+_Notes: "Duplicate" needs create rights and "Delete" publish rights, or they're hidden; members without event access are refused._
 
 ### US-EVT-02 — Create an event with a guided wizard and save drafts  ·  **Must**
-**As an** Event Organizer, **I want** to build an event through a step-by-step wizard (Basics, Date & location, Seating, Tickets, Assign seats, Review & publish) and save a draft at any point, **so that** I capture everything needed to go live and never lose work if I stop partway.
+**As an** Event Organizer, **I want** a step-by-step wizard that saves as I go, **so that** I capture every detail without losing work.
 **Acceptance criteria**
-- Given I start a new event, when the wizard opens, then I see a progress indicator and a step rail, plus a live summary of what I've entered so far (name, ticket types, capacity, seating).
-- Given I create or edit any event — in person or online, general admission or reserved — then the step rail always has the same six steps, Basics, Date & location, Seating, Tickets, Assign seats, Review & publish, and the progress counts all six; choosing a seating option or switching to online never adds or removes a step.
-- Given an event with no seats to assign, when I open Assign seats, then an online event tells me "Online events have no seats to assign.", and a general-admission event tells me "General admission has no seats to assign. To sell seats by ticket type, choose Reserved seating on the Seating step." with a "Go to Seating" button that takes me there; saving on that step saves my other changes and leaves the seating as it is.
-- Given I'm partway through, when I choose "Save as draft," then the event is saved as a Draft and appears in my events list so I can resume later.
-- Given I move between steps or pause, then my work is preserved automatically so an interrupted session is recoverable.
-- Given I try to leave with unsaved changes, then I'm asked whether to save the event as a draft before leaving.
-- Given a teammate changed the same event since I opened it, when I save, then I'm told it changed elsewhere and prompted to reload the latest version, so no one's edits are silently overwritten.
-- Given I edit an already-published event, when I save valid changes, then they apply without taking the event offline.
+- Given any event, then the rail always lists Basics, Date & location, Seating, Tickets, Assign seats, Review & publish, and progress reads 50% at Seating.
+- Given a new event, then "Save as draft" or Date & location's "Next" saves a Draft, which needs a title and start date.
+- Given a saved event, then "Next" saves silently and "Save changes" confirms; if a teammate saved meanwhile, I'm refused until I reload; their save stands.
+- Given an online or general-admission event, then Assign seats has no seats to assign; general admission also offers "Go to Seating" to choose Reserved seating.
+- Given a published event, when I press the last step's "Save changes", then my edits apply, it stays published and I return to its workspace.
+_Notes: On a wide screen a Summary panel shows the title, ticket types, capacity and seating as I type._
 
 ### US-EVT-03 — Describe the event (Basics)  ·  **Must**
-**As an** Event Organizer, **I want** to enter the event's title, a short rich description, category, tags, cover image, and highlight badges, **so that** the event has a clear, attractive identity on its public page.
+**As an** Event Organizer, **I want** to give the event a title, description, type, category, cover and highlights, **so that** its public page stands out.
 **Acceptance criteria**
-- Given the Basics step, when I enter a title and a formatted description, then I see a live character count and the description is capped at 250 characters; pasting more keeps only the first 250 and shows the counter in red.
-- Given I pick a category from my workspace's categories and add tags, then they are saved and later help attendees discover the event.
-- Given I upload a cover image that is the wrong type or larger than 5 MB, then it is rejected with a clear message and nothing is stored.
-- Given I add highlight badges (icon + short label), then they appear on the public page in the order I entered them, and empty ones are dropped on save.
-- Given I leave the title blank, when I try to publish, then publishing is blocked with "Add an event title before publishing."
+- Given the Basics step, then I enter an "Event title", a formatted "Description", a "Type" and one of my workspace's categories or "No category".
+- Given the description, then a counter shows characters out of 5,000; anything typed or pasted past 5,000 is cut off and the counter turns red.
+- Given a cover image that isn't PNG or JPG, or is over 5MB, then it's refused, I'm told why, and nothing is kept.
+- Given highlights (icon plus label), then they show on the public page in the order entered; one without a label is dropped on save.
+- Given the title or description is empty, then the "Publish checklist" flags it and "Publish event" can't be pressed.
+_Notes: The "Category" picker shows only to members who may manage categories (US-EVT-11)._
 
 ### US-EVT-04 — Set the date, time and location  ·  **Must**
-**As an** Event Organizer, **I want** to set the start/end date-time and timezone and choose whether the event is in-person or online, **so that** attendees know exactly when and where to show up (or how to join).
+**As an** Event Organizer, **I want** to set the event's dates and whether it's in person or online, **so that** attendees know when and where.
 **Acceptance criteria**
-- Given I set a start and end, when the end is not after the start, then I'm blocked with "End time must be after the start time."
-- Given I choose In-person, then I must provide a venue name and address before publishing.
-- Given I choose Online, then venue and address are not required, and I provide a meeting link that stays private — it is sent only to people after they register, never shown publicly.
-- Given all dates, when they display anywhere in the product, then they are shown in Bangkok time.
-_(Notes: Switching to Online removes the seating requirement; switching back to In-person re-enables seating.)_
+- Given the Date & location step, then I set the start and end dates and times in Bangkok time; "Timezone" is fixed at GMT+7.
+- Given the end is not after the start, when I save, then I'm refused.
+- Given "In-person", then I enter a "Venue name" and "Address" and see the venue on a map; publishing needs the venue name.
+- Given "Online", then no venue is needed, and the "Meeting link" is emailed to each attendee once they register.
+_Notes: Online events have no seating; switching back to "In-person" brings it back._
 
 ### US-EVT-05 — Choose seating (general admission or reserved)  ·  **Must**
-**As an** Event Organizer, **I want** in-person events to use either general admission or a reserved seat map I lay out by rows and seats-per-row and split between my ticket types — a whole row at a time as a shortcut, or seat by seat when only some seats of a row should sell as another type (say five free seats in a row of Normal ones) — **so that** I can sell the right kind of ticket and, for reserved events, hold a specific seat for each attendee.
+**As an** Event Organizer, **I want** general admission or a reserved seat map by ticket type, **so that** each attendee gets the right seat.
 **Acceptance criteria**
-- Given an in-person event, when I choose Reserved and set rows and seats-per-row, then I see a live seat-map preview and a total-seat count (rows × seats/row), and I'm told "After Tickets, give the seats ticket types in Assign seats."
-- Given I choose General admission, then I simply set a headcount with no specific seat assignment, and the wizard's Assign seats step has no seats to assign (US-EVT-02).
-- Given an online event, when I view the Seating step, then no seating options are offered, I'm told a join link is emailed after registration, and the wizard's Assign seats step has no seats to assign (US-EVT-02).
-- Given an in-person event with Reserved seating, then the wizard's Assign seats step, right after Tickets, has one select per row ("Row 1", "Row 2" …) offering my event's saved ticket types and "No ticket type", and picking a type gives every seat of that row that type (for example rows 1–2 VIP, rows 3–6 Normal, row 7 Free); a row whose seats don't all share one type reads "Mixed" until I pick a type for the whole row. If the event has no saved ticket types yet, the step says "Add your ticket types in the Tickets step first, then give the seats one here." and its "Go to Tickets" button takes me there.
-- Given I want only some seats of a row to sell as another type, when I choose that type under "Paint seats with" above the seat map (my saved ticket types plus "No ticket type", starting on the first ticket type) and click seats, or press and drag across them, then just those seats take that type and the rest of the row keeps its own; the hint under the map says "Pick a ticket type, then click or drag across seats to give just those seats that type." I can give a seat the type from the keyboard too (Enter or Space), and on a phone every seat is big enough to tap, the map scrolling sideways inside its own box rather than the page.
-- Given seats have ticket types, then the preview colours every seat by its type — a seat on "No ticket type" stays a neutral colour — with a legend that changes as I click, before I save: each of my ticket types, in ticket order, with where its seats are and how many, whole rows reading "Row 7" or "Rows 1–2" and part of a row "row 7 seats 1–5" (for example "Free · Row 7 seats 1–5 · 5 seats", "Normal · Rows 3–6, row 7 seats 6–16 · 75 seats", "VIP · Rows 1–2 · 32 seats"); a type with no seats reads "{Type} · 0 seats", and seats left without a type are counted as "No ticket type · {n} seats". The public page words each type's seats the same way (US-PAGE-05).
-- Given an in-person event with Reserved seating, when I'm on the wizard's Tickets step, then there is no Quantity column at all — I neither type nor see a quantity there, each ticket type is just its name and price — and a note under the list tells me "Each type's quantity is the seats it holds — give seats a type in the next step, Assign seats." Each type's seat count is shown on Assign seats, in the preview's legend.
-- Given seats have ticket types, then each ticket type's quantity is the number of seats that have it (0 for a type with none), shown read-only as "Set by the seat map" wherever a quantity is shown, such as the Tickets screen (the wizard's Tickets step shows none); a seating change that would leave a ticket type with fewer seats than it has already sold is refused with "{Type} has sold {sold} tickets, more than the {n} seats it now holds."
-- Given a reserved event where a seat has no ticket type, or a ticket type has no seats, when I publish, then publishing is blocked with "Give every seat a ticket type before publishing." or "{Type} has no seats. Give it some seats or remove it."; until every seat has a type, the review checklist shows "Every seat has a ticket type" as not done.
-- Given a seat that is booked or held in someone's checkout, when I try to give it a different ticket type, by its row's select or by painting it, then the change is refused with "Row {n} seat {m} is booked or held, so its ticket type can't change." and nothing in that save is changed; the seat keeps its type, and the rest of its row can still be given another type by painting around it.
-- Given a published reserved event whose seats have ticket types, when I add rows or seats per row on the Seating step, then that step doesn't save the seat map: under its hint it says "New seats need a ticket type. The seat map is saved when you give them one in Assign seats.", its Save saves my other changes and tells me "Saved. Give the new seats a ticket type in Assign seats to save the seat map." (Next moves on without a message, as on every step), and the map, new seats included, is saved when I save Assign seats with every seat given a type. Seats that were already there keep their types; new seats start with none.
-- Given a published reserved event whose seats have ticket types, when I save Assign seats with any seat left on "No ticket type" (one that was already there or one I've just added), then the save is refused with "Give every seat in row {n} a ticket type. Every seat of a published event needs one.", naming the first row that has such a seat.
-- Given a published reserved event, when I reduce rows or seats, then seats already sold are never removed.
-_(Notes: The per-booking seat limit for attendees is enforced during registration, not here — see the Attendee epic. Reserved events published before seats carried ticket types keep selling any seat under any of their ticket types until their seating is next saved with ticket types on its seats, and they are not re-checked for publishing. Until then their stored quantities stand: the wizard never takes a typed quantity on a reserved event and leaves them as they are, so they can be changed only outside the wizard, on the Tickets screen. A draft laid out that way must give every seat a type before it publishes. Once any seat has a ticket type — even a single seat — a seat with no type is not on sale. A payment that lands after the buyer's seat changed ticket type, or for a ticket type left with no seats, is refunded rather than ticketed. The seat map's split can be saved a whole row at a time or seat by seat, never both in one save ("Send rowTicketTypes or seatTicketTypes, not both."), with one entry for every row ("Send one ticket type per row: this map has {rows} rows, but {k} were sent.") and, seat by seat, one for every seat of each row ("Send one ticket type per seat: row {n} has {seatsPerRow} seats, but {k} were sent."), and only with this event's own ticket types ("Row {n} seat {m}'s ticket type isn't one of this event's ticket types."). The wizard always saves seat by seat; those refusals guard the map against anything else that saves it.)_
+- Given an in-person event, then "Reserved seating" previews "Rows" × "Seats / row" live, with "Total seats"; "General admission" has no map, only a headcount.
+- Given Assign seats, then I set a row's type from its menu or "Paint seats with" one by click or drag; mixed rows read "Mixed".
+- Given seats have types, then each takes its type's colour and the legend's count is the type's quantity; the Tickets step has no Quantity column.
+- Given a reserved draft with an untyped seat, or a type without seats, then the checklist or a refusal naming the type blocks publishing.
+- Given a published reserved event, then sold seats stay, a booked or held seat keeps its type, and no type drops below its sales.
+_Notes: Assign seats needs saved ticket types ("Go to Tickets"); on a published map, new seats save only once typed._
 
 ### US-EVT-06 — Set up tickets, capacity and registration rules  ·  **Must**
-**As an** Event Organizer, **I want** to define ticket types (name, price, quantity), overall capacity, the registration open/close window, and approval and waitlist options, **so that** the right tickets go on sale at the right time and price.
+**As an** Event Organizer, **I want** to set ticket types, capacity, approval and waitlist, **so that** the right tickets sell at the right price.
 **Acceptance criteria**
-- Given I add ticket rows, then each has a name (unique within the event), a price in ฿ (0 allowed for free tickets), and a quantity — typed, except on an in-person event with Reserved seating, where it is the seats given that type and the wizard's Tickets step has no Quantity column (US-EVT-05); at least one ticket type must exist to publish and the last row can't be removed.
-- Given a paid ticket priced at ฿890, when it's saved, then it is treated as VAT-inclusive at 7% (finance records ฿831.78 net + ฿58.22 VAT), so pricing is correct for receipts and reporting.
-- Given a published event with tickets already sold, when I try to set a ticket quantity or event capacity below what's already sold/registered, then the change is rejected with a message showing the already-committed count.
-- Given I set a registration window, when the current time is outside it, then public registration is closed even while the event is published; the window is judged in Bangkok time.
-- Given I turn on Require approval, then each registration is held for my review before it's confirmed.
-- Given I turn on the waitlist, then attendees can join a waitlist once tickets run out; with it off, the event simply shows "sold out."
+- Given the Tickets step, then each type has a name, a ฿ price (0 is free) and, unless reserved, a quantity; "Capacity" sets the headcount.
+- Given a ticket name already used on the event, a quantity below tickets already sold, or removing the last saved ticket type, then I'm refused.
+- Given a ฿890 ticket, then the price already includes 7% VAT (฿831.78 + ฿58.22), and the receipt shows it within "Total paid", service fee included.
+- Given "Require approval" is on, then each new registration awaits my decision (US-REG-02).
+- Given "Enable waitlist" is on (general admission only), then a sold-out ticket offers the waitlist at checkout (US-REG-04).
+_Notes: Sales windows are set per ticket type on the Tickets screen (US-TKT-03)._
 
 ### US-EVT-07 — Pick a public page template, set visibility, and publish  ·  **Must**
-**As an** Event Organizer, **I want** to choose a landing-page template, set who can see the event, review a readiness checklist, preview the page with my real content, and publish, **so that** the public page looks right and only goes live when it's complete.
+**As an** Event Organizer, **I want** to pick a template and visibility, then publish, **so that** the public page goes live only when complete.
 **Acceptance criteria**
-- Given the template gallery (Classic, Spotlight, Minimal, Vibrant), when I select one, then my event's own title, date, venue, agenda, speakers, highlights and tickets fill the page automatically — I never author page content separately.
-- Given any template, when I choose Preview, then the public page opens in a new tab reflecting the details I've entered, including unsaved ones.
-- Given I set visibility, then Public lists the event on the public Discover page, Unlisted is reachable only by direct link, and Private is admin-only.
-- Given my event is missing a required item (title, description, date/time, location, or at least one ticket type), when I click Publish, then publishing is blocked and the missing items are flagged; a missing cover image is only a warning, not a blocker.
-- Given a complete event, when I publish, then it goes live at its public link, becomes discoverable if Public, and my team gets an "Event published" notice.
-- Given the event's start date is already in the past, when I publish, then I'm asked to confirm before it goes live.
-_(Notes: Publishing requires publish rights; an organizer without them sees Publish disabled and is told they don't have permission.)_
+- Given Review & publish, then the template I pick ("Classic", "Spotlight", "Minimal", or "Vibrant" in "Browse templates") fills only from my event's details.
+- Given "Preview" or "Preview landing page", then a new tab shows the page, unsaved edits included; if pop-ups are blocked, I'm told to allow them.
+- Given "Visibility", then "Public" is listed on Discover with a live page; "Unlisted" and "Private" have none; only a draft's visibility can change.
+- Given the "Publish checklist", then it lists what's missing (title, description, in-person venue, saved ticket type, every reserved seat typed) and blocks "Publish event".
+- Given a complete draft, then "Publish event" puts it live at its public link and opens its workspace; without publish rights I'm refused.
+_Notes: A cover image is optional._
 
 ### US-EVT-08 — Cancel or delete an event without losing paid registrations  ·  **Must**
-**As an** Admin, **I want** deletion to always require confirmation and to be blocked for any event that holds registrations or payment history — routing me to Cancel (which refunds and notifies) instead — **so that** I can never accidentally destroy an event people have paid for.
+**As an** Admin, **I want** delete limited to empty drafts and cancel for everything else, **so that** I never destroy an event people paid for.
 **Acceptance criteria**
-- Given a draft with zero registrations and no payment history, when I confirm Delete, then the event is permanently removed.
-- Given a published event or any event with registrations or payment history, when I choose Delete, then hard deletion is blocked and I'm offered Cancel: "This event has registrations and can't be deleted. Cancel it instead to refund and notify attendees."
-- Given I cancel such an event, then I must enter a reason and confirm; the event stops accepting registrations, the waitlist is voided, issued tickets are invalidated, refunds are queued for paid attendees, and affected attendees receive a cancellation message in their language.
-- Given a cancel completes but some refunds are still processing, then the cancellation still succeeds and I'm told refunds are still being handled.
-- Given the event is cancelled, when I return to the list, then it moves out of the Active bucket but is retained for reporting.
-_(Notes: Cancelling requires publish rights; posting refunds is an Admin finance action. No confirmation-free deletion is ever allowed.)_
+- Given a draft with no registrations or payments, when I confirm "Delete", then it's permanently removed and I'm told so.
+- Given a published event, or a draft with registrations or payments, when I confirm "Delete", then I'm refused and offered "Cancel event instead".
+- Given "Cancel event", then it needs a "Reason"; once cancelled, registration closes, the event moves to "Completed" and I'm told refunds and notices are underway.
+- Given a cancellation, then each confirmed or awaiting-approval registrant is emailed the reason in their language (English or Thai) and promised a refund.
+_Notes: Delete and cancel need publish rights; refunds aren't automatic and are issued from Payments (US-FIN-02)._
 
 ### US-EVT-09 — Manage the event program (agenda and speakers)  ·  **Must**
-**As an** Event Organizer, **I want** to add and remove agenda sessions per day and manage the speaker line-up directly from the event workspace, **so that** I can keep the published program accurate as plans change.
+**As an** Event Organizer, **I want** to add and remove sessions and see speakers in the event's workspace, **so that** the published program stays accurate.
 **Acceptance criteria**
-- Given the Agenda tab, when I add a session (title, day, start time, duration, type, speaker, room), then it appears on the chosen day sorted by start time; a title is required.
-- Given two sessions in the same room overlap in time, when I add one, then I'm warned but not blocked, so multi-track events across rooms still work.
-- Given I remove a session, then it disappears immediately and the public page's agenda updates.
-- Given the Speakers tab, when I add a speaker (name, and optionally role, talk, tag, photo), then they appear as a card and show on the public page.
-_(Notes: Agenda editing is the core (Must) capability; speaker management is a lighter, supporting part of the same program workspace.)_
+- Given "Add session" on "Agenda", then I set title, day, start time, duration, type and room; it lists under its day in time order.
+- Given a session without a title, when I add it, then it's refused.
+- Given another session holds that room at that time, then it's refused, naming the clashing session; different rooms may overlap.
+- Given I remove a session and confirm, then it leaves the agenda and the public page; attendees who bookmarked it aren't told.
+- Given the "Speakers" tab, then each speaker shows as a card (name, role, talk, tag); "Manage speakers" opens this event's Speakers page to add more.
 
 ### US-EVT-10 — Adjust ticket inventory after publishing  ·  **Must**
-**As an** Event Organizer, **I want** to add new ticket types and remove ones with no sales directly from the event workspace, **so that** I can respond to demand without rebuilding the event.
+**As an** Event Organizer, **I want** to add ticket types from the event's workspace, **so that** I can respond to demand without rebuilding the event.
 **Acceptance criteria**
-- Given the Tickets tab, when I add a ticket type (name, price, quantity, optional description, optional "Popular" flag), then it appears immediately starting at 0 sold and ฿0 revenue, and the public ticket list and capacity update.
-- Given I add a ticket whose name already exists on the event, then it is rejected as a duplicate.
-- Given a ticket type that has sales, when I try to remove it, then removal is blocked with "This ticket type has sales and can't be removed. Close it instead."
-- Given a valid new ticket at ฿1,250 × 200, when I save, then it shows 0/200 sold and ฿0 revenue.
+- Given the "Tickets" tab, when I "Add ticket" (name, ฿ price or free, quantity), then it shows "On sale" at 0 sold and sells publicly.
+- Given a name already used on the event, then the new ticket is refused.
+- Given a reserved event whose seats have types, then a new type's quantity reads 0 until Assign seats gives it seats (US-EVT-05).
+- Given "Manage tickets", then the Tickets screen opens to edit or retire a ticket type (US-TKT-02, US-TKT-05).
 
 ### US-EVT-11 — Organize events with categories  ·  **Must**
-**As an** Admin, **I want** to create, edit, and safely delete event categories (name, description, icon, colour), **so that** events are grouped consistently for attendee discovery.
+**As an** Admin, **I want** to create, edit and safely delete event categories, **so that** events are grouped consistently for attendees.
 **Acceptance criteria**
-- Given the categories view, when I browse, then I can search and sort them and each shows its icon, colour, description, and live count of events using it.
-- Given I create or edit a category, then I see a live preview of its icon, colour, and name; the name must be unique in my workspace and duplicates are rejected.
-- Given I edit a category's name, icon, or colour, then the change is reflected on every event that uses it.
-- Given a category with no events, when I confirm Delete, then it is removed.
-- Given a category still used by events, when I try to delete it, then I'm blocked until I move those events to another category (or clear their category): "This category has 12 events. Move them to another category before deleting."
+- Given "Event categories", then each shows icon, colour, name, description and event count; I can search, sort by name or count, and toggle grid/list.
+- Given "New category" or edit, then I set name, description, icon and colour with a live "Preview", and "Save category" confirms it.
+- Given a name already used in my workspace, then the category is refused.
+- Given "Delete", then a category with no events is removed after I confirm; one with events is refused until I move them to another category.
+- Given I rename a category, then every event in it shows the new name on its public page.
 
 ### US-EVT-12 — See my events on a calendar and what's coming up  ·  **Should**
-**As an** Event Organizer, **I want** a month calendar of my scheduled events plus a soonest-first view of upcoming events, **so that** I can see my schedule at a glance and jump straight to any event.
+**As an** Event Organizer, **I want** a month calendar and a soonest-first list of upcoming events, **so that** I see my schedule at a glance.
 **Acceptance criteria**
-- Given the calendar, when I open it, then each event appears on its start date, the header reads "{n} events this month," and I can move between months or jump to Today.
-- Given a busy day, when its cell renders, then up to three events show with a "+N more" roll-up, and picking a day lists that day's events; an empty day reads "No events scheduled."
-- Given the upcoming view, when it loads, then future events appear soonest-first with correct "days left" (in Bangkok time) and how full each is.
-- Given I click an event on the calendar or upcoming view, then I go straight to that event's detail workspace.
+- Given the "Calendar", then events sit on their Bangkok start dates and the header counts them; I can step months or jump to "Today".
+- Given a day with more than three events, then three show plus a count of the others.
+- Given I choose a day, then its events are listed by time, or I'm told none are scheduled.
+- Given "Upcoming events", then my next events show soonest first, each with days left ("Today" on the day) and how full it is.
+- Given I click an event on either view, then its workspace opens.
 
 ### US-EVT-13 — Duplicate an event to relaunch quickly  ·  **Should**
-**As an** Event Organizer, **I want** to duplicate an existing event as a fresh draft, **so that** I can relaunch a recurring or similar event without re-entering everything.
+**As an** Event Organizer, **I want** to copy an event as a fresh draft, **so that** I can relaunch a similar event without re-entering it.
 **Acceptance criteria**
-- Given an event with 312 registrations, when I duplicate it, then a new draft named "…(Copy)" is created with all its content (details, schedule, seating, tickets, agenda, speakers, template, visibility) but with 0 registrations, 0 sold, ฿0 revenue, empty waitlist, and no attendees.
-- Given the duplicate, when it's created, then it gets its own unique public link and any past registration open/close dates are cleared so I re-set the sales window.
-- Given the new draft, when the list refreshes, then it appears next to the original and the Active/Completed counts update.
-- Given I accidentally trigger the duplicate twice, then only one copy is created.
-_(Notes: A reserved seat map is copied without its seats' ticket types, so the copy's ticket quantities stay as copied (editable only outside the wizard, on the Tickets screen) until its seats are given types again on the wizard's Assign seats step, which publishing the copy requires — see US-EVT-05.)_
+- Given "Duplicate", then a Draft "{name} (Copy)" copies details, date, seating layout, ticket types, agenda, speakers, template and visibility, but no registrations or sales.
+- Given the copy, then it has its own public address and its ticket types' sales windows are cleared.
+- Given the copy is made, then the list refreshes and the "Active" count goes up by one.
+- Given I press "Duplicate", then it reads "Working…" and is locked until the copy exists: one press, one copy.
+_Notes: A reserved copy's seats have no ticket types; type them on Assign seats before publishing (US-EVT-05)._
 
 ### US-EVT-14 — Monitor an event's performance from its workspace  ·  **Should**
-**As an** Event Organizer, **I want** a single event workspace showing live headline numbers, its registrations, and its confirmed attendees, **so that** I can track how the event is doing and reach attendees.
+**As an** Event Organizer, **I want** one workspace with an event's headline numbers, registrations and attendees, **so that** I can track how it is doing.
 **Acceptance criteria**
-- Given the Overview, when it loads, then I see live registrations-vs-capacity with a percentage, revenue, tickets sold, and days left, plus a "Copy" button that copies the event's public link.
-- Given I lack finance access, when Overview loads, then registration and attendance numbers still show but revenue is hidden.
-- Given the Registrations tab, when I filter by status (all, Paid, Pending, Refunded) or page through, then the list and its counts update and show attendee, ticket, amount (in ฿), and when they registered.
-- Given the Attendees tab, when it loads, then confirmed attendees are listed with a count badge, and "Email all" opens a message to this event's attendees that requires my explicit confirmation before sending.
-_(Notes: Attendee names/emails are shown only to members with registration access; broadcast messaging is governed by the Engagement epic.)_
+- Given "Overview", then I see registrations against capacity (120/300 reads 40%), tickets sold, days left and ฿ revenue, or a dash without finance access.
+- Given the public link on "Overview", when I press "Copy", then it's copied and the button reads "Copied".
+- Given the "Registrations" tab, then paged rows show attendee, reference, tickets, ฿ amount, registration time and status; filters "All", "Paid", "Pending", "Refunded" show counts.
+- Given the "Attendees" tab, then confirmed attendees are listed with name, email, registrations and seats, under a badge counting them.
+- Given I lack registration access, then the "Registrations" and "Attendees" tabs are refused to me, since names and emails are personal data.
+_Notes: Emailing an event's attendees is done from Announcements (US-MSG-04)._
 
 ### US-EVT-15 — Promote an event with share links and a printable flyer  ·  **Should**
-**As an** Event Organizer, **I want** to share the event to social channels and email and download a printable flyer with a scannable QR code, **so that** I can drive registrations across channels.
+**As an** Event Organizer, **I want** share links and a printable flyer for the event, **so that** I drive registrations across channels.
 **Acceptance criteria**
-- Given the Share dialog, when I click "Copy link," then the event's public link is copied and the button confirms "Copied!"
-- Given the Share dialog, when I pick Facebook, X, LINE, WhatsApp, or Email, then a pre-filled share message ("Join me at {title} — {date} at {location}") opens for that channel.
-- Given the flyer preview, when I save it, then a poster image downloads that includes a scannable QR code leading to the event's registration page.
-- Given the event isn't public, when I share it, then I'm warned the link may not be publicly reachable.
+- Given "Share" on the event's workspace, when I choose "Copy link", then the public link is copied and the label reads "Copied!"
+- Given Facebook, X, LINE, WhatsApp or Email, then it opens with the link; X, WhatsApp and Email add an invite with title, date and place.
+- Given the flyer, when I choose "Save", then a PNG poster downloads with the event's title, date, place and link.
 
 
 ---
@@ -541,119 +527,122 @@ _(Notes: Attendee names/emails are shown only to members with registration acces
 
 # Epic E4 — Public Event Pages
 
-**Goal (business value):** Give every event a fast, beautiful, shareable public page that turns a click from a link, a search result, or the Discover listing into a completed registration — without forcing anyone to create an account first. The same page doubles as the organizer's design-and-publish surface, so launching an event is self-service and the shared link never breaks.
+**Goal (business value):** Give every event a fast, shareable public page that turns a click from a shared link, search or Discover into a registration, with no account needed. Organizers design, preview and publish it themselves under a stable link.
 
-**Primary users:** Attendee (guest or registered), Event Organizer, Admin, Staff/Team member.
+**Primary users:** Attendee (guest or signed in) reads the page and registers; Event Organizer and Admin preview, design and publish it.
 
 **Success measures:**
-- Registration conversion: share of page visitors who click Register/Get tickets and go on to complete a booking.
-- Reach quality: share-to-visit rate and click-through from search/social (rich cards rendering correctly).
-- Mobile experience: page loads fast on a phone (target under ~2.5s on 4G); low bounce.
-- Time-to-publish: organizer can go from event details to a live public page in one sitting, self-service.
-- Preview usage: template previews opened per new event (organizers choosing confidently before publishing).
+- Share of page visitors who click Register and complete a booking.
+- Visits per shared link and click-through from search and social.
+- Page loads under 2.5 seconds on a 4G phone; few visitors bounce.
+- Organizers preview designs and publish a live page in one sitting.
 
 ---
 
 ## User stories
 
 ### US-PAGE-01 — Open a shareable event page  ·  **Must**
-**As a** guest Attendee, **I want** to open an event's page from a shared link and immediately see what it is, when it happens and where, **so that** I can decide to register without creating an account.
+**As a** guest Attendee, **I want** a shared link to show what, when and where, **so that** I can decide to register without an account.
 
 **Acceptance criteria**
-- Given a published event, when I open its shared link, then I see the event's title, date, time, location and tickets with no prompt to log in or sign up.
-- Given a link that points to no live event (or an event that isn't published yet), when I open it, then I see a clear "this event page isn't available" message rather than the wrong event or a broken screen.
-- Given a section has no content (no highlights, agenda, speakers, tickets or FAQs), when the page renders, then that section is hidden entirely — never an empty heading.
-- Given the event runs in Thai or English, when the page loads, then all text and all dates/times read correctly in that language and in Bangkok time.
+- Given a published public event, when I open its link, then I see title, date, time, place and tickets with no sign-in prompt.
+- Given a draft, unlisted, private, cancelled or missing event, then a "Not found" page says it isn't available, with "Back to home", never another event.
+- Given any section is empty (highlights, about, agenda, speakers, tickets or FAQs), then it is left out, never an empty heading.
+- Given any event, then dates and times read in English and Bangkok time (Aug 15, 2026; 18:00 – 21:00); Thai text shows as typed.
 
-_Notes: The public page is anonymous and read-only — it starts registration but never books, holds seats or exposes attendee data._
+_Notes: The page only starts registration; it never books, holds seats or shows attendee data._
 
 ### US-PAGE-02 — Event identity and one-tap Register  ·  **Must**
-**As a** guest Attendee, **I want** the top of the page to show the event identity and key facts with an obvious Register / Get tickets button always in reach, **so that** I can start booking the moment I'm convinced.
+**As a** guest Attendee, **I want** key facts up top and Register always in reach, **so that** I can start booking once convinced.
 
 **Acceptance criteria**
-- Given I'm on the page, when I scroll, then a Register / Get tickets button is available at the top, in the opening hero, on each ticket, and at the foot of the page.
-- Given I click any Register button, when it responds, then I land on the registration step for this event in the same tab.
-- Given registration isn't open yet for the event, when the page renders, then the Register button is visibly unavailable with a short "registration isn't open yet" hint instead of leading to a dead end.
-- Given the event's cover image is missing or fails to load, when the hero renders, then a branded background shows and I never see a broken-image icon.
+- Given I open the page, then its top shows the title, date, time, place (or that it's online) and the organizer's cover image.
+- Given I scroll, then a Register button stays in reach: sticky top bar, hero, every ticket and the page foot.
+- Given I click any Register button ("Register", "Register now", or "Get tickets" in Vibrant), then the event's "Register" page opens in the same tab.
+- Given the cover image is missing or fails to load, then a green brand gradient shows, never a broken-image icon.
 
 ### US-PAGE-03 — Clear about section and online-event handling  ·  **Must**
-**As an** Attendee considering an online event, **I want** the page to state plainly that it's online and how I'll get the join link, **so that** I know I don't need to travel and what to expect after I register.
+**As an** Attendee, **I want** to see where the event is, or how I'll join online, **so that** I know what to expect after registering.
 
 **Acceptance criteria**
-- Given an online event, when I read the details, then it shows "Online event" and a note that the join link is sent after I register — and never shows a physical address.
-- Given an in-person event, when I read the details, then I see the venue and, when provided, the address, date, time, category and price.
-- Given any online event, when the page renders, then the private join link is never shown publicly — only the promise of when I'll receive it.
-- Given a detail (such as address) is blank, when the section renders, then that single row is simply left out and the rest still shows.
+- Given an in-person event, then About shows the description, a details list (date, time, venue, address, category, starting price) and a map with "Get directions".
+- Given an online event, then the page says it's online and the join link comes after registering, with no address or map.
+- Given I register for an online event, then my confirmation email carries the organizer's "Meeting link", which the page never shows.
+- Given a detail is blank (say, no address), then only that row is left out.
 
 ### US-PAGE-04 — Highlights, agenda and speakers  ·  **Should**
-**As a** guest Attendee, **I want** to see the event's highlights, schedule and line-up of speakers, **so that** I can judge whether it's worth my time and money.
+**As a** guest Attendee, **I want** to see the highlights, schedule and speakers, **so that** I can judge if it's worth my time and money.
 
 **Acceptance criteria**
-- Given the organizer added highlights, agenda items or speakers, when I scroll, then each appears in the order the organizer arranged them.
-- Given the schedule and speaker sections have custom titles, when they render, then those titles are used (with sensible defaults otherwise).
-- Given any of these lists is empty, when the page renders, then that whole section is absent rather than shown blank.
+- Given the organizer added "Highlights" in the event wizard, then each shows with its icon and label, in the order entered.
+- Given the event has an agenda, then an "Agenda" section lists sessions in agenda order, each with its time range, title, room and speakers.
+- Given the event has speakers, then a "Speakers" section shows each one's initials, name and talk title (or job role), in the order added.
+- Given any of these is empty, then its section is left out.
 
 ### US-PAGE-05 — Ticket tiers, pricing and availability  ·  **Must**
-**As a** guest Attendee, **I want** each ticket option shown with its all-in price, what's included, and whether it's still available, **so that** I can pick the right ticket with no surprises at checkout.
+**As a** guest Attendee, **I want** to see each ticket's price and availability, **so that** I can pick the right one before registering.
 
 **Acceptance criteria**
-- Given the event has ticket tiers, when the Tickets section renders, then each tier shows its name, price, any "what's included" list and its own Register button.
-- Given prices are shown, when I read them, then every Baht price already includes the 7% VAT, and free or RSVP tiers read as "Free" or "RSVP" with no price prefix.
-- Given one tier is marked as the recommended option, when the section renders, then it stands out and shows its badge (e.g. "Most popular").
-- Given a tier is sold out, when I view it, then its button reads "Sold out" and cannot be clicked through to registration.
-- Given very few seats remain, when the tier renders, then an urgency line (e.g. "Going fast — only N left") is shown.
-- Given registration for the event has closed, when the tickets render, then all tier buttons are disabled with a "registration is closed" message.
-- Given an in-person event with reserved seating whose seats have ticket types — all of them or only some — when I open its public page, then the Tickets section shows a seat map with each seat coloured by its ticket type, so a row split between two types shows both colours, and a legend naming each type with where its seats are and how many (e.g. "VIP · Rows 1–2 · 32 seats", "Free · Row 7 seats 1–5 · 5 seats", "Normal · Rows 3–6, row 7 seats 6–16 · 75 seats"), and each ticket says which seats it sells in the same words (e.g. "Rows 1–2", "Row 7 seats 1–5"); each type has the colour the organizer's seat-map preview gives it, because colours follow the order the ticket types were created, not their price.
-- Given a general-admission or online event, or a reserved event none of whose seats has a ticket type, when the page renders, then no seat map is shown and no ticket names any rows or seats.
+- Given the event has ticket types, then the "Tickets" section shows one card each, cheapest first, with name, price and own Register button.
+- Given a price, then it already includes 7% VAT; a free ticket reads Free, and a ฿0 ticket not marked free reads RSVP.
+- Given a ticket is sold out or paused, then its card says sold out; with 10 or fewer left, it warns with the real count.
+- Given reserved seating, then a "Seat map" under the cards shows the stage and seats in their tickets' "Assign seats" colours, keyed with seat counts.
+- Given a seat map, then each card names its seats as the key does (Rows 1–2); general-admission and online events have neither.
 
-_Notes: Choosing quantity happens later in registration — the page just carries the chosen tier through. The seats each ticket sells are the ones the organizer gave it on the wizard's Assign seats step (US-EVT-05), whole rows or single seats, and they are worded the way the organizer's legend words them; the seat map shows only that split, never which seats are already taken — individual seats are chosen at checkout._
+_Notes: Ticket, quantity and seats are chosen on the "Register" page, which refuses sold-out tickets; the seat map never shows taken seats._
 
 ### US-PAGE-06 — Frequently asked questions  ·  **Could**
-**As a** guest Attendee, **I want** an FAQ I can expand, **so that** I can clear up doubts about the event before committing to register.
+**As a** guest Attendee, **I want** an FAQ I can expand, **so that** I can clear up doubts before I register.
 
 **Acceptance criteria**
-- Given the event has FAQs, when the page loads, then the first answer is open and the rest are collapsed, and I can expand any of them.
-- Given the event has no FAQs, when the page renders, then the FAQ section is absent.
+- Given FAQs, then "Frequently asked" ("Know before the show" in Vibrant) loads with only the first answer open; I can open or close any.
+- Given the event has no FAQs, then there is no FAQ section.
+
+_Notes: The web app has no screen for organizers to add FAQs yet._
 
 ### US-PAGE-07 — Add the event to my calendar  ·  **Should**
-**As a** guest Attendee on my phone, **I want** to add the event to my calendar in one tap, **so that** I don't forget to attend after I've decided to go.
+**As a** guest Attendee on my phone, **I want** to add the event to my calendar in one tap, **so that** I don't miss it.
 
 **Acceptance criteria**
-- Given the event has a clear start and end time, when I tap Add to calendar, then I can choose Apple, Google or Outlook and get an entry set to Bangkok time with the event title and location.
-- Given an online event, when I add it to my calendar, then the entry contains no private join link.
-- Given the event's date or time is missing or unclear, when the page renders, then the Add to calendar option is simply hidden rather than producing a broken entry.
-- Given I add the same event again later, when it lands in my calendar, then it updates the existing entry rather than creating a duplicate.
+- Given an event, when I tap "Add to calendar", then I get an entry with title, start and end in Bangkok time, and place.
+- Given an online event, then the entry's place says it's online and it carries no join link.
+- Given I add the same event again, then the existing entry is updated, not duplicated.
+
+_Not in the web app yet._
 
 ### US-PAGE-08 — Rich search results and social sharing  ·  **Should**
-**As an** Event Organizer (marketing owner), **I want** the page to produce an accurate, rich preview card wherever it's shared or searched, plus easy share buttons, **so that** shares and search results attract clicks instead of looking broken.
+**As an** Event Organizer, **I want** one clean link everywhere I share, and previews hidden from search, **so that** people land on the real page.
 
 **Acceptance criteria**
-- Given a published event, when its link is shared to social or picked up by search, then a rich card shows the correct title, description, image (or a branded default) and event details including Baht pricing and Bangkok time.
-- Given the page offers sharing, when I use it, then I can copy the link or share to channels like Facebook, LINE and X, and the shared link is the clean public address with no personal data attached.
-- Given a page is only a preview or is unpublished, when a search engine or scraper reaches it, then it is marked "do not index" so it never leaks into public search.
+- Given a published public event, then "View page", the "Landing page" card and every "Share" channel give one clean address: no names, emails or tracking.
+- Given the page is open, then the browser tab reads the event title followed by "· Eventa".
+- Given a design preview, then search engines are told to skip it; a draft, unlisted, private or cancelled event has no public page.
+
+_Notes: Rich link cards (title, image, price) aren't built yet; sharing itself is US-EVT-15._
 
 ### US-PAGE-09 — Preview any template with unsaved content  ·  **Must**
-**As an** Event Organizer, **I want** to preview any of the four page designs using my live, unsaved event details before I publish, **so that** I can confidently pick the design that fits my event without committing anything.
+**As an** Event Organizer, **I want** to preview my page in any design with unsaved edits, **so that** I can choose without committing anything.
 
 **Acceptance criteria**
-- Given I'm editing an event and I've typed a title, a highlight and chosen "online", when I click Preview, then a new tab shows a live page with exactly those values applied.
-- Given I open a preview, when it renders, then nothing is saved — no event, page or draft is created — and it is clearly marked as a preview.
-- Given a preview page, when it's viewed, then it is never counted in public visitor analytics and never appears in public search.
-- Given I try to preview but my browser blocks the new tab, when nothing opens, then I see a clear hint to allow pop-ups.
+- Given I click the wizard's "Preview" or "Preview landing page", then my design opens in a new tab; if blocked, I'm told to allow pop-ups.
+- Given a draft, then the preview shows only my typed title, place and highlights (a blank title gets a placeholder), no tickets, agenda or speakers.
+- Given a live event, then the preview is its real page with my typed changes on top.
+- Given I preview, then nothing is saved and search engines are told to skip the preview.
+- Given a live event under "Preview with" on "Landing Pages", then any design's "Preview" opens it in that design, as saved, in a new tab.
 
-_Notes: Preview is for Organizers, Admins and (view-only) Staff — not attendees or the public._
+_Notes: Typed changes on a live event show only to signed-in console users; anyone else opening the link sees the saved page._
 
 ### US-PAGE-10 — Choose a design, brand it, and publish under a stable link  ·  **Must**
-**As an** Event Organizer, **I want** to bind one of the four designs to my event, set its public web address and accent colour, and publish or unpublish it, **so that** I control how my event looks and the link I share never breaks.
+**As an** Event Organizer, **I want** to choose my page's design and address, then publish, **so that** it looks right and my link keeps working.
 
 **Acceptance criteria**
-- Given four designs (Classic, Spotlight, Minimal, Vibrant), when I choose one and publish, then my event content renders in that design under a stable public address, and I can switch designs later with no loss of content.
-- Given I try to publish, when the event is missing a title, a date, or at least one ticket/RSVP option, then publishing is blocked with a message telling me exactly what to add first.
-- Given I set an accent colour, when the page renders, then buttons and highlights take that colour; an invalid colour quietly falls back to the brand default.
-- Given I set a public web address that's already taken, when I save, then I'm told the address is in use and asked to pick another.
-- Given a published page, when I unpublish it, then its public link stops working immediately and drops out of search, while the page is preserved so I can re-publish it later under the same address.
+- Given a draft on "Review & publish", when I pick Classic, Spotlight or Minimal and click "Publish event", then it goes live in that design.
+- Given I click "Use template" on any design (Vibrant too), then the "Preview with" event switches to it, same address, nothing lost, now "In use".
+- Given an unmet "Publish checklist" line (title, description, venue or online link, a ticket type, a type per reserved seat), then "Publish event" is disabled.
+- Given I save a "Public address", then it's tidied into link form (bkk-tech-meetup), refused if already taken in my workspace, and the old link retires.
+- Given I save an "Accent colour", then a hex colour such as #E91E63 is kept, and anything else becomes the default #2563EB.
 
-_Notes: The recommended design follows the event category, but any of the four can be chosen for any event._
+_Notes: The designs don't use the accent colour yet; every page shows in Eventa green._
 
 
 ---
@@ -662,171 +651,166 @@ _Notes: The recommended design follows the event category, but any of the four c
 
 # Epic E5 — Sell Tickets & Run Promotions
 
-**Goal (business value):** Give organizers a fast, trustworthy way to define what they sell — the ticket classes, prices, quantities and sales windows — and to run promotions that grow sign-ups without leaking margin, so every event can turn interest into paid, confirmed attendance. Attendees see the right ticket at the right price and can join in a couple of taps.
+**Goal (business value):** Organizers set what they sell — ticket types, prices, quantities, sales windows — and run discount codes that grow sales without leaking margin. Attendees get the right ticket at the right price in a few taps.
 
-**Primary users:** Event Organizer, Admin (define tickets & promotions); Attendee — guest or registered (buys tickets, redeems codes); Staff (no access to this surface).
+**Primary users:** Event Organizer and Admin (set up tickets and codes); Attendee, guest or registered (buys tickets, applies codes); Staff sees Tickets and Discounts in the menu but can't open them.
 
 **Success measures:**
-- Revenue collected per event and overall (฿).
-- Ticket sell-through rate (sold ÷ available) and time-to-sell-out for hot events.
-- Registration conversion on shared ticket links/QRs.
-- Promotion performance: code redemption rate, incremental sign-ups from promoted codes, and discount cost vs. revenue (margin protected).
-- Zero oversells and zero over-redeemed codes (integrity of inventory and promo budgets).
+- Revenue (฿) per event, sell-through (sold ÷ available) and time to sell out.
+- Conversion on shared ticket links and QRs.
+- Code redemption rate, extra sign-ups, and discount cost vs. revenue.
+- Zero oversold tickets and zero over-redeemed codes.
 
 ---
 
 ## User stories
 
 ### US-TKT-01 — Create paid and free ticket types  ·  **Must**
-**As an** Event Organizer, **I want** to create ticket types for my event — paid or free, each with a price, quantity, sales start/end dates, a per-order limit and an optional description — **so that** attendees can register for the right class of admission at the right time and I start collecting revenue.
+**As an** Event Organizer, **I want** paid or free ticket types on my events, **so that** people buy the right ticket at the right time.
 
 **Acceptance criteria**
-- Given I am setting up an event that is not cancelled, when I add a ticket type with a name, a price in baht, a quantity, and a sales window, then it is saved and appears in my ticket list ready to sell.
-- Given I mark a ticket type as Free, when I save it, then no price is asked for or charged, and attendees confirm that ticket without any payment step.
-- Given I choose a sales start date in the future, when I save, then the ticket shows as Scheduled and is not yet on sale; if the window is already open and quantity is available, it shows as On sale.
-- Given I try to reuse a ticket name that already exists on the same event, when I save, then I am told a ticket with that name already exists and it is not created.
-- Given I set a per-order limit above the quantity available, or a sales end date before the start, when I save, then I am shown a plain-language error and can correct it before saving.
+- Given I save a "New ticket type", then its card appears on Tickets, reading Scheduled if Sales start is after today, otherwise On sale.
+- Given I choose "Free", then the Price box disappears and attendees register for that ticket without paying.
+- Given the event already has a ticket of that name, when I save, then I'm told the name is taken and nothing is created.
+- Given Sales end before Sales start, or a Per-order limit outside 1–8 or above the quantity, then nothing saves and I'm told what to fix.
+- Given a reserved event whose seats have ticket types, then the seat map sets the quantity (US-EVT-05).
 
-_Notes: Per-order limit is capped at 8 seats to match the platform booking cap. On a reserved event whose seats have ticket types, a ticket type's quantity comes from the seat map (US-EVT-05), so its per-order limit is held only to that 8-seat cap, not to the quantity. Prices are whole baht; the attendee-facing total adds 7% VAT at checkout._
+_Notes: Prices are whole baht and include VAT, as the attendee pays them._
 
 ---
 
 ### US-TKT-02 — Adjust a ticket type safely after it is live  ·  **Must**
-**As an** Event Organizer, **I want** to edit a ticket type — raise capacity, extend the sales window, tidy the description or transfer setting — with guardrails once tickets have sold, **so that** I can respond to demand without corrupting orders people already paid for.
+**As an** Event Organizer, **I want** to edit a live ticket type within guardrails, **so that** I meet demand without changing paid orders.
 
 **Acceptance criteria**
-- Given a ticket type has sold some seats, when I increase the quantity available, then the extra seats go on sale immediately and, if it had sold out, it returns to On sale.
-- Given a ticket type has sold 640 seats, when I try to lower the quantity to 500, then the change is refused with a message that quantity cannot go below the seats already sold.
-- Given tickets have already sold, when I try to change the price, the paid/free setting, or the event, then I am told these can't change after sales began and am advised to create a new ticket type instead.
-- Given no tickets have sold yet, when I change the price or switch paid/free, then the change is accepted.
-- Given a reserved-seating event whose seats have ticket types, when I edit a ticket type, then its quantity is shown as "Set by the seat map" and can't be typed — a different number is refused with "This event's ticket quantities come from its seat map. Give rows to a ticket type instead." — while its other details stay editable.
-- Given a colleague edited the same ticket type while I had it open, when I save, then I am told it changed since I opened it and asked to reload, so neither of us silently overwrites the other.
+- Given I edit a ticket's quantity, then I can raise it, putting a sold-out ticket back On sale at once, but never below what's sold.
+- Given a ticket has sold, then its price and Paid/Free can't change (I'm told to create a new ticket type); before any sale they can.
+- Given I edit any ticket, then its Event is locked; a ticket type can't move to another event.
+- Given a reserved event whose seats have ticket types, then the seat map sets ticket quantities, which I can't type; other fields stay editable.
+- Given a colleague saved the same ticket after I opened it, when I save, then I'm told it changed elsewhere and nothing is overwritten.
 
-_Notes: Description and the "transferable" setting can be changed at any time. If capacity is raised on a sold-out ticket that has a waitlist, waitlisted attendees are offered the freed seats._
+_Notes: With the event's waitlist on, raising the quantity offers the new places to people waiting (US-REG-04)._
 
 ---
 
 ### US-TKT-03 — Availability that manages itself (opens, sells out, pause/resume, closes)  ·  **Must**
-**As an** Event Organizer, **I want** a ticket type to open, sell out, and close on its own based on its sales window and inventory — and to let me pause and resume it on demand — **so that** I never oversell and never have to police availability by hand.
+**As an** Event Organizer, **I want** sales to open, close and sell out by themselves, and to pause them myself, **so that** I never oversell.
 
 **Acceptance criteria**
-- Given a ticket is Scheduled and its sales start date arrives, when the day begins (Bangkok time), then it automatically becomes On sale.
-- Given a ticket has one seat left, when two people try to buy that last seat at the same moment, then exactly one succeeds and the ticket immediately shows Sold out to everyone else.
-- Given a ticket's sales end date has passed, when an attendee tries to buy, then the purchase is refused even if the badge hasn't visibly refreshed — no sales happen outside the window.
-- Given I choose Pause on a ticket, when it is paused, then it stops being purchasable even inside its sales window, until I Resume it.
-- Given a ticket whose sales window has already ended, when I try to Resume it, then I am told to extend the sales end date first.
+- Given a ticket before its Sales start, then checkout shows it as not on sale yet and it can't be bought.
+- Given two buyers pay for the last seat at once, then one gets it and the other is refused; once paid, checkout shows Sold out.
+- Given a ticket past its Sales end, when a buyer pays, then it's refused because sales have ended.
+- Given I choose "Pause sales", then the ticket reads Paused, at checkout too, and can't be bought, even in its sales window, until I resume.
+- Given a ticket past its Sales end, when I choose "Resume sales", then it stays Paused and I'm told to extend Sales end first.
 
 ---
 
 ### US-TKT-04 — See all my tickets and inventory at a glance  ·  **Should**
-**As an** Event Organizer, **I want** a searchable, filterable list of my ticket types showing price (or Free), how many have sold, and their current status, **so that** I can monitor sales across all my events in one place.
+**As an** Event Organizer, **I want** one list of my ticket types with price, sales and status, **so that** I watch sales across my events.
 
 **Acceptance criteria**
-- Given I have tickets in mixed states, when I select the "Sold out" filter, then only sold-out tickets are shown and the tab count matches.
-- Given I search for "jazz", when I type it, then only tickets whose name or event contains "jazz" remain (case-insensitive).
-- Given a ticket type, when I view its card, then I see its sales progress (sold out of total) and whether it is On sale, Scheduled, Paused or Sold out.
-- Given my filters match nothing, when the list refreshes, then I see a clear "No matches" empty state.
+- Given the Tickets page, then each card shows its name, event, price or a Free badge, status, and sold of total with a progress bar.
+- Given I pick a status tab (All, On sale, Scheduled, Paused, Sold out), then only those cards show; each tab's count spans all my events.
+- Given I search, then only tickets whose name or event contains the text, in any letter case, remain; picking an event narrows to that event.
+- Given nothing matches, then I'm told so and "Clear filters" brings the list back.
 
-_Notes: Sold and total counts are read-only here; they reflect confirmed registrations and configured capacity, and are never edited from this view._
+_Notes: Sold and total counts are read-only here._
 
 ---
 
 ### US-TKT-05 — Retire a ticket type without harming existing holders  ·  **Should**
-**As an** Event Organizer, **I want** to delete a ticket type I created by mistake, or retire one that has already sold, **so that** I can clean up my line-up while everyone who already holds a ticket keeps it and their records stay intact.
+**As an** Event Organizer, **I want** to delete ticket types, even sold ones, **so that** I tidy my line-up while holders keep their tickets.
 
 **Acceptance criteria**
-- Given a ticket type has never sold, when I confirm delete, then it is removed completely.
-- Given a ticket type has sold 210 seats, when I confirm delete, then it is retired instead of removed: it disappears from my active list and can't be bought anymore, but existing holders keep valid tickets.
-- Given I retire a ticket type, when the action completes, then no attendee is refunded or cancelled automatically — those are handled separately as finance actions.
-- Given a ticket type has checkouts in progress, when I try to delete it, then I am told to pause it and try again shortly.
-- Given a reserved-seating event where a ticket type still has seats, when I try to delete or retire it, then I am told "{Type} still has seats. Give them to another ticket type first." and it stays as it is.
+- Given I delete a ticket type and confirm, then it leaves the list and can't be bought; holders keep valid tickets and nobody is refunded.
+- Given someone is checking out with it, then deleting is refused and I'm told to pause it and try again shortly.
+- Given it is the event's last ticket type, then deleting is refused, as every event must keep at least one.
+- Given it still has seats on a reserved event, then deleting is refused until I give those seats to another ticket type.
 
 ---
 
 ### US-TKT-06 — Share a ticket's registration link and QR  ·  **Should**
-**As an** Event Organizer, **I want** a shareable registration link and a printable QR code for a specific ticket type, **so that** I can drive sign-ups from posters, social posts and email straight into the right ticket.
+**As an** Event Organizer, **I want** a ticket's registration link and printable QR, **so that** I promote it on posters, social posts and email.
 
 **Acceptance criteria**
-- Given a ticket on a published event, when I open its share view, then I get a registration link and a matching QR that both open the sign-up page with that ticket already selected.
-- Given the share view is open, when I choose "Copy link", then the link is copied and I get a brief "Copied" confirmation.
-- Given the share view is open, when I choose "Download QR", then I receive a printable QR image I can put on a poster.
-- Given the event is not yet published, when I try to share, then I am prompted to publish the event first so the link actually works.
+- Given I choose "Share link & QR" on a card, then "Share ticket type" shows its registration link and a QR of it.
+- Given the share view, when I choose "Copy link", then the link is copied and the button briefly reads "Copied".
+- Given the share view, when I choose "Download QR", then the QR saves as a printable SVG image.
+- Given the event is a draft, cancelled or private, then the link and QR still show, with a warning they won't open until it's published.
 
-_Notes: This link opens registration for the ticket type; it is not a personal entry pass. Each buyer receives their own unique entry QR later at check-in._
+_Notes: The link is for registering, not entry; each buyer gets their own entry QR with their ticket._
 
 ---
 
 ### US-TKT-07 — Create a discount code with a quick generator  ·  **Should**
-**As an** Admin, **I want** to create a discount code — a percentage or a fixed-baht amount — scoped to one event or all events, with a total usage limit, a per-person limit, a validity window and an optional minimum order, **so that** I can run controlled promotions that grow sign-ups without giving away more margin than I intend.
+**As an** Event Organizer, **I want** percent or fixed-฿ codes, for one event or all, with limits and dates, **so that** promotions stay in budget.
 
 **Acceptance criteria**
-- Given I am creating a code, when I click Generate, then a memorable, unused code (for example "PROMO42") is proposed, and generating again never suggests one that already exists.
-- Given I create a 25%-off code for a specific event with a usage limit of 500, when I save, then it appears in my list with 0 redemptions used and the correct live/scheduled status based on its dates.
-- Given I set the code to start in the future, when I save, then it shows as Scheduled and is not yet usable at checkout; given it starts today, it shows as Active.
-- Given I set a per-person limit higher than the total usage limit, or an end date before the start, when I save, then I get a plain-language error and can fix it.
-- Given I try to save a code whose validity window has already ended, when I save, then it is refused as already expired.
+- Given the "New discount code" panel, when I choose "Generate", then the Code box fills with a memorable code unused in my workspace, like PROMO42.
+- Given I type a code, then it's saved in capitals and must be 3–24 letters, numbers or hyphens.
+- Given I save a 25% code limited to 500, then its row reads 25% off, 0 / 500 and Active, or Scheduled if starting later.
+- Given a Per-user limit above the Usage limit, or an End date not after the Start date, then saving is refused and I'm told why.
+- Given an End date already past, then saving is refused and I'm told to pick a future one.
 
-_Notes: Codes apply only to paid tickets and reduce the price before 7% VAT is recalculated; free tickets are never discountable. Scope "All events" applies everywhere; a specific-event code only works for that event._
+_Notes: A Usage limit of 0 means unlimited._
 
 ---
 
 ### US-TKT-08 — Adjust a discount code without breaking past redemptions  ·  **Could**
-**As an** Admin, **I want** to edit a discount code's limits, dates, scope and minimum order, with the code text and its value locked once it has been used, **so that** I can tune a live promotion while everyone who already redeemed it keeps exactly the deal they were given.
+**As an** Event Organizer, **I want** to edit a code's limits, dates and scope, **so that** I adjust a promotion without changing past deals.
 
 **Acceptance criteria**
-- Given a code has been redeemed 342 times, when I try to lower its usage limit to 300, then the change is refused because it can't drop below redemptions already made.
-- Given a code has never been redeemed, when I change its discount from 25% to 30%, then the change is accepted.
-- Given a code has already been redeemed, when I try to change the code text or its value, then I am told these can't change after use and advised to create a new code instead.
-- Given I narrow a code's scope or shorten its window, when I save, then people who already redeemed it are unaffected.
+- Given a code redeemed 342 times, then its Usage limit can't be lowered below 342.
+- Given a code, then its text and value can change only until its first redemption; after that I'm told to create a new code.
+
+_Not in the web app yet._
 
 ---
 
 ### US-TKT-09 — Stop a promotion safely  ·  **Should**
-**As an** Admin, **I want** to switch a code off or delete it mid-flight without touching attendees who already redeemed it, **so that** I can end a promotion the moment it has done its job or is being abused, without clawing back deals already given.
+**As an** Event Organizer, **I want** to disable or delete a code without touching past redemptions, **so that** I end a promotion once it's done.
 
 **Acceptance criteria**
-- Given an active code, when I switch it off, then it is immediately refused at checkout while its redemption history is preserved.
-- Given a code that has been redeemed 89 times, when I delete it, then it is retired (not erased): prior orders keep their discount and it no longer works at checkout.
-- Given a code that has never been redeemed, when I delete it, then it is removed completely.
-- Given a code is in use in an active checkout, when I try to delete it, then I am told to switch it off and try again shortly.
+- Given an Active code, when I choose "Disable code", then it reads Disabled and checkout refuses it at once; its used count stays.
+- Given a Disabled code, when I choose "Enable code", then it returns to Active, or Scheduled before its Start date.
+- Given I delete a code and confirm, then it leaves the list and stops working at checkout, but past orders keep their discount.
 
 ---
 
 ### US-TKT-10 — Codes go live and expire on schedule  ·  **Could**
-**As an** Admin, **I want** codes to activate on their start date and expire when their window ends or their usage runs out, automatically, **so that** I can schedule promotions in advance and trust that they turn on and off without me policing them.
+**As an** Event Organizer, **I want** codes to start and stop on their own, by date and usage, **so that** promotions run unattended.
 
 **Acceptance criteria**
-- Given a Scheduled code whose start date arrives, when the day begins, then it automatically becomes Active and usable at checkout.
-- Given an active code reaches its usage limit, when the final redemption completes, then it automatically becomes Expired.
-- Given an active code passes its end date, when the window closes, then it automatically becomes Expired and no longer applies.
-- Given a code has already expired, when I try to switch it back on, then I am told to update its dates or usage limit to revive it.
+- Given a Scheduled code, when its Start date arrives (Bangkok time), then checkout accepts it and it reads Active.
+- Given a code reaches its Usage limit or passes its End date, then it reads Expired and checkout refuses it, saying why.
+- Given a Disabled code with no time or uses left, then "Enable code" is refused until I update its dates or Usage limit.
 
 ---
 
 ### US-TKT-11 — Apply a discount code at checkout  ·  **Should**
-**As an** Attendee (guest or registered), **I want** to enter a discount code during registration and see it applied to my total, **so that** I get the promoted price and know instantly whether my code is valid.
+**As an** Attendee (guest or registered), **I want** to apply a discount code at checkout, **so that** I see at once whether it works.
 
 **Acceptance criteria**
-- Given a valid 25%-off code and a ฿1,000 order, when I apply it, then I see ฿250 off, a discounted total with 7% VAT recalculated on the reduced amount, and my code marked as applied.
-- Given a fixed ฿300-off code on a ฿250 order, when I apply it, then the discount is capped at ฿250 and my total never goes below zero.
-- Given a code that is unknown, not yet started, expired, switched off, or for a different event, when I apply it, then I get a clear reason it can't be used.
-- Given I have already used a single-use code, when I try it again, then I am told I've already used it; given the code has hit its overall limit, then I am told it has reached its redemption limit.
-- Given the order is below the code's minimum, when I apply it, then I am told how much more to add to qualify.
+- Given a 25% code on ฿1,000 of tickets, then the Order summary shows Discount ฿250, and the service fee and Total are based on ฿750.
+- Given a ฿300-off code on a ฿250 order, then the discount stops at ฿250 and the Total at ฿0, never below.
+- Given a code that's unknown, for another event, not started, expired, disabled or at its Usage limit, then a red message says why.
+- Given I've used up a code's Per-user limit, when I pay, then I'm told I've already used it.
+- Given I chose a free ticket, then a typed code is refused as there's nothing to discount; a free-only event shows no code box.
 
-_Notes: Only one code applies per order. If an order is later cancelled or refunded, its redemption is released so the code can be used again._
+_Notes: One code per order, entered in the Payment step; the discount comes off the VAT-inclusive price._
 
 ---
 
 ### US-TKT-12 — Track which promotions are working  ·  **Should**
-**As an** Event Organizer, **I want** to browse my codes with their type, scope, live redemption counts and status, and copy any code to share it, **so that** I can see at a glance which promotions are landing and act on them.
+**As an** Event Organizer, **I want** to see every code's use and status at a glance, **so that** I know which promotions are landing.
 
 **Acceptance criteria**
-- Given a code scoped to "All events", when I filter by a specific event, then that all-events code still shows because it applies everywhere.
-- Given a list of codes, when I filter by status (Active, Scheduled, Expired, Disabled) or search by code or event, then the table narrows accordingly.
-- Given any code, when I view its row, then I see how many redemptions it has used out of its limit and its current status.
-- Given a code, when I click copy, then the code is on my clipboard with a brief confirmation so I can paste it into a post or email.
+- Given the Discounts list, then each row shows Code, Type (25% off or ฿200 off), Applies to, Used / Limit, Valid dates and Status.
+- Given I choose a status tab (All, Active, Scheduled, Expired, Disabled) or search by code or event name, then the table narrows to match.
+- Given a code for All events, when I filter by one event, then it still shows, since it applies there too.
+- Given I choose "Copy code" on a row, then the code is copied and its icon briefly shows a tick.
 
-_Notes: Redemption counts are live and read-only. Deeper redemption reporting, including attendee-level detail, lives in Insights & Reports and is access-controlled._
+_Notes: Used counts are live and read-only here; the Discounts report goes deeper._
 
 
 ---
@@ -835,206 +819,182 @@ _Notes: Redemption counts are live and read-only. Deeper redemption reporting, i
 
 # Epic E6 — Discover & Register for Events (Attendee)
 
-**Goal (business value):** Give event-goers a fast, low-friction path to find events they care about, register and pay in Thai Baht (card or PromptPay), and walk in with a QR ticket — while giving returning attendees a home for their tickets, receipts, profile, and feedback. This is the core revenue path: every ticket sold and every seat filled starts here.
+**Goal (business value):** Let anyone find an event, book without an account, pay in ฿ by card or PromptPay, and walk in with a QR ticket; returning attendees keep tickets, receipts and profile in one account. Every ticket sold starts here.
 
-**Primary users:** Attendee (guest or registered). Organizers, Admins, and Staff do not act in this portal — they consume the registrations, payments, and feedback it produces in the admin console.
+**Primary users:** Attendees, guest or signed in. Organizers, Admins and Staff don't act here; they work with the bookings, payments and feedback in the organizer console.
 
 **Success measures:**
-- Registration conversion (browse → completed registration) and checkout completion rate.
-- Guest-checkout success rate (no account required).
-- Payment success rate by method (card vs PromptPay) and total revenue collected (฿).
-- Ticket delivery rate (confirmed registrations that receive a usable QR ticket).
-- Repeat-attendee sign-in and return-registration rate.
-- Post-event survey response rate and average event rating.
+- Browse-to-booking conversion, checkout completion and guest-checkout success.
+- Payment success by method (card, PromptPay) and revenue collected in ฿.
+- Share of confirmed bookings that get a usable QR ticket.
+- Repeat sign-ins and bookings, survey response rate and average rating.
 
 ---
 
 ## User stories
 
 ### US-DISC-01 — Discover and browse what's on  ·  **Must**
-**As an** Attendee, **I want** to browse a visual list of upcoming public events with the key details at a glance, **so that** I can quickly spot something worth attending in Bangkok.
+**As an** Attendee, **I want** to browse upcoming events with their key facts, **so that** I quickly spot one worth attending.
 
 **Acceptance criteria**
-- Given published, publicly visible events exist, when I open the Discover page, then I see a grid of event cards each showing cover image, category, title, date, venue/city, organizer, how many people are going, a price-from (or "Free"), and an average rating when the event has been reviewed.
-- Given an event has sold out, when the grid renders, then that card shows a "Waitlist" badge instead of a buy-now price.
-- Given an event is nearly sold out, when the grid renders, then that card shows a "Selling fast" badge.
-- Given an event has already started or finished, when the grid renders, then it is not shown in the list.
-- Given no events match, when the page renders, then I see a friendly empty state suggesting I try a different search or category.
-- Given I tap an event card, then I am taken to that event's public page where I can register.
-
-_Notes: Events are ordered soonest-first by default. Ratings shown come from real attendee feedback (US-DISC-13), not a placeholder._
+- Given published public events not yet started, when I open "Discover", then they're listed soonest first, 12 a page; with none, I'm told nothing's on.
+- Given a card, then it shows the cover, category, title, date, venue and city or online, organizer, number going, and starting price or free.
+- Given every ticket type is sold out, then the card shows a waitlist badge and a dash instead of a price.
+- Given 90% or more of an event's limited seats are sold, then its card shows a selling-fast badge.
+- Given I tap a card, then the event's own page opens with its "Register" or "Get tickets" button.
 
 ### US-DISC-02 — Search and filter events  ·  **Must**
-**As an** Attendee, **I want** to search by keyword and narrow by category, **so that** I can find the right event without scrolling through everything.
+**As an** Attendee, **I want** to search by keyword and narrow by category, **so that** I find the right event without scrolling through everything.
 
 **Acceptance criteria**
-- Given the Discover page, when I type a keyword, then the list narrows to events whose title, category, city, or venue matches, and the result count updates.
-- Given I type in Thai or English (with or without accents/tone marks), when I search, then matching works consistently for both languages.
-- Given I select a category, when the list refreshes, then only events in that category are shown; selecting "All events" clears the category.
-- Given both a keyword and a category are active, when the list refreshes, then only events matching both are shown.
-- Given a keyword and category together match nothing, when applied, then the empty state is shown.
-- Given I leave stray spaces around my search, when applied, then they are ignored.
+- Given I search on "Discover", then only events whose title, category, city or venue contain my words remain, and the event count updates.
+- Given accents, Thai tone marks or spaces around the keyword, then search ignores them, so cafe finds Café.
+- Given I pick a category chip, then only that category shows; "All events" clears it.
+- Given a keyword and a category together, then only events matching both show.
+- Given nothing matches, then I'm told to try a different search or category and offered "Clear filters".
 
 ### US-DISC-03 — Save events for later  ·  **Should**
-**As an** Attendee, **I want** to save events I'm interested in, **so that** I can come back and register later.
+**As an** Attendee, **I want** to heart events I'm interested in, **so that** I can come back and register later.
 
 **Acceptance criteria**
-- Given an event card, when I tap the save (heart) control, then the event is marked saved and stays saved when I return.
-- Given I am signed in and save an event on one device, when I sign in on another, then the event still shows as saved.
-- Given I save events as a guest and then sign in, when I sign in, then my in-session saves are merged into my account with no duplicates.
-- Given a save can't be recorded, when I tap it, then the control reverts and I see a brief "couldn't save right now" message.
+- Given an event card, when I tap the heart, then it fills and stays filled when I return; tapping again removes the save.
+- Given I'm signed in, then my saves belong to my account and show on any device I sign in on.
+- Given I saved events as a guest in this browser, when I next sign in, then they join my account's saves with no duplicates.
+- Given a save can't be recorded, then the heart goes back and a note under the card says it couldn't save.
 
-_Notes: Saved events can trigger a reminder only if the attendee has event reminders turned on (US-DISC-12)._
+_Notes: There is no separate saved list, only filled hearts on Discover._
 
 ### US-DISC-04 — Register and choose my tickets (guest or signed in)  ·  **Must**
-**As an** Attendee (guest or registered), **I want** to pick a ticket type, choose my seats or quantity, and review a clear running total, **so that** I know exactly what I'm getting and paying before I commit — without being forced to create an account.
+**As an** Attendee, guest or signed in, **I want** to pick tickets and seats and see the total, **so that** I know the price first.
 
 **Acceptance criteria**
-- Given I click "Register"/"Get tickets" on an event, when checkout opens, then I see the event summary and can choose exactly one ticket type, with prices shown in Baht (or "Free").
-- Given the event has reserved seating, when I reach seat selection, then I can pick up to 8 available seats of the ticket type I chose from a seat map: seats of other ticket types — whole rows, or single seats within a row the organizer split between types — are shown but can't be selected, already-taken seats are not selectable, switching ticket type drops any seats of another type I had picked, no seat can be booked at another type's price, and my chosen seats are held for me while I check out.
-- Given the event is general-admission or online, when I reach quantity, then I choose a quantity between 1 and 8; online events tell me a join link will be emailed, general-admission events note seating is first-come.
-- Given I make any selection, when it changes, then the order summary updates live with subtotal, service fee, and total, mirrored in a sticky action bar.
-- Given I am signed in, when checkout opens, then my contact details are pre-filled from my profile and remain editable for this order; given I am a guest, then I enter name, email, and (when needed for PromptPay) a mobile number.
-- Given I complete a guest checkout without opting in, when the order is placed, then no account is silently created for me.
-- Given a free event, when I register, then all tiers show "Free", no fees are added, and the payment step is skipped.
-- Given my seat hold expires or a seat is taken before I confirm, when I try to continue, then I'm told and asked to re-select, and I am not charged.
+- Given I choose "Register", then checkout lists the ticket types in ฿ or free to pick one; any I can't buy says why.
+- Given reserved seating, then I can pick only available seats of my ticket type, up to 8; switching type clears my picked seats.
+- Given general admission or online, then I choose 1 to 8 tickets, noted as first come first served or with a join link emailed.
+- Given my pick, then the summary and bottom bar show the total, service fee included; a free event has no payment step, just "Confirm registration".
+- Given the details step, then I give name, email and optional phone, pre-filled and editable when signed in; a guest booking creates no account.
 
-_Notes: Registration requires no account. Prices, seats, and totals shown are always the event's real, current values._
+_Notes: Seats are held from the moment I book, not while I'm still choosing._
 
 ### US-DISC-05 — Pay by card or PromptPay  ·  **Must**
-**As an** Attendee, **I want** to pay the total securely by card or Thai PromptPay, **so that** I can complete my registration the way that suits me.
+**As an** Attendee, **I want** to pay by card or Thai PromptPay, **so that** I can finish registering the way that suits me.
 
 **Acceptance criteria**
-- Given a paid order, when I reach payment, then I can choose card or PromptPay.
-- Given I choose card and my payment is approved, when it succeeds, then I move to confirmation and my registration is completed.
-- Given my card is declined, when I submit, then I see a clear decline message, no ticket is issued, and I can try another card or switch to PromptPay.
-- Given I choose PromptPay, when I continue, then I see a QR code for the exact total to scan in my banking app, valid for a limited time.
-- Given my PromptPay payment settles, when confirmation arrives, then my registration completes and my ticket is issued exactly once.
-- Given the PromptPay code expires before I pay, when it lapses, then no ticket is issued, my held seats are released, and I can generate a new code.
-- Given any payment hiccup, when it happens, then I am reassured whether or not I was charged and never charged twice for the same order.
+- Given a paid order, then the payment step offers the methods the organizer accepts: "Card", "PromptPay" or both.
+- Given Card, when I choose "Continue to pay", then my seats are held and I enter my card only on the provider's secure page.
+- Given PromptPay, when I choose "Pay", then a QR for the exact total appears to scan in my banking app.
+- Given the payment clears, then my order page confirms it, tickets issued once; while unpaid, it counts down the hold and offers card or PromptPay.
+- Given the 10-minute hold ends unpaid, then the order expires: seats go back on sale, nothing is charged and no ticket is issued.
 
-_Notes: Card details are entered by the attendee into the secure payment provider; Eventa never stores card numbers. All charges settle in THB._
+_Notes: Everything is charged in ฿._
 
 ### US-DISC-06 — Confirm and receive my QR ticket  ·  **Must**
-**As an** Attendee, **I want** a confirmation and a scannable QR ticket the moment my registration is placed, **so that** I know I'm in and can get through the door.
+**As an** Attendee, **I want** a confirmation and QR ticket once I'm booked, **so that** I know I'm in and can get through the door.
 
 **Acceptance criteria**
-- Given a valid selection and (for paid events) an approved payment, when I confirm, then my registration is placed once, I get one QR ticket per seat/ticket, and I see a "You're registered!" recap with links to view my tickets.
-- Given the recap, when I follow it to my tickets, then I am also offered — but never required — to keep them in an account, through a one-time link emailed to the address I booked with; no password is asked for until that link is opened (US-DISC-15).
-- Given I never create an account, when I follow the link in my confirmation email, then I can still open and download my ticket: the link works without signing in.
-- Given my registration is confirmed, when it completes, then I receive a confirmation email containing my QR ticket(s), an order summary, a VAT receipt for paid orders, and a calendar invite; online events also include a join link.
-- Given I provided a mobile number and SMS is applicable, when I register, then I also get a confirmation text.
-- Given I double-tap confirm or retry, when the requests arrive, then only one registration is created and I'm charged only once.
-- Given two people try to take the same seat, when both confirm, then only the first succeeds and the other is not charged (or is refunded) and asked to pick again.
+- Given I book, then a free booking confirms with ticket count, reference and "View my tickets"; a paid one says my seats are held.
+- Given my order is confirmed, then its order page, opened without signing in, shows one QR per ticket and what I paid, VAT included.
+- Given it's confirmed, then I'm emailed the reference, date, place, total and tickets link, in English or Thai; paid orders add a 7% VAT receipt.
+- Given I gave a Thai mobile and the organizer sends texts, then I'm also texted the reference and tickets link.
+- Given a double press, then one order is placed and charged once; given someone books my seat first, I pick again and pay nothing.
+
+_Notes: Emails carry a tickets link, not QR codes, and organizers can switch them off._
 
 ### US-DISC-07 — View and download my QR ticket  ·  **Must**
-**As a** registered Attendee, **I want** to open and download my QR ticket, **so that** I always have my entry pass on hand, printed or on my phone.
+**As an** Attendee, **I want** to open and download my QR ticket, **so that** I have my entry pass on my phone or on paper.
 
 **Acceptance criteria**
-- Given I own a valid ticket, when I open it, then I see a scannable QR and its ticket reference.
-- Given I download a ticket, then I get a printable ticket image showing the QR, event name, date, venue, doors-open time, ticket class (VIP/General), seat/row/gate where applicable, and admission number.
-- Given a ticket has been refunded or voided, when I open it, then it shows as no longer valid and cannot be downloaded as a valid pass.
-- Given I try to open a ticket I don't own, then I am refused access.
+- Given "My Events", when I choose "Ticket", then I see the QR, reference and admission number; several tickets switch with "Ticket 1", "Ticket 2".
+- Given I choose "Download ticket", then its printable pass has QR, event, date, time, venue or online, type, seat or general admission, reference, admission number.
+- Given I open my order page from the confirmation, then each ticket shows its QR and code with "Download", no sign-in needed.
+- Given a ticket was refunded or voided, then no QR is shown, it says it won't admit anyone, and it can't be downloaded.
 
 ### US-DISC-08 — Sign in to my attendee account  ·  **Must**
-**As a** registered Attendee, **I want** to sign in with email/password or Google/Apple, **so that** I can reach my tickets, receipts, and profile — and only my attendee area, never the organizer console.
+**As a** registered Attendee, **I want** to sign in with email and password, **so that** I reach my tickets, payments and profile.
 
 **Acceptance criteria**
-- Given valid credentials, when I sign in, then I land on my account (My Events) with attendee access only and no organizer/admin access.
-- Given I sign in after saving events as a guest, when I sign in, then those saves are attached to my account.
-- Given wrong credentials, when I submit, then I see a single "email or password is incorrect" message without revealing which was wrong.
-- Given repeated failed attempts, when the limit is passed, then further attempts are temporarily blocked and I'm pointed to reset my password.
-- Given I forgot my password, when I choose "Forgot password?", then I'm taken to a reset flow.
-- Given I have no account, when I am on the attendee sign-in page, then I can create one from there (US-DISC-15) — the sign-in page is the only other place an attendee account can be created.
-- Given I sign in, when my account is resolved, then it is found in the single platform-wide realm and no workspace is named: naming one is refused rather than ignored, so that my tickets from different organizers all live under one account.
+- Given the right email and password, then I land on "My Events" or back where I was; the organizer console still needs its own sign-in.
+- Given I saved events as a guest, when I sign in, then they join my account's saves with no duplicates.
+- Given a wrong email or password, then the same message shows either way, never saying which.
+- Given 5 failed attempts, then sign-in is locked for 15 minutes.
+- Given I choose "Forgot password?", then the reset flow opens; "Create one" opens the attendee sign-up (US-DISC-15).
+
+_Notes: One attendee account holds bookings from every organizer, with no workspace to pick._
 
 ### US-DISC-09 — See my upcoming and past tickets  ·  **Must**
-**As a** registered Attendee, **I want** my registrations split into upcoming and past, **so that** I can grab my ticket for what's next and revisit what I've attended.
+**As a** registered Attendee, **I want** my bookings split into upcoming and past, **so that** I find my next ticket fast and revisit past events.
 
 **Acceptance criteria**
-- Given I'm signed in, when I open My Events, then I see an Upcoming section and a Past section, each with a count, showing only my registrations.
-- Given an upcoming event, when it's listed, then I see a countdown (e.g. "6 days left", "Today"), my ticket type, date and venue, a link to the event page, and a "Ticket" action to open my QR.
-- Given a past event I attended, when it's listed, then I see an "Attended" badge and a "Leave feedback" action while feedback is open.
-- Given I have no registrations, when the tab loads, then I see an empty state inviting me to discover events.
+- Given "My Events", then "Upcoming" and "Past" tabs, with counts, list every confirmed booking made with my email, from any organizer, even as a guest.
+- Given an upcoming event, then its card shows a countdown (days left, tomorrow, today), ticket type, date and time, venue, "Details" and "Ticket".
+- Given an event has ended, then it moves to "Past", marked attended only if I was checked in, with "Leave feedback" for its survey.
+- Given I have no bookings, then I'm told so and offered "Discover events".
 
 ### US-DISC-10 — Review my payment history and receipts  ·  **Must**
-**As a** registered Attendee, **I want** a history of my payments with downloadable receipts and an export, **so that** I can track and expense my spending.
+**As a** registered Attendee, **I want** a list of my payments with totals, **so that** I can track and expense what I've spent.
 
 **Acceptance criteria**
-- Given I'm signed in, when I open Payment history, then I see summary tiles for total spent, number of transactions, and total refunded, plus a paged list of my transactions.
-- Given a transaction row, when I view it, then I see the event, invoice number, date, payment method (masked card or PromptPay), amount, and status (Paid/Refunded), with refunded amounts struck through and excluded from total spent.
-- Given a transaction, when I download its receipt, then I get a VAT receipt showing the 7% VAT breakdown in Baht.
-- Given I export my history, then I receive my full transaction list.
-- Given I have no transactions, when the tab loads, then tiles show zero and I see an empty state.
+- Given the "Payment history" tab, then tiles show total spent, number of transactions and amount refunded in ฿, above a paged list of payments.
+- Given a row, then it shows the event, invoice number or order reference, date, method (card or PromptPay), amount and a paid or refunded badge.
+- Given a refunded payment, then its amount is struck through and left out of total spent.
+- Given I have no payments, then I'm told so and offered "Discover events".
+
+_Notes: The VAT receipt for each paid order arrives by email (US-DISC-06)._
 
 ### US-DISC-11 — Manage my profile  ·  **Must**
-**As a** registered Attendee, **I want** to keep my personal details and photo up to date, **so that** organizers can reach me and my checkout details stay correct.
+**As a** registered Attendee, **I want** to keep my details and photo current, **so that** organizers can reach me and checkout fills itself in.
 
 **Acceptance criteria**
-- Given the Profile tab, when I edit and save name, email, phone, city, date of birth, bio, or photo, then valid changes are saved and confirmed, and "Cancel" discards unsaved edits.
-- Given I change my email, when I save, then the new email is marked unverified and I'm sent a verification link while my old email keeps working until confirmed.
-- Given I change my phone, when I save, then I must confirm it by code before it's used for texts.
-- Given I upload a photo over 5 MB or not a JPG/PNG, when I upload, then it's rejected with guidance and my current avatar is unchanged.
-- Given I update my profile, when I next check out, then my details pre-fill from the saved profile.
+- Given the "Profile" tab, when I edit name, city, date of birth or bio and choose "Save changes", then they're saved; "Cancel" undoes unsaved edits.
+- Given a new email and "Send confirmation", then it's pending and my old email still signs me in until I open the link sent there.
+- Given a phone and "Send code", then a 6-digit code is texted; only once I enter it and choose "Confirm" is the number used.
+- Given a photo that isn't JPG or PNG, or is over 5 MB, then "Upload" refuses it with the reason and my current photo stays.
+- Given saved details, when I next check out signed in, then full name, email and phone are pre-filled.
 
 ### US-DISC-12 — Manage my notifications, display preferences, and security  ·  **Should**
-**As a** registered Attendee, **I want** to control how Eventa contacts me, how things are displayed, and my account security, **so that** the experience fits me and my account stays protected.
+**As a** registered Attendee, **I want** to control my notifications, preferences and security, **so that** Eventa suits me and my account stays protected.
 
 **Acceptance criteria**
-- Given the Settings tab, when I toggle email notifications, event reminders, SMS alerts, or marketing/promotions, then my choice is saved and applied to future messages.
-- Given marketing is off, when a promotion goes out, then I'm excluded from it but still receive order confirmations and receipts.
-- Given I set language, timezone, or currency, then the interface reflects my choice, while all charges still settle in Baht and event times stay anchored to each event's own timezone.
-- Given I change my password with the correct current password, when I save, then it's updated, I'm sent a confirmation email, and I can sign out of other sessions.
-- Given I enable two-factor authentication, when I complete verification, then it's turned on and required at my next sign-in, with recovery codes provided.
-- Given a wrong current password or mismatched new passwords, when I submit, then I see a clear error and nothing changes.
-
-_Notes: Marketing opt-in/out is recorded with a timestamp for PDPA compliance; transactional emails are always sent regardless of marketing choice._
+- Given I switch reminders, SMS alerts (confirmed phone only) or marketing, then it saves at once; turning reminders off stops them, not confirmations or receipts.
+- Given I set language (English or Thai), timezone or currency, then emails follow my language; charges stay in ฿, event times in the event's timezone.
+- Given my current password and a new one twice, when I choose "Update password", then it changes, other devices sign out and I'm emailed.
+- Given a wrong current password or mismatched new ones, then I'm told which and nothing changes.
+- Given I turn on two-factor with my authenticator app's 6-digit code, then recovery codes show once and my next sign-in asks for a code.
 
 ### US-DISC-13 — Share post-event feedback  ·  **Should**
-**As an** Attendee who attended an event, **I want** to leave a star rating and a few optional comments, **so that** organizers can improve future events and other attendees can judge quality.
+**As an** Attendee who booked an event, **I want** to answer the organizer's short survey afterwards, **so that** the organizer can make future events better.
 
 **Acceptance criteria**
-- Given I attended an event and feedback is open, when I open the survey, then I can give a 1–5 star rating and optionally say what I enjoyed, how I heard about it, and whether I'd recommend Eventa events.
-- Given I don't pick a rating, when I submit, then I'm prompted to choose one and nothing is recorded until I do.
-- Given I submit feedback, then I see a thank-you confirmation and my rating contributes to the event's average shown on Discover.
-- Given I submit feedback again within the window, when I resubmit, then my earlier response is updated rather than duplicated.
-- Given I'm not eligible or the window is closed, when I open the survey, then I'm told feedback isn't open.
+- Given my confirmed booking and an open survey, when I open it signed in from the thank-you email or "Leave feedback", then its questions show.
+- Given the questions, then each is 1 (poor) to 5 (excellent) stars, a choice, a 0 to 10 likelihood scale or a comment box.
+- Given I skip a question that isn't a comment box, when I submit, then I'm asked to answer it and nothing is recorded.
+- Given I choose "Submit feedback", then I'm thanked; reopening the survey says I've already answered and my first answer stands.
+- Given no confirmed booking for the event, or a closed survey, then I'm told there's no survey to answer.
 
-_Notes: Feedback is anonymous to other attendees; organizers see aggregate ratings and comments._
+_Notes: Answers are anonymous to other attendees; organizers read them on "Feedback"._
 
 ### US-DISC-14 — Delete my account  ·  **Could**
-**As a** registered Attendee, **I want** to permanently delete my account and personal data, **so that** I can leave the platform on my own terms.
+**As a** registered Attendee, **I want** to permanently delete my account and personal data, **so that** I can leave Eventa on my own terms.
 
 **Acceptance criteria**
-- Given the Settings danger zone, when I choose to delete my account, then I must explicitly confirm and re-verify my identity before it proceeds.
-- Given I have upcoming paid tickets, when I try to delete, then I'm warned about any non-refundable tickets before continuing.
-- Given I confirm and re-verify, when deletion runs, then my personal data is scheduled for removal, I'm signed out, and I receive a confirmation email.
-- Given I can't re-verify my identity, when I try, then deletion is aborted and my account is unchanged.
+- Given "Delete account" in "Settings", then I type DELETE and my password, plus a code if two-factor is on; "Keep my account" backs out.
+- Given upcoming paid tickets, then the dialog lists them and warns they won't be refunded, with the total in ฿.
+- Given I confirm, then my profile, saved events and history are scheduled for removal, I'm signed out to sign-in, and a confirmation email is sent.
+- Given a wrong password or code, then I'm told it didn't match and nothing is deleted.
 
-_Notes: Deletion is irreversible. Financial/tax records are retained in anonymized form for the legal retention period, disassociated from the personal profile._
+_Notes: Payment and tax records are kept anonymised for the legal retention period._
 
 ### US-DISC-15 — Create my account from my confirmation  ·  **Must**
-**As an** Attendee who has just registered, **I want** to turn my booking into an account in one click, **so that** I can see this ticket and every future one in one place — without having been made to sign up before I could buy.
+**As an** Attendee who just booked, **I want** to turn my booking into an account, **so that** all my tickets sit in one place.
 
 **Acceptance criteria**
-- Given I have just confirmed a registration, when the confirmation screen appears, then it offers me a "Create account" link alongside my ticket, and a way to dismiss it that says the ticket is already in my email. The offer is made only once there is a ticket to keep — a booking still awaiting payment or approval, on the waitlist, lapsed, cancelled or turned down gets no offer — and no link is ever sent for a booking that isn't confirmed.
-- Given I am offered the account, when I decline or ignore it, then my registration, ticket and receipt are entirely unaffected and the offer never blocks the ticket.
-- Given the offer, when I choose "Create account", then nothing is created and no password is asked for yet: a one-time link is emailed to the address the booking was made with, and the screen tells me it was sent there and that opening it lets me choose a password and proves the address is mine. When I open that emailed link, the sign-up page shows the email from the booking and it **cannot be edited**, so the account can only ever be created for the address the ticket was sent to, by someone who can read that inbox.
-- Given the sign-up page opened from the link emailed to my booking's address, when I complete it, then I am asked only for a password, plus the same Terms & Privacy consent every sign-up asks for — my name comes from the booking — and I am signed in immediately and land on My Events, with no further confirmation email.
-- Given I registered with an email that already has a confirmed account, when the confirmation screen appears or I open a link sent to that address, then I am invited to sign in instead of being offered a duplicate. A sign-up with my address that was never confirmed is not an account I have: I am offered "Create account" as usual, and the account made from my emailed link replaces it — with the password I choose there, the name from my booking, and nobody left signed in to it.
-- Given my new account, when I open My Events, then registrations I made with the same email **before** creating the account are already listed.
-- Given I reach the sign-up page directly rather than from a booking, when it opens, then the email field is empty and editable, and the account is verified by email before it can be used.
-- Given the emailed link has expired, has been altered, or has already been used to create the account, when I open it, then no account is created and no password can be set through it: I am told to ask for a new link from my booking confirmation, or to sign in if the account already exists.
+- Given a confirmed, ticketed order, then its page offers "Create account", "Sign in" or "Not now"; other orders get no offer.
+- Given I choose "Create account", then nothing is created: a 7-day link is emailed, at most one a minute and five a day per address.
+- Given an unexpired, unaltered link, then I set a password, name and email locked, landing on "My Events" with all my bookings; otherwise it fails.
+- Given my email has a confirmed account, then the order offers only "Sign in", which brings me back; a used link offers "Sign in instead".
+- Given "Create one" on sign-in, then I type my email and must confirm it first; a booking link for that email replaces an unconfirmed sign-up.
 
-_Notes: This is deliberately the ONLY prompt to create an attendee account in the registration flow, and it comes AFTER the ticket is issued — see US-DISC-04's note that registering requires no account. The offer is an upsell, never a step, and it is a link rather than a form so that checkout itself never collects a credential. It is made only for a confirmed booking that holds a ticket: for one still owed, awaiting approval, on the waitlist, lapsed, cancelled or turned down there is no ticket to keep and no ticket email has gone out, so "your ticket is already in your email" would be untrue. The link itself is refused for a booking that isn't confirmed — "This booking isn't confirmed, so there are no tickets to keep in an account yet." — because an email offering to keep tickets that do not exist would only mislead whoever reads it._
-
-_The address is proven by its inbox, never by the screen. The confirmation screen is shown to whoever made the booking, before anyone has read the buyer's email, and anybody can book — a free RSVP is enough — with somebody else's address. If the account could be created from that screen, the person who typed the address would choose the password for its owner's account and could then see on My Events every booking ever made with that address, across every organizer and with the ticket codes, and every future one too (NFR-SEC-04, NFR-SEC-06). So "Create account" only sends a link to the booking's address, and the password is chosen after the link is opened and never before: an account whose password somebody else chose is taken over the moment its real owner starts to use it. Opening the link is the email verification, which is why the account is active as soon as the password is set and needs no second confirmation. The sign-up page therefore has two modes — opened from the emailed link (email shown and locked, already proven) and opened directly (email entered, verification required)._
-
-_Only a confirmed account counts as "already has an account". Anybody can start an attendee sign-up with anybody's address and choose its password, and until its confirmation email is opened that account proves nothing. If such a sign-up blocked the offer, or the offer sent the address's owner to sign in to it, the owner would be steered into a stranger's password — the very takeover the emailed link exists to prevent. So an unconfirmed sign-up blocks neither the offer nor the link, and the account made from the link takes it over: the password chosen there replaces the stranger's, the name comes from the booking, the account becomes active, and anyone signed in to it is signed out._
-
-_Nothing the booker's browser holds can be guessed or replayed into an account. The offer on the confirmation screen names the booking by the order's id, never its human-readable reference: an 8-character reference printed on a ticket can be guessed, and the offer can say whether an address has an account and send mail to it. The emailed link carries a token rather than the bare order id. The token is signed, not hidden: it names the order and the address, and anyone holding the link can read them. It cannot be forged or altered without being refused, and only the booking's inbox ever receives it, so only someone who received the email ever sees the sign-up page with the booking's name and address on it — or can use it to choose the password. The link expires after 7 days and works once: after it has made the account it only says to sign in, and if that account is later deleted or moved to another address, the old link is dead rather than a way to make the account again. It is also refused if the booking's email has changed since it was sent. Whoever holds the booking can press the button, the booker included, so the link is rationed per address: asking for another within a minute is refused with a "give it a minute" message, and no address is sent more than five in 24 hours — after the fifth, the refusal says how long to wait and to check the spam folder and the address. The button cannot be used to fill somebody's inbox._
-
-_Every attendee account belongs to the one platform-wide organization, never to the organizer whose event was booked — see US-DISC-08. This is what allows tickets from different organizers to appear in one place._
+_Notes: Declining never affects the ticket, and only the inbox owner can create the account._
 
 
 ---
@@ -1043,128 +1003,126 @@ _Every attendee account belongs to the one platform-wide organization, never to 
 
 # Epic E7 — Communicate with Attendees
 
-**Goal (business value):** Give organizers one place to keep every attendee informed — automatic transactional messages that fire on their own, one-off broadcasts to the right audience, a feed of what's happening across the event, proof that messages landed, and a way to measure how attendees felt. Reliable, on-brand communication protects revenue (people get their tickets and receipts), reduces support load, and turns each event into insight for the next one.
+**Goal (business value):** Keep every attendee informed from one place: automatic messages, one-off announcements, an activity feed, a delivery log and surveys. Reliable, on-brand messages get people their tickets, cut support load and make each event teach the next.
 
-**Primary users:** Event Organizer, Admin (author and manage), Staff/Team member (personal notification feed only), Attendee (receives messages; answers surveys in the attendee portal).
+**Primary users:** Admin; Event Organizer (everything but "Message templates"); Staff (notification feed, sending announcements); Attendee (receives messages, answers surveys in the attendee portal).
 
 **Success measures:**
-- Message delivery rate (share of sent messages the provider confirms delivered).
-- Email open rate on transactional and announcement messages.
-- Announcement reach (recipients actually addressed vs. audience size).
-- Survey response rate and completion rate per event.
-- Attendee satisfaction — average rating and NPS across the portfolio.
-- Triage speed — time for organizers to clear the unread notification backlog.
+- Share of messages marked Failed in the delivery log.
+- Survey completion rate per event.
+- Average rating and NPS across all events.
+- Time for organizers to clear unread notifications.
 
 ## User stories
 
 ### US-MSG-01 — Attendees automatically get the right message at the right moment  ·  **Must**
-**As an** Attendee, **I want** to automatically receive accurate confirmation, receipt, reminder, waitlist, cancellation, and thank-you messages, **so that** I always have my ticket and the information I need without chasing the organizer.
+**As an** Attendee, **I want** my confirmation, receipt, reminder, waitlist, cancellation and thank-you emails to arrive unasked, **so that** I never chase the organizer.
 
 **Acceptance criteria**
-- Given I complete registration and payment, when the payment succeeds, then I receive a confirmation message with my ticket and order details.
-- Given my event is a day away, when the reminder time arrives, then I receive a reminder with the event time and place.
-- Given the organizer has turned a given message off, when its trigger occurs, then no message of that kind is sent to me.
-- Given I have a language preference, when a message is sent, then I receive it in English or Thai accordingly, falling back to the event's default language.
+- Given my registration is confirmed (paid or approved), then I'm emailed my booking reference, when and where, total paid and ticket link.
+- Given the organizer switched "Event reminder" on (it starts off), then a day before my event I'm emailed its time, place and ticket link.
+- Given I switched "Event reminders" off in my account, then I get no reminder; confirmations and receipts can't be switched off there.
+- Given the organizer switched a message off on "Message templates", when its trigger fires, then nobody receives it.
+- Given my attendee account's Language is ไทย or English, then my messages arrive in it; otherwise (say, as a guest) in English, the default.
 
-_Notes: Message content is personalized with the attendee's and event's details; a message is never sent with a personalization field left unfilled. Ticket delivery on successful payment is an expected communication and is not subject to marketing opt-out._
+_Notes: Eventa always adds ticket and order details below the organizer's wording, fills every merge field, and texts confirmations to Thai mobiles._
 
 ### US-MSG-02 — Keep automated messages on-brand and in the organizer's control  ·  **Should**
-**As an** Event Organizer, **I want** to edit the wording of each automated email/SMS, insert personalization fields, and turn each message on or off, **so that** every attendee gets accurate, on-brand communication without me sending anything by hand.
+**As an** Event Organizer, **I want** to reword automated emails with merge fields and switch messages on or off, **so that** attendees get on-brand messages.
 
 **Acceptance criteria**
-- Given the registration-confirmation message, when I edit its wording and save, then messages sent afterwards use the new wording while messages already sent are unaffected.
-- Given I am editing a message, when I place a personalization field (e.g. first name, event name) into the text, then it appears where my cursor was and shows correctly filled in for each recipient.
-- Given I write an SMS that crosses into a second message segment, when I type, then I see a live character/segment count and a warning, so that I understand the added cost.
-- Given a message that attendees legally expect, such as a payment receipt or cancellation notice, when I try to turn it off, then I am warned attendees won't receive it and must confirm before it is disabled.
-- Given I try to save an active message with its subject or body empty, or referencing an unsupported personalization field, then the save is blocked with a clear reason.
+- Given I "Reword" the subject and opening in English or ไทย and "Save", then only later sends use them; an empty language keeps Eventa's wording.
+- Given the "Merge fields" chips, when I click one, then it lands at my cursor and each attendee sees their own details.
+- Given a half-written language (subject without opening, or the reverse) or a merge field the message can't fill, then saving is refused, naming it.
+- Given a message attendees are entitled to (confirmation, rejection, cancellation, receipt), then switching it off asks first; "Keep it on" leaves it Active.
+- Given I lack "Edit workspace settings" (for example Staff or a default Organizer), when I open "Message templates", then I am refused.
 
-_Notes: Each message exists in English and Thai; an active channel cannot be saved with its language version blank. SMS cost is driven by encoding — Thai text uses shorter segments — and the count reflects the actual text._
+_Notes: Only the email is reworded; the confirmation text goes out in Eventa's wording._
 
 ### US-MSG-03 — Triage everything happening across my events in one feed  ·  **Should**
-**As an** Event Organizer, **I want** one notification feed with an unread filter, "mark all read" and the alerts that need me, **so that** I can triage registrations, payments, feedback and alerts without opening every module.
+**As an** Event Organizer, **I want** one feed of registrations, payments, payouts and alerts that need me, **so that** I triage without opening every module.
 
 **Acceptance criteria**
-- Given unread notifications, when I open the feed, then I see All and Unread counts and the most recent activity, with older activity on demand.
-- Given the Unread filter with nothing unread, then the feed says "you're all caught up".
-- Given I choose "mark all read", then the unread count drops to 0 and stays 0 after a reload.
-- Given alerts I can act on (US-DASH-06), then the feed lists every one, not only home's 3, with its text and a link to where it is resolved. A resolved alert leaves; one I could not resolve never shows.
-- Given I am a Staff/Team member, then I see only my own activity and the alerts I can act on, and cannot compose messages, edit templates, broadcast, view the delivery log or manage feedback.
-
-_Notes: Each member sees only what they are entitled to; payment and payout items need finance access._
+- Given I open "Notifications", then it shows 30 days with "All" and "Unread" counts; groups older than Earlier this week wait behind "Show older activity".
+- Given I "Mark all read", then only my feed is marked and "Unread" stays 0 after reload; an empty "Unread" tab says I'm caught up.
+- Given alerts I can act on, then "Needs action" lists all, not just home's 3, each linking to its fix; only resolving one removes it.
+- Given I lack finance access (for example Staff), then no payment or payout items show; neither does any alert I couldn't resolve.
+- Given unread items, then the header bell shows a red dot; opening it shows my unread count, the 5 newest items and "View all notifications".
 
 ### US-MSG-04 — Broadcast a one-off announcement to the right audience  ·  **Should**
-**As an** Event Organizer, **I want** to send a one-off announcement to a chosen audience of an event over email and/or SMS, either immediately or scheduled, **so that** I can reach the right attendees at the right time (e.g. a venue change or last-minute update).
+**As an** Event Organizer, **I want** to email one event's attendees now or at a Bangkok time, **so that** they hear of changes in time.
 
 **Acceptance criteria**
-- Given I choose the "checked-in attendees" audience for an event with email and SMS, when I send now, then only checked-in attendees with a valid contact receive it and the recorded recipient count matches who was addressed.
-- Given I choose to schedule for a future Bangkok date and time, when I send, then the announcement is recorded as Scheduled and goes out at that time.
-- Given I have not selected any channel, or left the message (or an email subject) empty, when I click send, then I am blocked with a clear reason.
-- Given the chosen audience resolves to nobody, when I send, then nothing is sent and I am told no recipients matched.
-- Given I broadcast a marketing-class announcement, when it is delivered, then it includes an unsubscribe option and anyone who has opted out is excluded and counted as skipped.
+- Given "Send announcement", then "Send" stays disabled until I pick an event and write a Subject and Message, plus a send time if scheduling.
+- Given I confirm "Send now" or a "Schedule" Bangkok time, then the row reads Sent with event and recipient count, or Scheduled for that time.
+- Given an announcement goes out, then everyone confirmed by then gets exactly one email, to them alone, even with two bookings or a retry.
+- Given a send time under 5 minutes away or over a year ahead, then it is refused under the field.
+- Given I pick an event above the list, then "Sent & scheduled" shows only that event's announcements.
 
-_Notes: Audience options are all registrants, checked-in attendees, or waitlist. A double-click or retry never double-sends to the same recipient._
+_Notes: Email only, always to the event's confirmed attendees._
 
 ### US-MSG-05 — Change my mind on a scheduled announcement  ·  **Could**
-**As an** Event Organizer, **I want** to cancel or reschedule an announcement that hasn't gone out yet, **so that** I can correct a mistake or shift timing without messaging attendees wrongly.
+**As an** Event Organizer, **I want** to cancel or move a scheduled announcement, **so that** I can fix a mistake or shift the timing.
 
 **Acceptance criteria**
-- Given a scheduled announcement still in the future, when I cancel it, then no messages are sent and it no longer shows as Scheduled (but remains in history).
-- Given a scheduled announcement, when I reschedule it to a later valid time, then it goes out at the new time to a freshly resolved audience.
-- Given an announcement has already started sending, when I try to change it, then I am told it can no longer be changed.
+- Given a Scheduled row, when I "Cancel" and confirm, then nobody is emailed and it stays in the history as Cancelled.
+- Given I "Reschedule" a Scheduled row to a new Bangkok time, then it goes out at that time to whoever is registered then.
+- Given a row is sent or cancelled, then it offers no "Reschedule" or "Cancel"; if sending starts mid-change, I'm told it can't be changed.
 
 ### US-MSG-06 — Prove messages were delivered and diagnose failures  ·  **Should**
-**As an** Admin, **I want** a delivery log showing each message's recipient, type, channel, and status (sent, delivered, opened, failed), **so that** I can prove a message went out and spot and fix failures.
+**As an** Admin, **I want** a log of every email and text with failure reasons, **so that** I can help attendees whose ticket never came.
 
 **Acceptance criteria**
-- Given messages have gone out, when I open the log, then I see one entry per recipient with the recipient, message type, channel, status, and time.
-- Given an SMS the provider reported as undelivered, when the log renders, then that entry shows the SMS channel and a Failed status.
-- Given an email the recipient opened, when that is confirmed, then the entry advances to an Opened status.
-- Given a critical message (a ticket or receipt) failed, when I review the log, then failures are surfaced so I can follow up.
+- Given sent messages, then "Delivery log" gives each recipient a row: name, email, message type, channel (Email or SMS), event, status, Bangkok send time.
+- Given the mail or SMS service refused a message, then its row reads Failed with the reason; otherwise it reads Sent.
+- Given failures in view, then I'm told how many didn't get through; the "Needs attention" tab lists only failed rows, or says nothing has failed.
+- Given I search a name or address, or pick a message type, then the rows narrow to match.
+- Given I lack "Approve, add & invite registrations" (for example Staff), when I open the log, then I am refused.
 
-_Notes: Statuses reflect only what the delivery provider has actually confirmed — the log never claims a delivery the provider hasn't reported. The log exposes attendee contact details, so it is limited to organizers/admins with attendee-view access; Staff are denied._
+_Notes: Sent means the mail or SMS service accepted it, not that it arrived or was opened; nothing is re-sent from here._
 
 ### US-MSG-07 — Export the delivery log for records  ·  **Could**
-**As an** Event Organizer, **I want** to export the delivery log to a file, **so that** I have a record for compliance, reconciliation, or diagnostics.
+**As an** Event Organizer, **I want** to export the delivery log to a file, **so that** I have a record for compliance or diagnosis.
 
 **Acceptance criteria**
-- Given I have permission to export attendee data, when I export, then a file of the current log view downloads and the export is recorded for audit.
-- Given I am a Staff member or lack export permission, when I view the log, then the export option is unavailable.
-- Given the current view has nothing to export, when I export, then I am told there is nothing to export.
+- Given I hold "Export attendee data", then "Export" downloads a CSV of the rows matching my tab, search and type; without it, there's no "Export".
+- Given I export, then the audit log records it.
+- Given nothing matches my filters, when I export, then I'm told there is nothing to export.
 
-_Notes: The file contains attendee contact data in bulk, so export requires the stronger attendee-export permission, not just view access._
+_Notes: The file is attendee contact data in bulk, hence its own permission._
 
 ### US-MSG-08 — Measure attendee satisfaction across all my events  ·  **Should**
-**As an** Event Organizer, **I want** portfolio-wide feedback KPIs and a per-event drill-down with a rating breakdown, **so that** I can see how attendees felt across all my events and dig into any one of them.
+**As an** Event Organizer, **I want** feedback figures across all my events and a page per event, **so that** I see how attendees felt.
 
 **Acceptance criteria**
-- Given several events have collected feedback, when I open the feedback overview, then I see portfolio KPIs — total responses, average rating, NPS, and completion rate — and a card per event.
-- Given I search by event name, when I type, then the event grid filters to matching events, with a clear empty state when none match.
-- Given I open an event's detail, then I see its KPIs, its rating distribution, and its surveys; and clicking a rating bar filters the responses to that rating.
-- Given an event has collected no responses yet, when its card or detail renders, then it clearly shows "no responses yet" rather than misleading numbers.
+- Given the "Feedback" tiles, then Responses, Average rating, NPS and Completion rate pool all events: 100 ratings at 4.5 plus 10 at 3.0 read 4.4.
+- Given a figure with nothing behind it (no star ratings, no recommendation answers, nobody asked), then it reads "—", never 0.
+- Given "Feedback by event", then each event's card shows its date and its survey, live and response counts, or says there are none yet.
+- Given I type in "Search events…", then cards narrow by name; with no match, I'm told so and offered "Clear search".
+- Given I open a card, then the event's page shows Surveys, "Overall satisfaction" (average, 5★–1★ bars), "Likelihood to recommend" (NPS: promoters, passives, detractors) and Responses.
 
-_Notes: Portfolio figures are weighted by each event's number of responses; events with no responses don't distort the averages._
+_Notes: NPS is promoters (9–10) minus detractors (0–6) as a share of answers; Completion is the share of post-event thank-you recipients who answered._
 
 ### US-MSG-09 — Build and manage surveys for my events  ·  **Should**
-**As an** Event Organizer, **I want** to build surveys with rating, text, and multiple-choice questions and then duplicate, close, reopen, or delete them, **so that** I can collect the feedback I need and reuse and lifecycle-manage my forms.
+**As an** Event Organizer, **I want** to write and manage surveys for each event, **so that** I collect the feedback I need.
 
 **Acceptance criteria**
-- Given I create a survey with a title and at least one question against an event, when I save, then it is created as a Draft under that event and appears in its surveys list, collecting nothing until I make it live.
-- Given a multiple-choice question with fewer than two options, or a question with blank text, when I save, then I am blocked with a clear reason.
-- Given an existing survey, when I duplicate it, then a fresh Draft copy with zero responses appears next to it.
-- Given a live survey, when I close it, then it stops accepting responses; and when I reopen it, then it accepts responses again.
-- Given a survey with responses, when I delete it, then I must confirm before it is removed.
+- Given I save a "New survey" with a title and questions (Rating, Free text, Multiple choice, Likelihood to recommend), then it's a Draft asking nobody.
+- Given no title, a blank question, a choice under two options or two recommendation questions, then saving (new or edited) is refused, naming the question.
+- Given a survey, then one button moves it on: "Make live" from Draft, "Close" from Live, "Reopen" from Closed; attendees can't answer a closed one.
+- Given I duplicate a survey, then a Draft with its title plus (copy) appears, with no responses.
+- Given I delete a survey, then I must confirm first; "Delete it" removes it and its questions.
 
-_Notes: Attendees answer surveys in the attendee portal, not here — this story is only about authoring and managing them. The post-event thank-you message is what distributes the survey link to attendees._
+_Notes: Attendees answer once each in the attendee portal; the post-event thank-you emails them the link the day after the event._
 
 ### US-MSG-10 — Browse and filter individual feedback responses  ·  **Could**
-**As an** Event Organizer, **I want** to browse individual responses and filter them by survey and by rating, **so that** I can read what specific attendees said, not just the averages.
+**As an** Event Organizer, **I want** to read individual responses, filtered by stars, **so that** I see what attendees said, not just averages.
 
 **Acceptance criteria**
-- Given an event has responses, when I filter by a rating or a specific survey, then the list narrows to matching responses and paginates, showing respondent, survey, rating, comment, and date.
-- Given a page size and multiple pages, when I move between pages, then the "showing X–Y of N" range updates accordingly.
-- Given filters that match no responses, when applied, then I see a clear "no responses match these filters" message.
-
-_Notes: Responses carry attendee identity, so browsing is limited to organizers/admins with attendee-view access; Staff are denied._
+- Given an event has responses, then "Responses" lists them newest first, each with the attendee's name, stars, survey title, date and comment.
+- Given I click a star bar under "Overall satisfaction", then only that rating's responses show; clicking it again or "show all" brings all back.
+- Given no response has that rating, then I'm told so and offered "Show all".
+- Given I lack "Create & edit events" (for example Staff), when I open "Feedback", then I am refused.
 
 
 ---
@@ -1173,181 +1131,180 @@ _Notes: Responses carry attendee identity, so browsing is limited to organizers/
 
 # Epic E8 — Manage Registrations & Admit Attendees
 
-**Goal (business value):** Give organizers one dependable place to turn sign-ups into confirmed, ticketed attendees — reviewing and approving registrations, filling seats fairly from the waitlist, keeping a clean attendee directory, inviting the right people, and getting everyone through the door fast on event day by QR scan or by hand. The outcome is more paid seats filled, less door queue, and no fraudulent or double entry.
+**Goal (business value):** One place to turn sign-ups into confirmed, ticketed attendees and admit them fast, by QR or by hand. More seats filled, shorter door queues, no fake or double entry.
 
-**Primary users:** Event Organizer, Admin (full registration + attendee management), Staff / Team member (view + door check-in), Attendee (the subject of these records — never operates these screens).
+**Primary users:** Event Organizer and Admin (decide, add and invite; only Admin refunds), Staff (view and check in); attendees are the records, never the users.
 
 **Success measures:**
-- Registration approval turnaround (time from sign-up to confirmed ticket).
-- Seat fill rate and waitlist conversion (share of freed seats re-sold before the event).
-- No-show rate and overall check-in rate on event day.
-- Average time-to-check-in per attendee / door throughput at peak.
-- Share of admissions handled cleanly by QR vs. manual fallback, and rejected/duplicate scans caught.
-- Invite-to-registration conversion.
-- Data cleanliness handed to CRM (tagged VIPs/speakers/sponsors, exportable segments).
+- Time from sign-up to confirmed ticket.
+- Seats filled, including freed seats re-sold from the waitlist and invites converted.
+- Check-in and no-show rates; door time per attendee at peak.
+- Share admitted by QR; bad or duplicate scans caught.
 
 ## User stories
 
 ### US-REG-01 — Review the registrations queue · **Must**
-**As an** Event Organizer, **I want** to see every registration for my events in one filterable list with pending, waitlist and cancelled views, **so that** I can quickly find who needs a decision and keep only legitimate attendees moving toward a ticket.
+**As an** Event Organizer, **I want** all registrations in one searchable queue, **so that** I quickly find who needs a decision.
 
 **Acceptance criteria**
-- Given registrations exist across events, when I open the registrations workbench, then I see a list with tabs for All, Pending, Waitlist and Cancelled, each showing a live count that updates as statuses change.
-- Given I want a specific person, when I search by attendee name, email or booking reference, then the list narrows to matches and returns me to the first page.
-- Given many events, when I filter by a chosen event and/or ticket type, then the list shows only matching registrations and the filters combine (all conditions must hold).
-- Given any registration, when it is listed, then its status shows as a clear badge — Confirmed, Pending, Waitlisted or Cancelled — and its amount shows as a VAT-inclusive Baht figure or a "Free" badge.
-- Given a pending registration, when I look at its row, then Approve and Reject actions are offered; on non-pending rows only View and an overflow menu appear.
-- Given no registrations match my filters, when the list refreshes, then I see a clear "No matches" empty state.
-- Given I open a single registration's detail, when the panel appears, then I can read its current status, payment state, issued ticket(s) and a dated history (created / confirmed / checked-in / cancelled) in Bangkok time.
-- Given a Staff member without finance access, when they open a registration, then monetary amounts are masked.
+- Given I open Registrations, then tabs All, Pending, Waitlist and Cancelled show counts, and rows show attendee, event, ticket, registered date (Bangkok), amount and status.
+- Given I search a name, email or order ID, or pick an event, then rows and tab counts narrow to match both, from page 1.
+- Given a row, then its badge reads Confirmed, Pending, Waitlisted, Cancelled, Rejected or Expired, noting awaiting approval, place in line or offer deadline where useful.
+- Given finance access, then Amount shows a Free badge or the ฿ total, VAT included; without it (e.g. Staff), every amount is a dash.
+- Given nothing matches, then I'm told so and offered "Clear filters"; with no registrations at all, I'm told there are none yet.
 
-_Notes: Read-only browsing is open to Organizer, Admin and Staff; the underlying detail view is lower priority (Could) but folded here as the natural "open a row" action._
+_Notes: Without permission to decide registrations (e.g. Staff), rows show no Approve or Reject._
 
 ### US-REG-02 — Approve or reject a pending registration · **Must**
-**As an** Event Organizer, **I want** to approve a pending sign-up so a ticket and QR are issued, or reject it so the seat is released, **so that** only legitimate attendees are confirmed and freed seats can go to someone else.
+**As an** Event Organizer, **I want** to approve or reject pending registrations, **so that** only people I accept get tickets.
 
 **Acceptance criteria**
-- Given a pending registration for a free ticket with seats available, when I approve it, then it becomes Confirmed, the attendee is seated, a ticket with QR code is issued, and a confirmation is sent by email and SMS.
-- Given a pending registration for a paid ticket that isn't paid yet, when I try to approve it, then approval is blocked with "Payment isn't complete yet, so this registration can't be approved."
-- Given the ticket sold out between opening the list and approving, when I approve, then the registration stays pending and I'm told the ticket is now sold out and offered the waitlist instead.
-- Given I approve the same registration twice (e.g. a retry), when the action repeats, then only one ticket is issued and only one confirmation is sent.
-- Given a pending or waitlisted registration with no funds captured, when I reject it and confirm the prompt, then it becomes Rejected, the held seat is released, and a rejection notice is emailed to the attendee.
-- Given a rejected registration, when I view it later, then it cannot be re-approved and no Approve action is shown.
-- Given a confirmed registration where money was captured, when I look for a reject action, then it is not offered and I'm directed to cancel and refund instead.
+- Given a pending registration, when I approve it, then it's Confirmed, QR tickets are issued and a confirmation emailed, also texted where SMS is on.
+- Given Approve is sent twice (a double-click or a retry), then only one set of tickets and one confirmation go out.
+- Given payment is incomplete or the registration was rejected, which is final, then Approve is greyed out saying why; once Confirmed, both buttons are.
+- Given a pending or waitlisted registration, when rejected, then it's Rejected at once, any held seat returns to sale and a rejection is emailed.
+- Given someone paid while awaiting approval, then Reject becomes "Reject and refund", returning the money; without refund permission it's greyed out, saying ask an Admin.
 
-_Notes: Reject requires a confirmation step so a single misclick can't terminate a registration. Rejecting may free capacity and trigger waitlist promotion. Approve/reject are Organizer/Admin only — Staff cannot decide._
+_Notes: Only members who may manage registrations (Organizer, Admin) can decide; a refusal shows under the row._
 
 ### US-REG-03 — Add a registration by hand · **Must**
-**As an** Event Organizer, **I want** to add a registration for a walk-up or phone booking myself, **so that** off-platform attendees still get a proper ticket and QR and are counted against capacity.
+**As an** Event Organizer, **I want** to add a walk-up or phone booking, **so that** off-platform attendees get a proper ticket and count against capacity.
 
 **Acceptance criteria**
-- Given an event open for registration, when I fill in the attendee's name, email, event, ticket type and a seat quantity, then a registration is created, the seats are reserved against capacity, and the attendee is matched to an existing directory record or added as a new one.
-- Given the "Send confirmation" toggle is on, when I save, then the attendee receives their ticket and QR by email and SMS; when it's off, the ticket is created quietly for me to deliver later.
-- Given I request more than the allowed maximum of 8 seats in one booking, when I try to save, then I'm asked to choose between 1 and 8 seats and nothing is reserved.
-- Given I request more seats than remain, when I save, then I'm told exactly how many seats are left and no partial booking is made.
-- Given the chosen event is a draft, completed or cancelled event, when I try to add a registration, then I'm told the event isn't open for new registrations.
-- Given a free ticket, when I save, then the amount shows as "Free" and the registration is confirmed immediately; for a paid ticket the amount is calculated automatically (VAT-inclusive) and I never type it.
-- Given required fields are missing or the email is invalid, when I try to save, then I see inline errors and the panel keeps my entries.
+- Given I save name, email, event, ticket type and quantity (phone optional), then seats are reserved and the attendee is matched by email or added.
+- Given a free ticket, then it's Confirmed at once, shown as Free; a paid one is auto-priced, VAT included, and stays Pending until paid.
+- Given a free ticket, then "Send confirmation email" (on by default) emails the QR ticket; off, it's issued quietly for me to hand over.
+- Given over 8 seats per booking, more than remain, or a draft, completed or cancelled event, then I'm told why and nothing is reserved.
+- Given a missing name or email, or an invalid email, then the form won't save; after any refusal the panel stays open with my entries.
+
+_Notes: "Add registration" is offered only to members who may manage registrations, and is disabled until an event exists._
 
 ### US-REG-04 — Manage the waitlist & promote attendees · **Should**
-**As an** Event Organizer, **I want** to promote waitlisted attendees in order when a seat frees, **so that** I fill my event to capacity fairly and don't lose demand.
+**As an** Event Organizer, **I want** to offer freed seats to the waitlist, **so that** I fill my event fairly and don't lose demand.
 
 **Acceptance criteria**
-- Given a free seat and a waitlist, when I promote the person at the front of the queue, then they receive a time-limited offer (24 hours by default) to complete payment and are notified; free tickets confirm immediately.
-- Given no seat is free, when I try to promote someone, then promotion is refused and I'm told to free capacity first.
-- Given the default order is first-come-first-served, when I deliberately promote someone out of order, then the out-of-order choice is recorded.
-- Given a promotion offer that isn't taken up in time, when it lapses, then the seat passes to the next person in line automatically and the attendee is told their offer expired.
-- Given a promoted attendee completes payment within the offer window, when it settles, then their registration confirms with ticket, QR and confirmation just like a normal approval.
+- Given a waitlisted registration, then its row shows its place in line and "Offer a seat" instead of Approve.
+- Given an offered seat on a free ticket, then the attendee is Confirmed at once and gets their confirmation.
+- Given an offered seat on a paid ticket, then it's held 24 hours, the row shows the deadline and a pay link is emailed.
+- Given no seat is free, then the offer is refused; given people ahead in line, I'm warned how many I'd skip, and skipping is recorded.
+- Given an offer lapses, then they're emailed it expired and the seat passes to the next in line; paying in time confirms them, tickets emailed.
 
 ### US-REG-05 — Browse the attendee directory & profiles · **Must**
-**As an** Event Organizer, **I want** to search, segment and sort my whole attendee directory and open a full profile for anyone, **so that** I can understand and act on who is coming across all my events.
+**As an** Event Organizer, **I want** to search, filter and sort everyone who registered and open their profile, **so that** I know who's coming.
 
 **Acceptance criteria**
-- Given attendees exist, when I open the directory, then I see a list with segments for All, New, Checked-in and VIP, each with a live count, sorted by most recent activity by default.
-- Given I want to reorder, when I sort by name, most events or most tickets, then the list re-orders accordingly (ties broken by most recent activity).
-- Given I search by name or email, or filter by tag (VIP, Speaker, Sponsor, Student), then the list narrows to matches and the conditions combine.
-- Given a tagged attendee, when they appear in the list, then their tag shows as a coloured badge, and untagged attendees show a dash.
-- Given I open an attendee's profile, when the panel appears, then I see their contact details, tags, every event they've registered for with its status (Checked-in, Registered or Past), their tickets (VAT-inclusive amount or "Free"), and a dated activity timeline, newest first.
-- Given no attendees match, when the list refreshes, then I see a "No matches" empty state.
+- Given I open Attendees, then tabs All, New, Checked in and VIP show counts; rows show attendee, phone, events, tickets, tag and last activity.
+- Given I search name or email or pick a tag or tab, then rows matching all remain; if none, I'm told so with "Clear filters".
+- Given I sort by Name (A–Z), Most events or Most tickets, then the list re-orders; by default, and on ties, latest activity comes first.
+- Given an attendee's tag, VIP, Speaker, Sponsor or Student, then it shows as a coloured badge; untagged shows a dash.
+- Given I choose "View profile", then "Attendee profile" shows name, tag, email, phone and an Activity timeline, newest first, with Bangkok date and time.
+
+_Notes: New means first seen in the last 30 days; Checked in means checked in at any event._
 
 ### US-REG-06 — Invite people to an event · **Must**
-**As an** Event Organizer, **I want** to email an invitation for a specific event to a named person with an optional personal note, **so that** I can grow attendance beyond public discovery.
+**As an** Event Organizer, **I want** to email one person an invitation to one event, **so that** I grow attendance beyond public discovery.
 
 **Acceptance criteria**
-- Given I enter a recipient name, email and exactly one event, when I send the invite, then a tracked invite record is created and one invitation email is queued to that person with a link into the event's registration flow.
-- Given I add a personal message, when the invite is sent, then that note appears at the top of the invitation email.
-- Given I try to send with a missing name, invalid email or no event chosen, when I submit, then I see inline errors and nothing is sent.
-- Given my note is longer than 250 characters, when I submit, then I'm asked to shorten it.
-- Given I send a second identical invite to the same person and event within a short window, when it's submitted, then no duplicate email is dispatched.
+- Given I fill event, name and email under "Invite", when I choose "Send invitation", then I'm told it's sent and they're emailed the event's link.
+- Given I add a message, then it appears at the top of the invitation, up to 250 characters.
+- Given the name or email is missing, or the email is invalid, then the form won't send until I fix it.
+- Given I invite the same person to the same event within 24 hours, then no second email is sent.
+- Given I may not manage registrations (e.g. Staff), when I send, then the invitation is refused.
 
-_Notes: An invite is a promise to attend, not a booking — it does not reserve a seat until the invitee actually registers. Inviting is Organizer/Admin only; Staff cannot invite._
+_Notes: An invitation holds no seat; "Invite" sits on Attendees and is disabled until an event exists._
 
 ### US-REG-07 — Tag & segment attendees · **Should**
-**As an** Event Organizer, **I want** to tag an attendee as VIP, Speaker, Sponsor or Student, **so that** I can segment my audience and hand clean, labelled data to my CRM.
+**As an** Event Organizer, **I want** to tag an attendee as VIP, Speaker, Sponsor or Student, **so that** I can segment my audience.
 
 **Acceptance criteria**
-- Given an untagged attendee, when I set a tag, then the tag badge appears on their row and the matching segment count (e.g. VIPs) increases by one.
-- Given a tagged attendee, when I clear or change the tag, then the badge updates and the affected segment counts adjust live (an attendee carries at most one tag).
-- Given I re-apply the tag an attendee already has, when I confirm, then nothing changes.
-- Given another team member tags the same attendee at the same moment, when my change lands, then the most recent change wins and I'm told the attendee was just updated.
+- Given I set or change an attendee's tag, then their badge and tab counts (e.g. VIP) update; each attendee has at most one tag.
+- Given I clear the tag, then the badge shows a dash.
+- Given Staff, then they see tags but cannot change them.
 
-_Notes: Staff can view tags but not change them._
+_Notes: Tags already show, and filter, in Attendees (US-REG-05); only setting them is missing._
+
+_Not in the web app yet._
 
 ### US-REG-08 — Keep attendee contact details current · **Should**
-**As an** Event Organizer, **I want** to correct an attendee's name, email and phone, **so that** confirmations and SMS reach the right person and my directory stays accurate.
+**As an** Event Organizer, **I want** to correct an attendee's name, email and phone, **so that** tickets and messages reach the right person.
 
 **Acceptance criteria**
-- Given valid changes, when I save, then the directory row and profile show the new details and the change is recorded for audit.
-- Given I change the phone number, when I save, then future confirmations and reminders go to the new number.
-- Given the new email already belongs to another attendee, when I save, then the change is blocked and I'm prompted to merge the two records rather than overwrite.
-- Given an invalid name or email, when I try to save, then I see inline errors and the change is not applied.
-- Given a successful edit, when I reopen the profile, then an "Updated contact details" entry appears in the activity timeline.
+- Given I edit name, email or phone on a profile and choose "Save changes", then I'm told it's saved and the row and profile update.
+- Given a new email or phone, then future confirmations, reminders and SMS go to it; emptying the phone removes it.
+- Given the email already belongs to another attendee, then nothing is saved and I'm told to merge the two records instead.
+- Given a blank name or an invalid email, then the error shows under that field and nothing is saved.
+- Given a saved change, when I reopen the profile, then Activity shows the contact update with date, time and who made it.
+
+_Notes: Only members who may manage registrations see "Edit"; Eventa does not merge records itself._
 
 ### US-REG-09 — Email an attendee directly · **Should**
-**As an** Event Organizer, **I want** to send a one-off email to an attendee from their profile, **so that** I can answer a question or share event-specific information without leaving the platform.
+**As an** Event Organizer, **I want** to send one attendee a one-off email from their profile, **so that** I answer questions without leaving Eventa.
 
 **Acceptance criteria**
-- Given a valid subject and message, when I send, then one email is queued to the attendee and the send is logged on their activity timeline.
-- Given an empty subject or message, when I try to send, then I'm asked to add a subject and a message before sending.
-- Given a send fails, when it errors, then I'm told it couldn't be sent and can retry.
+- Given a subject and message, when I send, then one email goes to the attendee and the send is logged on their Activity.
+- Given an empty subject or message, then I'm asked to add both.
+- Given a send fails, then I'm told and can retry.
 
-_Notes: Staff cannot send attendee emails._
+_Notes: The profile's "Send email" only opens my own mail app, addressed to them; Eventa neither sends nor logs it._
+
+_Not in the web app yet._
 
 ### US-REG-10 — Export registration & attendee lists · **Should**
-**As an** Event Organizer, **I want** to export exactly the registrations or attendees I've filtered to, **so that** I can share clean data with my CRM, finance or sponsors.
+**As an** Event Organizer, **I want** to export my filtered registrations or attendees, **so that** I share clean data with CRM, finance or sponsors.
 
 **Acceptance criteria**
-- Given a filter is active (tab, event, ticket, tag, search), when I export, then the file contains exactly that filtered set — not just the current page — with attendee, event, ticket, date, amount and status details, and Thai names render correctly.
-- Given I export, when the file is produced, then the export is recorded (who exported, how many rows, which filters) because it discloses attendee personal data.
-- Given a Staff member, when they view the list, then the Export control is not available to them.
-- Given no rows match, when I export, then I get an empty file with headers only rather than an error.
+- Given I export, then the file holds every filtered row, not just this page, with Thai names intact; no match gives headers only.
+- Given an export, then it's recorded: who, how many rows and which filters.
+- Given Staff, then no Export is offered.
 
-_Notes: Export is limited to members with export permission (Organizer/Admin); Staff and attendees are excluded._
+_Notes: Reports already export their own views (US-RPT-11); Registrations and Attendees have no Export._
+
+_Not in the web app yet._
 
 ### US-REG-11 — Run the manual check-in list · **Must**
-**As** Staff at the door, **I want** a searchable roster for one event with a live checked-in progress bar, **so that** I can admit people quickly and mark or undo a check-in even when a QR can't be scanned.
+**As** Staff at the door, **I want** a searchable check-in list per event, **so that** I can check people in by hand and undo mistakes.
 
 **Acceptance criteria**
-- Given I select an event, when the roster loads, then I see its confirmed attendees, a live progress readout (e.g. "7 / 29" with a matching percentage bar), and segments for All, Checked-in and Not-yet.
-- Given I search by name, email or ticket, or filter by ticket type, then the roster narrows to matches and returns to the first page.
-- Given a not-yet attendee, when I check them in, then their row shows a check-in time (HH:MM, Bangkok), the checked-in count goes up by one, and the progress bar advances immediately.
-- Given a checked-in attendee, when I undo the check-in, then the time clears and the not-yet count goes up by one.
-- Given an attendee whose registration isn't valid for entry (e.g. cancelled), when I try to check them in, then I'm told the registration isn't valid for check-in.
-- Given the event's check-in window isn't open, when I try to check someone in, then I'm told check-in isn't open for this event.
-- Given an already-checked-in attendee, when they are checked in again, then nothing changes and their original arrival time is kept.
+- Given an event on Check-in, then everyone ticketed is listed with checked-in count, % bar and tabs All, Checked in and Not yet, each counted.
+- Given I search by name, email or ticket, then the list narrows and returns to page 1.
+- Given I choose "Check in", then the row shows Checked in with the Bangkok time, count and bar rise; "Undo" returns it to Not yet.
+- Given it's over 2 hours before the start or over 1 hour after the end, when I check in or undo, then it's refused.
+- Given someone is checked in by scan and by hand, then they count once at their earliest time; cancelled or refunded tickets aren't listed.
 
-_Notes: Anyone with view access can watch the list; only members with check-in permission (Organizer/Admin/Staff) can mark or undo. Manual and QR check-ins stay consistent — the same person can't be double-counted, and the earliest arrival time is kept._
+_Notes: Needs check-in permission (Organizer, Admin, Staff)._
 
 ### US-REG-12 — Scan tickets at the live QR check-in station · **Must**
-**As** Staff running a check-in station, **I want** to bind the station to one event and scan ticket QR codes with my phone camera, getting an instant valid / duplicate / invalid / wrong-event / cancelled result, **so that** entry is fast and fraud is caught at the door.
+**As** Staff at a check-in station, **I want** to scan tickets with my device's camera, **so that** entry is fast and bad tickets are caught.
 
 **Acceptance criteria**
-- Given I bind the station to an event, when I switch it to a different event, then the scanner, stats and feed re-point to the new event and start fresh.
-- Given the station is bound to an event, when I start the camera and hold a valid, unused ticket for this event in view, then a green "Checked in" result shows, the attendee is admitted, and the live count and feed update.
-- Given the same ticket is held or presented again, when it's read again, then the result is "Already checked in" showing the original arrival time, and the count does not change.
-- Given a QR that isn't a recognisable ticket, when it's read, then the result is "Invalid ticket" and no one is admitted.
-- Given a valid ticket for a different event, when it's scanned at this station, then the result is "Wrong event" and no one is admitted.
-- Given a cancelled or refunded ticket, when it's scanned, then the result is "Ticket cancelled — entry denied" and no one is admitted.
-- Given the camera can't be opened (permission denied, no camera, insecure page, or camera in use), when I try to start it, then I see a plain-language reason and am pointed to upload an image or search manually — the station never crashes.
-- Given a valid code is held steady in view, when it's read, then exactly one check-in happens and immediate re-reads of the same code are ignored.
+- Given I pick an event on the "Check-in station", when I switch events, then the scanner, counts and feed reload for it.
+- Given I choose "Start camera" and scan a valid, unused ticket for this event, then a green check-in shows their name; count and feed update.
+- Given a used ticket, then I see when they arrived and nothing changes; any code held in view is read once, then ignored 2.5 seconds.
+- Given an unknown code, another event's ticket, or a refunded or voided one, then the station says why and admits no one.
+- Given the camera is blocked, missing, busy or needs https, then I'm told why and offered "Upload QR" or manual lookup; the station still works.
 
-_Notes: Torch, camera flip, decoding an uploaded QR image, and a simulate control (a demo/testing aid, not a real entry method) are available at the station to support real door conditions. Requires check-in permission._
+_Notes: Needs check-in permission; "Torch", "Flip" and "Upload QR" help in poor light, swap cameras or read a photo._
 
 ### US-REG-13 — Check attendees in manually when a QR won't scan · **Must**
-**As** Staff at the station, **I want** to look someone up by name, email or ticket and check them in without a scan, **so that** a damaged, missing or unscannable QR never stops a legitimate attendee from getting in.
+**As** Staff at the station, **I want** to check someone in without a scan, **so that** a broken or missing QR never stops them.
 
 **Acceptance criteria**
-- Given I open the "Can't scan? Find attendee manually" lookup and search, when I find a not-yet-checked-in attendee for this event and check them in, then they are admitted, the live count goes up, and they appear at the top of the feed — exactly as a scan would.
-- Given an already-checked-in attendee, when I find them, then their row shows a "Checked in" badge and no check-in action, so they can't be admitted twice.
-- Given no one matches my search, when the list refreshes, then I see a "No attendees match your search" message.
+- Given a manual search by name, email or ticket ID, when I choose "Check in", then they're admitted, counted and top "Just checked in".
+- Given a match is already checked in, then it shows their arrival time instead of "Check in".
+- Given no one matches, then I'm told so.
+
+_Notes: The station's "Can’t scan? Find attendee manually" opens this search._
 
 ### US-REG-14 — Watch live turnout at the door · **Should**
-**As an** Event Organizer, **I want** a live count and feed of who just arrived, **so that** I can monitor turnout in real time and react to a slow or crowded door.
+**As an** Event Organizer, **I want** a live count and feed of arrivals, **so that** I can watch turnout and react to a slow door.
 
 **Acceptance criteria**
-- Given check-ins are happening, when one succeeds, then the counter (checked / total, percentage, on-site and remaining) updates immediately and never counts past the event's total capacity.
-- Given a successful check-in from any method (scan, uploaded image, simulate or manual), when it lands, then the attendee appears at the top of a "Just checked in" feed marked "just now", with earlier arrivals ageing below.
-- Given I switch the station to another event, when the view refreshes, then the counter and feed show that event's figures.
+- Given the station shows an event, then I see checked in over total tickets with a % bar, plus On-site, Late and Remaining counts.
+- Given a check-in succeeds here (camera, "Upload QR" or manual), then counts update and they top "Just checked in" with ticket type and arrival time.
+- Given I switch to another event, then counts and feed show its figures; other stations' arrivals appear at my next check-in or reload.
+- Given nobody has arrived yet, then the feed says so; otherwise it lists the last 8.
+
+_Notes: On-site means arrived by the start; Late, after it._
 
 
 ---
@@ -1356,144 +1313,148 @@ _Notes: Torch, camera flip, decoding an uploaded QR image, and a simulate contro
 
 # Epic E9 — Get Paid & Manage Finances
 
-**Goal (business value):** Give event organizers one trusted money workspace where they can see every payment, refund a cancellation cleanly, receive settled funds in their bank, hand buyers compliant VAT invoices, and stay on top of monthly VAT filing — so revenue is always reconciled and Thai tax obligations are met on time.
+**Goal (business value):** Give organizers one trusted money workspace to see every payment, refund cleanly, receive payouts, hand buyers VAT invoices and file VAT monthly, so revenue reconciles and Thai tax is filed on time.
 
-**Primary users:** Event Organizer (view, invoice, export), Admin (full control — refunds, payout money-movement, invoice void, VAT filing), Staff and Attendee (no access to finance).
+**Primary users:** Event Organizer (view, download invoices, export), Admin (all of that, plus refunds, payout retries and settings, invoice voids, VAT filing); Staff and Attendees have no finance access.
 
 **Success measures:**
-- Revenue collected and fully reconciled against the ledger (share of payments matched, no unexplained gaps).
-- Refund turnaround time (request to settled, with ticket released).
-- Payout settlement time to the organizer's bank and failed-payout recovery rate.
-- Invoice on-time payment rate and average days-to-pay against the 14-day term.
-- VAT returns filed by the statutory due date (share of periods filed on time).
+- Share of payments reconciled, with no unexplained gaps.
+- Refund turnaround, from request to settled with tickets released.
+- Payout settlement time, and failed payouts recovered.
+- Invoices paid within 14 days; VAT returns filed by the 15th.
 
 ---
 
 ## User stories
 
 ### US-FIN-01 — See every payment · **Must**
-**As an** Event Organizer, **I want** a searchable, filterable ledger of every charge, refund, and failed attempt — with the attendee, event, payment method, amount, and status — that stays in step with what actually cleared, **so that** I can reconcile revenue and answer buyer questions without leaving the console.
+**As an** Event Organizer, **I want** one list of every charge, refund and failed attempt, **so that** I can reconcile sales and answer buyers.
 **Acceptance criteria**
-- Given payments exist across Paid, Pending, Refunded, and Failed, when I filter by status and by method (Card, PromptPay, or Bank transfer) and type part of a name or transaction reference, then only matching payments show and each status tab shows a live count for the whole ledger.
-- Given the ledger, when it loads, then payments are listed newest first with VAT-inclusive Baht amounts.
-- Given a Pending or Failed payment, when I look at its row, then "View invoice" and "Refund" are unavailable, each explaining why (no completed charge / not eligible for refund).
-- Given a PromptPay charge that later settles, when I refresh, then the row shows as Paid without any manual editing.
-_Notes: Payment methods in scope are Card, PromptPay, and Bank transfer; all amounts are VAT-inclusive Thai Baht._
+- Given I open Payments, then rows run newest first, each showing transaction, attendee, event, method, ฿ amount (VAT included), status and Bangkok date and time.
+- Given the All, Paid, Pending, Refunded and Failed tabs, then each counts payments matching my method, event and search; choosing one lists only that status.
+- Given I choose a method (Card, PromptPay, Bank transfer) or event, or search part of an attendee name or transaction, then only matches show.
+- Given a Pending, Failed or Refunded payment, then "Refund" is greyed and says why: no completed charge, attempt failed, or already refunded.
+- Given a Pending PromptPay charge the buyer then pays, when I reload Payments, then it reads Paid without anyone editing it.
+_Notes: Never-paid Pending and Failed attempts show a dash for date and sit on top._
 
 ### US-FIN-02 — Issue a refund · **Must**
-**As an** Admin, **I want** to issue a full refund of a paid charge back to the buyer's original payment method in one guarded, confirmed action, **so that** a cancellation is settled fairly, the ticket seat is freed, and everything stays reconciled and auditable.
+**As an** Admin, **I want** to refund a paid charge in full, **so that** a cancellation is settled and seats go back on sale.
 **Acceptance criteria**
-- Given a Paid payment, when I open the refund dialog, then it restates the exact amount and warns that the refund is final before I confirm.
-- Given I confirm the refund, when it succeeds, then the payment shows as Refunded, the attendee's ticket is cancelled and its seat returned to availability, and the buyer receives a refund confirmation (email, plus SMS if a mobile is on file).
-- Given the refund succeeds, when I look at the related invoice, then it is marked Void and no longer counts toward outstanding receivables, and the VAT on that sale is backed out of the current tax period.
-- Given an Organizer (not an Admin), when they view a paid payment, then the Refund action is not available to them.
-- Given the same refund is submitted twice (e.g. a double click or a retry), when both arrive, then only one refund is ever issued.
-_Notes: Baseline is full refunds only; partial refunds are out of scope this release. Only Paid payments are refundable, and only an Admin can refund._
+- Given a Paid payment, when I choose "Refund", then a dialog restates transaction, buyer and amount and warns it cannot be undone.
+- Given I confirm "Refund", then I'm told it started; once the full amount is back on the buyer's original payment method, the payment reads Refunded.
+- Given the refund settles, then the order's tickets are void and back on sale, its invoice Void, and Taxes lowers the month it settled in.
+- Given I am an Organizer, then "Refund" is greyed, saying only an Admin can issue refunds.
+- Given "Refund" is pressed twice (a double click or a retry), then only one refund is issued.
+_Notes: A PromptPay refund waits for the buyer's bank details, so the payment stays Paid and tickets valid until then._
 
 ### US-FIN-03 — Track balances and payout history · **Must**
-**As an** Event Organizer, **I want** to see my available, pending, and all-time paid-out balances alongside a history of every payout to my bank, **so that** I always know how much I've earned, how much is on the way, and what has already landed.
+**As an** Event Organizer, **I want** my balances and payout history, **so that** I know what I've earned, what's coming and what's landed.
 **Acceptance criteria**
-- Given settled sales and past payouts, when I open Payouts, then I see three headline balances — available, pending, and paid out to date — in Baht.
-- Given one payout is currently in progress, when the page loads, then the pending balance equals that payout's amount and is labelled accordingly.
-- Given a history of payouts, when I filter by status (Paid, Processing, Scheduled, Failed), then matching payouts show with amount, a masked destination bank account, and their requested and completed dates.
-- Given no bank account is connected yet, when I open Payouts, then balances read as unavailable and I'm prompted to connect payouts.
-_Notes: Only a masked last-4 of the bank account is ever shown; Eventa never stores full bank or card numbers._
+- Given a connected payout account, then Payouts shows three ฿ tiles: Available, Pending (Scheduled plus Processing payouts) and Paid out (Paid payouts).
+- Given the All, Scheduled, Processing, Paid and Failed tabs, then each lists only its payouts, newest first.
+- Given a payout row, then it shows reference, period, bank account (last 4 digits), amount, status, Requested and Completed (a dash until paid).
+- Given no payout account is connected, then no balance reads ฿0 (any tile shown reads a dash) and the page offers "Connect a payout account".
+_Notes: Only the last 4 digits ever show; Eventa never stores bank or card numbers._
 
 ### US-FIN-04 — Follow and recover a payout · **Should**
-**As an** Admin, **I want** to open a payout to see its progress timeline and, when one fails, retry it to my connected bank, **so that** I can understand where my money is and unblock settlement myself.
+**As an** Admin, **I want** to see why a payout failed and retry it, **so that** I can unblock my money myself.
 **Acceptance criteria**
-- Given any payout, when I open it, then I see its amount, status, masked destination, dates, and a plain-language timeline (requested → processing → paid) with a note on what to expect.
-- Given a payout that is in progress, when I view it, then the note explains funds typically arrive within 1–3 business days.
-- Given a failed payout, when I retry it as an Admin and it is accepted, then the same payout moves to processing (no duplicate payout is created) and the retry is recorded for audit.
-- Given a completed payout, when I choose to download its receipt, then I get a record showing the payout reference, amount, and completion date.
-- Given an Organizer (not an Admin), when they view a failed payout, then the retry action is not available to them.
-_Notes: The downloadable payout receipt is a record of transfer, not a tax document — priority Could within this story._
+- Given a Failed payout, then its row shows the reason under the Failed badge and a "Retry payout" button.
+- Given I choose "Retry payout" and the provider accepts, then the same payout reads Processing, requested today, and the Audit log records the retry.
+- Given the provider refuses the retry, then the payout stays Failed with the new reason.
+- Given I am an Organizer, when I choose "Retry payout", then it is refused and the payout stays Failed.
 
 ### US-FIN-05 — Manage bank and payout settings · **Must**
-**As an** Admin, **I want** to manage my bank account, payout schedule, and tax forms through the secure payments provider, **so that** settlement details stay accurate and safe without Eventa ever holding my bank or card numbers.
+**As an** Admin, **I want** to manage my bank and payout settings at the payment provider, **so that** Eventa never holds bank numbers.
 **Acceptance criteria**
-- Given I am an Admin, when I choose to manage payouts, then I'm taken securely to the payments provider to update bank details, set my payout schedule, and access tax forms and statements.
-- Given no account is connected, when I start, then I'm guided through connecting my payout account first.
-- Given an Organizer (not an Admin), when they view Payouts, then bank and payout management is not available to them.
-_Notes: Bank/schedule/tax-form data lives with the payments provider, not in Eventa. This is Admin-only account control._
+- Given a connected payout account, then "Manage payouts" on Payouts opens the payment provider's dashboard for bank account, schedule, tax forms and statements.
+- Given no payout account is connected, then "Manage payouts" is not offered; "Connect a payout account" (or "Connect account") opens Settings → Payments instead.
+- Given I am an Organizer, then "Manage payouts" is not offered.
+_Notes: Bank, schedule and tax-form details live with the payment provider, never in Eventa._
 
 ### US-FIN-06 — Invoice ledger with ageing · **Must**
-**As an** Event Organizer, **I want** an invoice ledger that automatically ages unpaid bills to Overdue once the 14-day term passes, with search and per-event filtering, **so that** I can see at a glance who still owes and how late they are.
+**As an** Event Organizer, **I want** each unpaid invoice to show how late it is, **so that** I see who owes and for how long.
 **Acceptance criteria**
-- Given an unpaid invoice whose due date passed 3 days ago, when the ledger renders, then it shows as Overdue with "3 days overdue" highlighted.
-- Given an unpaid invoice due in 9 days, when it renders, then it shows as Issued with "in 9 days".
-- Given the ledger, when I filter by status (Paid, Issued, Overdue, Void), by event, or by invoice number or buyer name, then only matching invoices show and tab counts reflect the whole ledger.
-- Given a paid invoice, when I view its row, then it shows how and when it was paid; a voided invoice shows "Voided".
-_Notes: Invoice terms are fixed at 14 days; "today" is judged on Bangkok time._
+- Given I open Invoices, then rows run newest issued first, each showing number, buyer name and email, event, VAT, total, status and due date.
+- Given an unpaid invoice, then after its due date it reads Overdue, days late in red; until then, Issued, with days left.
+- Given the buyer pays the invoice's order, then it reads Paid, as does its due date; a voided invoice reads Void in both.
+- Given the All, Issued, Paid, Overdue and Void tabs, then each counts invoices matching my event and search; choosing one lists only that status.
+- Given I choose an event, or search part of an invoice number or buyer name, then only matching invoices show.
+_Notes: Terms are 14 days from issue; overdue is judged on the Bangkok day, so one due today is still Issued._
 
 ### US-FIN-07 — Issue a VAT invoice · **Must**
-**As an** Event Organizer, **I want** to issue a compliant tax invoice for an order — with a proper sequential number, 14-day terms, and a 7% VAT breakdown — **so that** business buyers get the document they need and my books stay in order.
+**As an** Event Organizer, **I want** to issue a VAT invoice for an order, **so that** a business buyer gets a compliant tax document.
 **Acceptance criteria**
-- Given a billable order for ฿48,000, when I issue an invoice today, then it receives the next invoice number in an unbroken sequence, a due date 14 days out, a subtotal and 7% VAT that add back exactly to ฿48,000, and a status of Issued.
-- Given the order is already paid, when the invoice is issued, then it appears as Paid with how and when it was paid.
-- Given the same order, when issuing is triggered twice, then only one invoice exists for it.
-- Given a missing buyer email or a zero/negative amount, when I try to issue, then I'm asked to provide a valid buyer email and amount and no invoice is created.
-_Notes: Invoice numbers are sequential and never reused (Thai tax requirement); once issued, the amount, buyer, and number can't be edited — corrections are made by voiding and re-issuing._
+- Given I invoice an order, then the invoice takes my next yearly number, is due in 14 days and totals the order, 7% VAT included.
+- Given the order is already paid, then the invoice is issued as Paid; if already invoiced, issuing again returns that invoice, no new number.
+- Given the order has no buyer email or nothing to bill, then no invoice is issued.
+_Not in the web app yet._
 
 ### US-FIN-08 — View and download a tax invoice · **Must**
-**As an** Event Organizer, **I want** to open any invoice and download it as a clean, single-page tax-invoice PDF carrying Eventa's legal identity and the 7% VAT breakdown, **so that** I can hand a buyer a compliant document on demand — whether I start from the invoice ledger or from the payment behind it.
+**As an** Event Organizer, **I want** to download any invoice as a one-page tax invoice, **so that** I can hand a buyer a compliant document.
 **Acceptance criteria**
-- Given a ฿32,500 paid invoice, when I open its detail, then it shows the buyer, order reference, event line item, issued and due dates, a subtotal and 7% VAT that reconcile to ฿32,500, and how it was paid.
-- Given a completed payment, when I open the invoice behind it, then I see the same reconciling breakdown, and a refunded payment's invoice is marked Void.
-- Given an invoice, when I download the PDF, then it is a single A4 page showing Eventa's legal name, address, and tax ID, the buyer, the event service line, and the reconciling VAT breakdown.
-- Given a due-but-unpaid invoice, when I view it, then the due date is shown with its ageing (e.g. "in 9 days" or "3 days overdue").
+- Given an invoice row, when I choose "Invoice", then a one-page A4 tax invoice image (not a PDF) downloads, named by its number.
+- Given the document, then it shows my organization's name, address and tax ID, and the buyer's name and email.
+- Given the document, then it shows the order, issue and due dates, and the payment method and date, or Unpaid.
+- Given a ฿32,500 invoice, then it lists an event registration line, subtotal ex-VAT ฿30,373.83 and 7% VAT ฿2,126.17, totalling ฿32,500.
+- Given a void invoice (voided, or its payment refunded), then the document keeps its number and carries a large VOID mark.
+_Notes: Seller details are those in Settings → Organization when the invoice was issued._
 
 ### US-FIN-09 — Chase unpaid invoices · **Should**
-**As an** Event Organizer, **I want** to resend an invoice to its buyer and have overdue bills reminded automatically, **so that** I get paid faster without manually tracking every due date.
+**As an** Event Organizer, **I want** to resend an invoice and have overdue ones chased automatically, **so that** I get paid without tracking due dates.
 **Acceptance criteria**
-- Given an invoice with a valid buyer email, when I resend it, then the buyer receives it again and the invoice's number, amount, and status are unchanged.
-- Given an unpaid invoice that reaches its due date, when the daily reminder runs, then the buyer is sent a due/overdue reminder and the invoice shows as Overdue thereafter.
-- Given an invoice becomes Paid or Void, when the next reminder cycle runs, then no further reminders are sent for it.
-- Given repeated resend attempts, when they exceed a sensible limit, then further sends are held back so the buyer isn't flooded.
-_Notes: Every send is recorded in the messaging delivery log; reminders render in the buyer's language (EN/TH)._
+- Given an invoice with a buyer email, when I resend it, then the buyer gets it again, unchanged in number, amount and status.
+- Given an unpaid invoice passes its due date, then the buyer gets a reminder in their language (English or Thai).
+- Given an invoice is Paid or Void, then no more reminders go out for it.
+_Not in the web app yet._
 
 ### US-FIN-10 — Void an invoice · **Must**
-**As an** Admin, **I want** to void an issued or overdue invoice that was raised in error, with an optional reason, **so that** I can correct receivables and VAT while keeping the invoice sequence intact and auditable.
+**As an** Admin, **I want** to void an invoice raised in error, **so that** the record is corrected and the number sequence stays whole.
 **Acceptance criteria**
-- Given an Issued or Overdue invoice, when I confirm the void as an Admin, then it becomes Void, drops out of outstanding receivables, its VAT is reversed from the current open tax period, and the action is recorded for audit.
-- Given a voided invoice, when I look at the sequence, then its number is preserved and never reused — a correction is a brand-new invoice.
-- Given an already-paid or already-void invoice, when I try to void it, then I'm told it can't be voided (a paid invoice is only voided by refunding its payment).
-- Given an Organizer (not an Admin), when they attempt to void, then the action is denied.
+- Given an Issued or Overdue invoice, when I choose "Void", then a dialog restates number, buyer and total and says it's kept, marked void.
+- Given I confirm "Void invoice" (reason optional), then I'm told it's voided, the row reads Void, and the Audit log records it with the reason.
+- Given a voided invoice, then it keeps its number, and no other invoice ever gets it.
+- Given a Paid or Void invoice, then "Void" is greyed, saying a Paid one is voided by refunding the payment, or it's already void.
+- Given I am an Organizer, when I choose "Void invoice", then it is refused and the invoice is unchanged.
+_Notes: Voiding changes no VAT figure: Taxes follows money collected, not invoices._
 
 ### US-FIN-11 — Monthly VAT ledger · **Must**
-**As an** Event Organizer, **I want** a monthly VAT ledger with clear headlines — VAT collected, remitted, and still payable, plus withholding tax — scoped by year, **so that** I always know my current tax position and can prepare the return.
+**As an** Event Organizer, **I want** a monthly VAT ledger for each tax year, **so that** I know my tax position and can prepare returns.
 **Acceptance criteria**
-- Given a period with taxable sales of ฿3,012,800, when its row renders, then VAT collected shows ฿210,896 (7% of sales).
-- Given a chosen year, when the headlines recompute, then VAT payable always equals VAT collected minus VAT remitted for that year, and the headlines never disagree with the rows beneath them.
-- Given periods across a year, when I filter by filing status (Filed, Due, Upcoming), then matching periods show with their due dates (the 15th of the following month) and status.
-- Given periods with withholding-tax figures, when I view the chosen year, then the withholding headline sums those figures and is tracked separately from VAT payable.
-_Notes: VAT rate is fixed at 7%; withholding tracking (Thai PND) is reconciled separately from VAT and is Should-level depth within this ledger._
+- Given I open Taxes, then it shows the current Bangkok year, and "Tax year" switches to any of the 5 years before.
+- Given a year, then all 12 months list Due (15th of next month), Sales ex-VAT, VAT at 7%, Withholding, Remitted and a status.
+- Given a year, then headlines VAT collected, VAT remitted, VAT payable (collected minus remitted) and Withholding each total the 12 months.
+- Given an ended month not yet filed, then it reads Due, even after the 15th; a current or future month reads Upcoming.
+_Notes: Sales and VAT follow money actually collected, so a refund lowers the month it settles in._
 
 ### US-FIN-12 — File the VAT return each period · **Must**
-**As an** Admin, **I want** each monthly VAT period to move from Upcoming to Due to Filed, and to record the PP30 filing when I remit, **so that** I file on time and my remitted and payable figures stay accurate.
+**As an** Admin, **I want** to record each month's VAT filing, **so that** I file on time and remitted and payable figures stay right.
 **Acceptance criteria**
-- Given a Due period with VAT of ฿210,896, when I record its filing as an Admin, then the period becomes Filed, its remitted amount shows ฿210,896, and VAT payable drops by that amount.
-- Given a period I try to mark filed that isn't yet Due, when I attempt it, then I'm told only a due period can be marked filed.
-- Given a filing recorded after its due date, when it is saved, then it is flagged as late for the record.
-- Given an already-filed period, when a later refund or void affects it, then the adjustment carries into the next open period rather than changing the filed return.
-- Given an Organizer (not an Admin), when they attempt to record a filing, then the action is denied.
+- Given a Due month, when I choose "Record filing", then a dialog restates month, VAT and due date, with optional withholding tax in ฿.
+- Given I confirm, then I'm told it's filed and the month reads Filed, marked late if recorded after the 15th.
+- Given a filed month, then Remitted equals its VAT, VAT payable drops by that, and any withholding adds to the Withholding headline.
+- Given a refund settles after a month is filed, then it comes off the month it settles in; the filed month never changes.
+- Given an Upcoming month, then "Record filing" is not offered; as an Organizer, recording is refused and the month stays Due.
+_Notes: This records the monthly PP30 VAT return; Remitted is never typed._
 
 ### US-FIN-13 — Export finance ledgers · **Should**
-**As an** Event Organizer, **I want** to export the payments, invoices, and VAT ledgers exactly as I've filtered them on screen, **so that** I can reconcile offline and hand a clean file to my accountant.
+**As an** Event Organizer, **I want** to export payments, invoices and VAT as I see them, **so that** I can reconcile offline with my accountant.
 **Acceptance criteria**
-- Given the payments ledger filtered to Refunded, when I export, then the file contains exactly those refunded payments with a VAT-inclusive amount.
-- Given the invoice ledger filtered to Overdue, when I export, then the file contains only overdue invoices with reconciling subtotal and VAT columns.
-- Given the VAT ledger scoped to a year and status, when I export, then the file lists those periods with reconciling VAT and remitted figures.
-- Given an export containing Thai names, when I open it in a spreadsheet, then the names render correctly.
-- Given an empty filtered set, when I export, then I'm told there's nothing to export.
-_Notes: Payments export is Should; invoice and tax exports are Could this release._
+- Given filtered Payments, when I choose "Export", then the file holds every matching payment, not just this page, with amounts VAT included.
+- Given filtered Invoices, when I choose "Export", then the file holds only those invoices, with subtotal, VAT and total that add up.
+- Given Taxes for a year, when I choose "Export", then the file lists its 12 months with sales, VAT, remitted, payable, withholding and status.
+- Given Thai names in an export, when I open it in a spreadsheet, then they read correctly.
+- Given filters that match nothing, when I choose "Export", then I'm told there's nothing to export and no file downloads.
 
 ### US-FIN-14 — Keep finance to finance roles · **Must**
-**As an** Admin, **I want** the entire Finance area to be invisible to Staff and Attendees, **so that** revenue, payout, and tax data stay restricted to the people accountable for money.
+**As an** Admin, **I want** Finance limited to the people accountable for money, **so that** revenue, payout and tax data stay private.
 **Acceptance criteria**
-- Given a Staff member or Attendee, when they use the console, then the Finance area is not visible or reachable for them.
-- Given an Organizer, when they use Finance, then they can view, invoice, and export, but cannot issue refunds, move payout money, void invoices, or record VAT filings.
-- Given an Admin, when they use Finance, then all finance actions are available.
+- Given an Attendee, then they cannot open the organizer console, so no Finance page.
+- Given a Staff member, when they open Payments, Payouts, Invoices or Taxes, then they're told they lack access and see no figures.
+- Given an Organizer, then they can open all four pages and export.
+- Given an Organizer, then "Refund" is greyed, "Manage payouts" is not offered, and retrying a payout, voiding an invoice or recording a filing is refused.
+- Given an Admin, then every Finance action is available.
+_Notes: These are the default roles; Settings → Roles can let another role issue refunds, or void invoices, handle payouts and file VAT._
 
 
 ---
@@ -1502,144 +1463,163 @@ _Notes: Payments export is Should; invoice and tax exports are Could this releas
 
 # Epic E10 — Build the Event Program
 
-**Goal (business value):** Give organizers a simple way to lay out their event's day-by-day schedule of sessions and to manage the speaker line-up behind it, so that attendees see a clear, trustworthy programme and decide the event is worth attending. A well-built program lifts registration confidence, drives "add to my schedule" engagement, and gives organizers the evidence they need to re-invite the best speakers.
+**Goal (business value):** Let organizers lay out each event's sessions day by day and manage the speakers behind them, so attendees see a clear, clash-free programme and trust the event.
 
-**Primary users:** Event Organizer, Admin (author and maintain the program); Staff/Team member (read-only, on-site support). Attendees consume the published programme on the event page (covered in the Event Landing epic).
+**Primary users:** Admin and Event Organizer (build the agenda and speakers); Staff (view only); attendees see the programme on the event page.
 
 **Success measures:**
-- Programme completeness — share of events published with a full agenda and speaker line-up before doors open.
-- Scheduling reliability — near-zero room double-bookings or speaker clashes reaching attendees.
-- Speaker profile quality — share of speakers with photo, bio and contact complete (drives a credible public page).
-- Attendee engagement — "add to my schedule" adoption against published sessions.
-- Re-invite insight — speakers carrying a usable satisfaction rating for future planning.
+- Share of events published with a full agenda and speaker line-up.
+- Room or speaker clashes reaching attendees: near zero.
+- Share of speakers with title, contact details, talk title and bio filled in.
+- Share of speakers carrying a rating to guide re-invites.
 
 ## User stories
 
 ### US-PROG-01 — See the event's schedule at a glance  ·  **Must**
-**As an** Event Organizer, **I want** to see all of my selected event's sessions laid out on a week-at-a-glance calendar by day and time, **so that** I can understand my programme and spot gaps before the event goes live.
+**As an** Event Organizer, **I want** my event's sessions laid out by day and time, **so that** I spot gaps in the programme.
 
 **Acceptance criteria**
-- Given my event has sessions across several days, when I open the agenda for that event, then every session appears in the correct day and time position, and none from any other event is shown.
-- Given a session, when I look at its block, then I can see its title, its type (shown by a consistent colour), and who is speaking.
-- Given an event that has no sessions yet, when I open its agenda, then I see a friendly "no agenda yet" prompt inviting me to add the first session — not an error.
-- Given I switch to a different event, when the agenda reloads, then it shows only that event's schedule.
+- Given I open "Agenda", then the newest event shows, or the one I pick, and only that event's sessions.
+- Given the agenda, then each event day is a column headed by weekday and date, with hours from 09:00 down the side.
+- Given a session, then its block sits at its day and time, showing time, title and speakers, else its room.
+- Given a session's type, then its block is coloured: Keynote blue, Panel green, Workshop amber, Talk rose, Break grey.
+- Given no sessions, then I'm told so, with "Add the first session" and "Add speakers", not an error; with no events, "Create your first event".
 
-_Notes: Staff/Team members can open this view read-only to support attendees on-site; they cannot change the programme._
+_Notes: Staff can view the agenda but not change it._
 
 ### US-PROG-02 — Add a session to the schedule  ·  **Must**
-**As an** Event Organizer, **I want** to add a session with a title, day, start and end time, type, room, speaker(s) and an optional description, **so that** attendees can see a structured, informative schedule.
+**As an** Event Organizer, **I want** to add sessions with times, type, room, speakers and description, **so that** attendees see a clear programme.
 
 **Acceptance criteria**
-- Given I am adding to a chosen event, when I fill in a valid session and save, then it immediately appears on the calendar in the right day and time, coloured by its type, showing the assigned speaker.
-- Given I leave the title blank, when I try to save, then I am asked to enter a session title and nothing is saved.
-- Given I set an end time that is not after the start, or a time that falls outside the event day's schedulable hours, when I save, then I am told the time is invalid and the session is not saved.
-- Given I assign a speaker, when the session saves, then that speaker's session count goes up by one.
+- Given I fill Title, Day, Type, Starts and Ends in "New session" and choose "Save session", then it's confirmed and its block appears.
+- Given a saved session, then its block sits at its day and time, coloured by its type.
+- Given Title is blank, when I save, then the form asks for it and nothing is saved.
+- Given Ends is not after Starts, when I save, then I'm told the end must follow the start and nothing is saved.
+- Given I tick a speaker, when the session saves, then their card on "Speakers" counts one session more.
 
-_Notes: A session may have more than one speaker; the schedule supports parallel tracks in different rooms at the same time._
+_Notes: Ends may be left blank, and the block then shows only the start time._
 
 ### US-PROG-03 — Update a session  ·  **Must**
-**As an** Event Organizer, **I want** to open an existing session and change any of its details, **so that** I can react to line-up or timing changes right up to and during the event.
+**As an** Event Organizer, **I want** to change any detail of a session, **so that** the agenda keeps up with line-up and timing changes.
 
 **Acceptance criteria**
-- Given a scheduled session, when I move it to a new day, time or room and save with no clash, then the block relocates on the calendar and the change is recorded.
-- Given I change a session's type, when I save, then its colour updates to match the new type.
-- Given a colleague changed the same session after I opened it, when I try to save, then I am told it changed and asked to reload, so their work is never silently overwritten.
-- Given a material change (day, time, room) to a session on a live event, when I save, then I may optionally choose to notify attendees who added it to their schedule; by default no message is sent.
+- Given I click a session's block, then "Edit session" opens with its details filled in.
+- Given I change its day, time or room, when I save, then it's confirmed and the block moves, unless a clash stops it (US-PROG-05).
+- Given I change its type from Panel to Workshop, when I save, then the block turns from green to amber.
+- Given a colleague saved the session after I opened it, when I save, then I'm asked to reload, and their change is kept.
+
+_Notes: Saving a change sends attendees no message._
 
 ### US-PROG-04 — Remove a session  ·  **Must**
-**As an** Event Organizer, **I want** to remove a session with a clear confirmation step, **so that** I can drop cancelled sessions while keeping my speakers in the directory.
+**As an** Event Organizer, **I want** to remove a cancelled session after a clear warning, **so that** its speakers stay on my line-up.
 
 **Acceptance criteria**
-- Given I choose to remove a session, when the confirmation appears, then it warns me the removal won't automatically notify attendees who bookmarked it, and only removes on my explicit confirm.
-- Given a removed session had speakers, when it is deleted, then those speakers stay in the directory and each affected speaker's session count drops by one.
-- Given the event is live, when I remove a session, then it stops appearing on the public agenda.
-- Given I cancel the confirmation, when I return, then nothing has changed.
+- Given I choose "Delete" in "Edit session", then I'm warned that attendees who bookmarked it won't be told and it can't be undone.
+- Given I choose "Remove", then it's confirmed and the block leaves the agenda and the event's public page.
+- Given a removed session, then each of its speakers stays on "Speakers" with one session fewer.
+- Given the warning, when I choose "Cancel", then nothing changes; only "Remove" removes the session.
+
+_Notes: The "Remove session" button on the event's "Agenda" tab gives the same warning._
 
 ### US-PROG-05 — Keep the schedule physically feasible  ·  **Must**
-**As an** Event Organizer, **I want** the system to stop me booking the same room for two overlapping sessions, and to warn me when I put the same speaker in two overlapping sessions, **so that** my programme is realistic and never embarrasses us on the day.
+**As an** Event Organizer, **I want** room double-bookings blocked and speaker double-bookings flagged, **so that** my programme works on the day.
 
 **Acceptance criteria**
-- Given a room is already booked for an overlapping time that day, when I try to save another session in that room, then I am blocked and told which room and time clashes.
-- Given a speaker is already assigned to an overlapping session, when I assign them again, then I am warned and must confirm before it saves ("assign anyway?").
-- Given two sessions run at the same time in different rooms with different speakers, when I save, then both are allowed as parallel tracks.
-- Given I am editing an existing session, when conflicts are checked, then the session is never flagged as clashing with itself.
+- Given Hall A is booked 09:00–10:30, when I save another Hall A session at 10:00 that day, then it's refused, naming the booking.
+- Given a speaker is booked at an overlapping time, when I save, then I'm warned; it saves only after I tick "Book them anyway".
+- Given two sessions overlap in different rooms with different speakers, or one ends at 10:00 as the next starts, then both save without warning.
+- Given I save a session unchanged, then it never clashes with itself.
+
+_Notes: Only sessions with an end time are checked, and rooms only when a room is set._
 
 ### US-PROG-06 — Find sessions in a busy programme  ·  **Should**
-**As an** Event Organizer, **I want** to search my agenda by keyword, **so that** I can quickly locate a session across a packed schedule.
+**As an** Event Organizer, **I want** to search my agenda by keyword, **so that** I find a session fast in a packed programme.
 
 **Acceptance criteria**
-- Given sessions with different titles and types, when I type a keyword, then only sessions matching that keyword by title or type stay visible.
-- Given I clear the search, when the box is empty, then all sessions are shown again.
-- Given no sessions match, when I search, then the calendar still shows its layout with nothing highlighted — not an error.
+- Given I type a keyword in English or Thai, then only sessions whose title or type match stay visible.
+- Given I clear the search, then every session shows again.
+- Given nothing matches, then the calendar stays, with no sessions, not an error.
 
-_Notes: Search is scoped to the currently selected event and works for both English and Thai text._
+_Not in the web app yet._
 
 ### US-PROG-07 — Switch between week and month views  ·  **Could**
-**As an** Event Organizer, **I want** to toggle between a detailed week view and a lighter month overview, and move between weeks, **so that** I can both fine-tune time slots and see the bigger picture of a multi-week programme.
+**As an** Event Organizer, **I want** week and month views with week-by-week navigation, **so that** I can fine-tune slots and see the whole programme.
 
 **Acceptance criteria**
-- Given the week view, when I switch to month, then I see a day-by-day overview I can drill back into; switching to week returns me to the time-slot layout.
-- Given any week, when I move to the previous or next week, then the dates and month label shift accordingly while staying on the same event.
-- Given I navigate beyond the event's scheduled weeks, when the view loads, then I see an empty week with the correct dates — never sessions from another event.
+- Given the week view, when I switch to month, then I see a day-by-day overview, and switching back returns the time slots.
+- Given any week, when I go to the previous or next week, then the dates and month label move, on the same event.
+- Given a week with none of this event's sessions, then it shows empty with the right dates.
+
+_Notes: The agenda already shows every day of the event side by side (US-PROG-01)._
+
+_Not in the web app yet._
 
 ### US-PROG-08 — Browse and filter the speaker directory  ·  **Must**
-**As an** Event Organizer, **I want** a searchable, event-filterable directory of speakers showing their key details at a glance, **so that** I can manage my line-up and check who is speaking where.
+**As an** Event Organizer, **I want** a searchable directory of each event's speakers, **so that** I manage my line-up and see who speaks most.
 
 **Acceptance criteria**
-- Given a set of speakers, when I open the directory, then I see each speaker's name, role, contact, session count and rating, and can switch between a card and a list layout.
-- Given I filter by a specific event, when the list refreshes, then only that event's speakers appear and the count reflects the filtered total.
-- Given I search by name, role or email, when I type, then only matching speakers show and the list returns to the first page.
-- Given no speakers match, when the list refreshes, then I see a "no speakers found" prompt, not an error.
+- Given I open "Speakers", then the newest event's speakers show A–Z under a count; picking another event shows only its speakers and count.
+- Given a speaker, then their entry shows initials, name, title & company, email, phone, session count and rating.
+- Given I type in the search box, then only speakers whose name, title & company or email match stay, from the first page.
+- Given I choose "List view" or "Grid view", then the speakers show as rows or as cards.
+- Given nothing matches, then I'm told so with "Clear filters"; an event with no speakers says so and offers "Add your first speaker".
 
-_Notes: Staff/Team members can browse the directory read-only; add/edit/delete controls appear only for organizers and admins._
+_Notes: Ten speakers a page by default; Staff can browse speakers but not add, edit or remove them._
 
 ### US-PROG-09 — Add a speaker to the line-up  ·  **Must**
-**As an** Event Organizer, **I want** to add a speaker with their photo, name, role, contact details, bio, topic, event and social links, **so that** they are represented accurately on the public event page.
+**As an** Event Organizer, **I want** to add a speaker's profile and contact details, **so that** they join my programme and event page.
 
 **Acceptance criteria**
-- Given a new speaker's details, when I save, then a speaker profile is created, assigned to the chosen event, starting at zero sessions and shown as unrated until feedback exists.
-- Given I leave the name or email blank, or enter an invalid email, when I save, then I am asked to correct it and nothing is saved.
-- Given the email already belongs to another speaker, when I save, then I am told a speaker with that email already exists and nothing is saved.
-- Given I upload a photo that is the wrong type or too large, when I save, then I am told the accepted format and size limit and it is not accepted.
-- Given a badly formed website or social link, when I save, then I am asked to enter a valid link rather than have it silently dropped.
+- Given "Add speaker" has at least a full name, when I choose "Save speaker", then it's confirmed and their card appears.
+- Given a new speaker, then their card shows 0 sessions and a dash for rating.
+- Given a blank full name or an invalid email, when I save, then the form asks me to fix it; nothing is saved.
+- Given another speaker on this event uses that email, when I save, then I'm told it's taken and nothing is saved.
+- Given the event picked on "Speakers", then the new speaker joins that event, which the panel names under its title.
+
+_Notes: Email is optional and may repeat across events._
 
 ### US-PROG-10 — Keep a speaker's profile up to date  ·  **Must**
-**As an** Event Organizer, **I want** to edit a speaker's details, **so that** the public page always reflects their current title, company, bio and links.
+**As an** Event Organizer, **I want** to edit a speaker's details, **so that** the directory and the event page stay current.
 
 **Acceptance criteria**
-- Given a speaker whose company changed, when I update and save, then their card shows the new role and the change is recorded.
-- Given I change the email to one already used by another speaker, when I save, then I see the duplicate-email message and nothing is saved.
-- Given a colleague changed the same speaker after I opened it, when I save, then I am told it changed and asked to reload, so no work is silently lost.
-- Given the speaker appears on a live event, when I save an update, then the public speakers section reflects it.
+- Given I choose "Edit speaker" on a card, then name, title & company, email and phone are filled in; "Save speaker" updates the card.
+- Given another speaker on this event uses the new email, when I save, then I'm told it's taken and nothing is saved.
+- Given a colleague saved the speaker after I opened it, when I save, then I'm asked to reload, and their change is kept.
+- Given the event's public page, then its Speakers section shows the update: the talk title if set, else title & company.
+
+_Notes: Talk title and Bio open blank on edit; leaving them blank keeps what was saved._
 
 ### US-PROG-11 — Remove a speaker  ·  **Must**
-**As an** Event Organizer, **I want** to delete a speaker with a clear, confirmed warning, **so that** I can remove someone who dropped out without losing the sessions they were attached to.
+**As an** Event Organizer, **I want** to remove a speaker who dropped out, after a clear warning, **so that** their sessions stay.
 
 **Acceptance criteria**
-- Given a speaker assigned to several sessions, when I confirm deletion, then the speaker disappears from the directory and those sessions remain but no longer list them.
-- Given the confirmation, when it appears, then it warns me the speaker will be removed from all their sessions and that the action cannot be undone.
-- Given the speaker was shown on a live event, when they are deleted, then they no longer appear in the public agenda or speakers section.
-- Given I cancel the confirmation, when I return, then the speaker and all their assignments are unchanged.
+- Given I choose "Remove speaker" on a card, then I'm warned it takes them off all their sessions and can't be undone.
+- Given I choose "Remove", then it's confirmed, the card leaves, and their sessions stay on the agenda without them.
+- Given a session left with no speaker, then its block shows its room instead.
+- Given the event's public page, then the speaker no longer appears in its Speakers section or agenda.
+- Given the warning, when I choose "Cancel", then the speaker and their sessions are unchanged; only "Remove" removes them.
 
 ### US-PROG-12 — Assign speakers to their sessions and balance the line-up  ·  **Should**
-**As an** Event Organizer, **I want** to assign speakers to sessions and see how many sessions each speaker carries, **so that** I can balance the programme and avoid overloading anyone.
+**As an** Event Organizer, **I want** to tick each session's speakers and see each one's session count, **so that** I can balance the line-up.
 
 **Acceptance criteria**
-- Given a speaker with one session, when I add them to a second session, then their session count reads two and the session shows their initials.
-- Given a session, when I assign one or more speakers, then the assignments are saved and the session's displayed speaker updates.
-- Given a speaker who belongs to a different event, when I try to assign them, then I am told they belong to another event and the assignment is refused.
-- Given I assign a speaker to a session overlapping one they already have, when I save, then I get the double-booking warning and must confirm.
+- Given "New session" or "Edit session", then I can tick one or more speakers, from this event only.
+- Given the event has no speakers, then the speaker list tells me to add one first.
+- Given I tick a speaker on a session and save, then its block shows their name.
+- Given a 1-session speaker, when I tick them on another and save, then their card shows 2 sessions; unticking returns it to 1.
+- Given they already speak at an overlapping time, when I save, then I get the "Book them anyway" warning (US-PROG-05).
 
 ### US-PROG-13 — See how speakers were rated  ·  **Should**
-**As an** Admin, **I want** each speaker to show an aggregate rating drawn from post-session attendee feedback, **so that** I can decide who to re-invite to future events.
+**As an** Admin, **I want** each speaker's average rating from attendee feedback, **so that** I can decide whom to invite back.
 
 **Acceptance criteria**
-- Given a speaker whose feedback averages 4.9, when I view their card, then it shows "4.9".
-- Given a brand-new speaker with no feedback, when I view their card, then it shows an unrated indicator, not a zero score.
-- Given a speaker with ratings, when I open their reviews, then I can see the underlying feedback that produced the score.
-- Given new feedback arrives, when I next view the speaker, then their rating reflects the latest results.
+- Given attendees rated a speaker's sessions with an average of 4.9, when I view their card, then it shows 4.9.
+- Given nobody has rated a speaker, then the card shows a dash, never 0.
+- Given new feedback arrives, then the rating reflects it the next time I look.
 
-_Notes: Ratings are read-only here and come from the Feedback/Insights module; they are never hand-edited in the program._
+_Notes: Every speaker card already shows a dash; nothing turns feedback into a rating yet._
+
+_Not in the web app yet._
 
 
 ---
@@ -1648,37 +1628,37 @@ _Notes: Ratings are read-only here and come from the Feedback/Insights module; t
 
 # Epic E11 — Organizer Home & Dashboard
 
-**Goal (business value):** Give organizers a single daily landing place that tells them what needs attention right now (today's sign-ups, the newest orders, the most urgent alerts, and how their live events are selling and checking in) and a clear analytics view of how their events are performing (revenue, registrations, ticket mix, and events at risk of selling out) — so they can act fast without digging through every module and never lose money to a missed alert or an overlooked sell-out.
+**Goal (business value):** Give organizers one daily home showing what needs them now (today's sign-ups, newest orders, urgent alerts) and a Dashboard of how their events perform, so they act fast and never lose money to a missed alert or sell-out.
 
-**Primary users:** Event Organizer, Admin, Staff/Team member (Attendees have no access).
+**Primary users:** Every organizer-console member (Admin, Organizer, Staff), each seeing only the cards their role allows; attendees have no access.
 
-**Home, top to bottom:** greeting and "New event" (US-DASH-01) · Today's Registrations (02), Ticket revenue (14), Active events ring (05) · Check-in insight (15), Upcoming Events (04) · Recent orders (16), To do (06). Today's meetings (03) and template shortcuts (07) are **Won't**.
+**Home, top to bottom:** greeting and "New event" (US-DASH-01) · Today's Registrations (02), Ticket revenue (14), Active events (05) · check-in insight (15), Upcoming Events (04) · Recent orders (16), To do (06).
 
 **Success measures:**
-- Time-to-triage: organizers act on today's sign-ups, newest orders and most urgent alerts without opening multiple screens.
-- Fewer at-risk events reaching their date behind on sales (early "selling fast" and progress signals acted on).
-- Revenue visibility: organizers can read short-term momentum and long-term trend at a glance.
-- Check-in rate and capacity-fill awareness improves per-event operational decisions.
-- Fewer sell-outs missed and fewer declined payments left unresolved.
+- Organizers triage today's sign-ups, orders and alerts from one screen.
+- Fewer events reach their date behind on sales or sell out unnoticed.
+- Fewer declined payments left unresolved.
+- Revenue momentum, check-in rate and capacity fill read at a glance.
 
 ## User stories
 
 ### US-DASH-01 — Daily operations home  ·  **Must**
-**As an** Event Organizer, **I want** a home screen that greets me and gathers today's activity, **so that** I can size up my day in one place.
+**As an** Event Organizer, **I want** a home that greets me and gathers today's activity, **so that** I see my day in one place.
 **Acceptance criteria**
-- Given I sign in, when home opens, then it greets me by name for the Bangkok time of day (morning, afternoon or evening), in English or Thai.
+- Given home opens, then it greets me by name: morning, afternoon from 12:00, evening from 18:00 Bangkok time, in the workspace's language.
 - Given I choose "New event", then the event creation flow opens.
-- Given I am an Attendee, when I open the admin home, then I am refused.
+- Given no active event, order, recent sign-up or alert yet, then home shows "Set up your workspace": five steps from organization to publishing, next highlighted.
+- Given I'm signed in as an attendee, when I open the organizer home, then I'm sent to the organizer sign-in.
 _Notes: Home only summarizes and links out; it never changes data._
 
 ### US-DASH-02 — Today's registrations at a glance  ·  **Must**
-**As an** Event Organizer, **I want** today's registration count, the three newest, and a quick way to add one, **so that** I know sign-ups are flowing and can record a walk-up on the spot.
+**As an** Event Organizer, **I want** today's registrations with the three newest and a quick add, **so that** I see sign-ups flowing and record walk-ups.
 **Acceptance criteria**
-- Given people registered today (Bangkok day), when I view home, then a badge counts today's confirmed registrations and the 3 newest are listed, newest first, with name, event · ticket type and time.
-- Given a registration that is not confirmed (awaiting approval or payment, waitlisted, rejected, cancelled), then it is neither counted nor listed; earlier days never fill the list.
-- Given nobody registered today, then the card says "no registrations yet today".
-- Given I may add registrations, when I choose "Add registration", then the add-registration form opens (US-REG-03); otherwise (for example Staff) it is not offered.
-- Given I choose "See all", then the registrations list opens.
+- Given confirmed registrations today (Bangkok day), then "Today's Registrations" counts them and lists the 3 newest, newest first: name, event, ticket type and time.
+- Given a registration awaiting approval or payment, waitlisted, rejected or cancelled, then it's neither counted nor listed; earlier days never fill the list.
+- Given nobody registered today, then the card says so and offers "Copy registration link" for my soonest upcoming event, or "New event" if none.
+- Given I may add registrations, then "Add registration" opens the Registrations page's add form (US-REG-03); Staff aren't offered it.
+- Given I choose "See all", then the Registrations page opens.
 _Notes: Shown only to members who may view registrations: names are personal data._
 
 ### US-DASH-03 — Today's meetings  ·  **Won't**
@@ -1686,122 +1666,122 @@ _Removed from Home on 2026-11-04: today's meetings are under **Today** on the Me
 **As an** Event Organizer, **I want** today's meetings on home, **so that** I stay ahead of my day.
 
 ### US-DASH-04 — Upcoming events progress  ·  **Should**
-**As an** Event Organizer, **I want** my next three events with days left and how full they are, **so that** I spot one falling behind before it runs out of time.
+**As an** Event Organizer, **I want** my next three events with days left and seats filled, **so that** I catch one falling behind in time.
 **Acceptance criteria**
-- Given I have upcoming events, when I view home, then the 3 soonest show, soonest first, each with a days-left chip, who's attending and a fill bar (83 of 100 seats reads 83%).
-- Given an event starts today, then its chip reads "Today".
-- Given nothing is upcoming, then the card says "no upcoming events".
-- Given I choose "See all", then the events list opens.
+- Given upcoming events, then "Upcoming Events" shows the 3 soonest first, each with days left, seats sold and a fill bar (sold ÷ seats).
+- Given an event starts today, then its chip shows Today instead of days left.
+- Given nothing is upcoming, then the card says so and offers "New event".
+- Given I choose an event's card, then its event page opens; "See all" opens the Events page.
+- Given I may view registrations, then each event also shows its newest attendee's initials; others never see them.
+_Notes: Upcoming means active (not draft, completed or cancelled) and not yet started._
 
 ### US-DASH-05 — Seats sold across active events  ·  **Could**
-**As an** Event Organizer, **I want** a ring showing how much of my active events' seats each event has sold, **so that** I see which events are filling and how many seats are left.
+**As an** Event Organizer, **I want** a ring of seats sold per active event, **so that** I see which are filling and what's left.
 **Acceptance criteria**
-- Given active events, when I view home, then the ring has one coloured segment per event (its sold seats ÷ the combined capacity of all active events) and a grey "Seats left" track for the rest. Example: events of 100, 200 and 200 seats that sold 50, 100 and 150 read 10%, 20% and 30%, with 40% left.
-- Given the ring, then segments and legend run largest first, with at most 6 colours: past 6 events, the 5 largest show and the rest merge into "Other events". The legend names each, plus "Seats left"; the centre shows only the number of active events.
-- Given the dashboard's capacity filled (US-DASH-08), then the sold segments together agree with it.
-- Given no active event has a seat limit, then the centre still shows the count and a "no seat limits set" note replaces the segments, never 0% sold. Given no active events, then the card says "no active events".
-- Given I choose "See all", then the events list opens.
-_Notes: Active means not draft, completed or cancelled. Tickets with no seat limit count in neither sold seats nor capacity._
+- Given active events, then their combined seats split into a coloured sold segment per event plus grey seats left; sold segments total Capacity filled (US-DASH-08).
+- Given the ring and its legend, then both run largest first, seats left last; over 6 selling events, the top 5 show, the rest combined.
+- Given no active event has a seat limit, then the centre still counts the events and a no-limits note replaces the segments, never 0%.
+- Given no active events, then the "Active events" card says so.
+- Given I choose "See all", then the Events page opens.
+_Notes: Active means not draft, completed or cancelled; the centre counts them, and unlimited tickets count toward neither seats sold nor capacity._
 
 ### US-DASH-06 — To do: the most urgent operational alerts  ·  **Must**
-**As an** Event Organizer, **I want** a To do card with the three most urgent things that need me, each linking to where I fix it, **so that** I start the day on what matters and nothing slips.
+**As an** Event Organizer, **I want** my three most urgent alerts, linked to their fixes, **so that** I start on what matters and nothing slips.
 **Acceptance criteria**
-- Given alerts I can act on, when I view home, then To do lists the 3 most urgent, each with its text, priority badge, date raised, event and a link to where it is resolved.
-- Given an alert's kind, then declined payments read **High**; registrations awaiting approval and ticket types nearly sold out read **Medium**; **Low** is kept for informational alerts (none yet).
-- Given a ticket type on sale with a seat limit, when 80% or more of its seats are sold, then it is nearly sold out: the same types as Tickets selling fast (US-DASH-11).
-- Given several alerts, then High come first, then Medium, then Low; within a priority, the oldest first.
-- Given several items of one kind in one event, then they form one alert with a count ("2 payments declined"), dated by the oldest item; a nearly-sold-out alert is dated when it last crossed 80%. Dates are Bangkok dates in my language.
-- Given an alert I could not resolve in its module (declined payments without finance access; approvals without the right to approve, for example Staff; nearly sold out without the right to manage ticket types), then I do not see it, here or in the feed.
-- Given I resolve an alert in its module, then it leaves To do at the next refresh and the next one moves up. Given nothing is left, then the card says "You're all caught up".
-- Given I choose "View all", then the notification feed (US-MSG-03) opens with every alert I can act on.
-_Notes: Home never dismisses, edits or re-prioritises an alert; its priority comes from its kind._
+- Given actionable alerts, then "To do" lists the 3 most urgent, one per kind and event, with count, priority, event, oldest date and fix link.
+- Given several alerts, then declined payments (**High**) come before registrations to approve and nearly sold-out ticket types (**Medium**), oldest first within each.
+- Given an alert I couldn't resolve (payments without finance access; approvals without approval rights, like Staff; sell-outs without ticket-type rights), then I never see it.
+- Given I resolve an alert in its module, then it drops off at the next refresh; with none left, I'm told I'm all caught up.
+- Given I choose "View all", then the Notifications page opens with every alert I can act on under "Needs action" (US-MSG-03).
+_Notes: Nearly sold out follows Tickets Selling Fast (US-DASH-11), dated when it hit 80%; home can't dismiss, edit or re-rank alerts._
 
 ### US-DASH-07 — Website template shortcuts  ·  **Won't**
 _Removed from Home on 2026-11-04: templates are chosen when an event's page is set up (US-EVT-07, US-PAGE-10). The id stays so references keep working._
 **As an** Event Organizer, **I want** shortcuts to the landing-page templates on home, **so that** I can start an event's public page quickly.
 
 ### US-DASH-08 — Performance KPIs at a glance  ·  **Must**
-**As an** Admin, **I want** headline numbers for registrations, ticket revenue, upcoming events, check-in rate, and capacity filled — each with how it moved versus the previous period — **so that** I can judge the health of my events in seconds.
+**As an** Admin, **I want** five headline numbers for my events, **so that** I judge their health in seconds.
 **Acceptance criteria**
-- Given I open the dashboard, when the KPI cards load, then I see total registrations, ticket revenue (in ฿), upcoming events, check-in rate, and capacity filled, each with a change versus the previous comparable period.
-- Given a metric improved, when I read its card, then the change shows an upward, positive-colored indicator; given it worsened (for example, check-in rate falling), then it shows a downward, warning-colored indicator.
-- Given I do not have finance access, when I view the dashboard, then the ticket revenue figure is not disclosed to me while the other cards render normally.
-- Given a metric has no data for the period, when I view its card, then it shows a neutral, empty state rather than a misleading value.
-_Notes: Revenue is shown net of VAT and refunds; the 7% VAT is tracked separately and not surfaced here._
+- Given the Dashboard, then five cards show Total registrations, Ticket revenue, Upcoming events, Check-in rate and Capacity filled for the range, Year by default.
+- Given the change on the previous range, then it reads green up, red down; for Upcoming events and Capacity filled it always reads a dash.
+- Given I have finance access, then Ticket revenue shows in ฿ (฿128,500 as ฿128.50k); without it, there's no such card and the other four show.
+- Given no data for a figure (check-in rate with no event held), then it shows a dash; with no previous data, its change does too.
+- Given no events or registrations yet, then the Dashboard says there's no activity and offers "Create your first event" instead of cards.
+_Notes: Revenue is net of VAT and refunds; check-in rate is checked-in ÷ tickets for events that started in the range._
 
 ### US-DASH-09 — Revenue trend with time-range toggle  ·  **Must**
-**As an** Event Organizer, **I want** a revenue chart I can switch between Week, Month, and Year, with the period total and how it compares to the previous period, **so that** I can read both short-term momentum and long-term trend from one view.
+**As an** Event Organizer, **I want** a Week, Month or Year revenue chart with total and change, **so that** I see both momentum and trend.
 **Acceptance criteria**
-- Given I open the dashboard, when the revenue view loads, then it defaults to the yearly view showing the period total and its change versus the previous period.
-- Given I switch to Week or Month, when I make the selection, then the chart and its headline total and change update to that range without reloading the page.
-- Given there is no revenue in the selected period, when I view the chart, then it shows an empty (zero) result with a neutral change.
-- Given I do not have finance access, when I view the dashboard, then the revenue section is not shown to me at all.
-_Notes: For the yearly view, the revenue total agrees with the ticket-revenue KPI for the same scope and period._
+- Given I open the Dashboard, then "Revenue Overview" shows Year: the chart, the total in ฿ and its change against the previous period.
+- Given I choose Week or Month, then the chart, total and change switch to that range, and the KPI cards and ticket-type split follow it.
+- Given any range, then the total equals the Ticket revenue card; with no revenue it reads ฿0 and the chart says so.
+- Given I have no finance access, then Revenue Overview is not shown at all.
+_Notes: Week, Month and Year are the last 7, 30 and 365 Bangkok days, today included, each against the same span before._
 
 ### US-DASH-10 — Registrations by ticket type  ·  **Should**
-**As an** Event Organizer, **I want** to see how my total registrations split across ticket types, **so that** I understand which tiers are selling and can adjust pricing or promotion.
+**As an** Event Organizer, **I want** my registrations split by ticket type, **so that** I see which tiers sell and adjust pricing or promotion.
 **Acceptance criteria**
-- Given registrations exist, when I view the dashboard, then a breakdown shows each ticket type's share with its count and percentage, and the total in the center, largest share first.
-- Given the total shown equals the total registrations KPI, when I compare the two, then they match for the same scope.
-- Given the ticket mix changes, when the dashboard refreshes, then the breakdown updates to match.
-- Given there are no registrations, when I view the panel, then it shows "no registrations yet".
+- Given registrations in the range, then "Registrations by Ticket Type" shows a donut, total in the centre, each type's count and share, largest first.
+- Given the centre total, then it equals the Total registrations card.
+- Given I switch between Week, Month and Year, then the split is recounted for that range.
+- Given no registrations in the range, then the panel says there are none yet.
 
 ### US-DASH-11 — Tickets selling fast  ·  **Should**
-**As an** Event Organizer, **I want** a list of ticket types running low on inventory, with how many are left and how urgent it is, **so that** I can add capacity or promote before a sell-out.
+**As an** Event Organizer, **I want** ticket types close to selling out, with seats left, **so that** I add capacity or promote in time.
 **Acceptance criteria**
-- Given ticket types are low on remaining inventory, when I view the dashboard, then they are listed scarcest-first with event context and a remaining count colored by urgency (critical, warning, or normal).
-- Given a ticket type is critically low, when I view it, then its remaining count is highlighted in the most urgent color.
-- Given I want to act, when I choose "Manage", then I am taken to ticket management for that inventory.
-- Given nothing is close to selling out, when I view the panel, then it shows "no tickets running low".
-_Notes: Because one booking can hold up to 8 seats, anything at or below 8 remaining is flagged as a possible sell-out within a single booking._
+- Given on-sale, seat-limited ticket types at least 80% sold, then "Tickets Selling Fast" lists up to 3, scarcest first, with event and seats left.
+- Given seats left, then 3 or fewer show red, 4 to 8 amber, and more plain.
+- Given I choose "Manage", then the Tickets page opens.
+- Given no ticket type is 80% sold, then the panel says none are running low and offers "Manage tickets".
+_Notes: One booking takes up to 8 seats by default, so amber means a single booking could sell it out._
 
 ### US-DASH-12 — Recent registrations table  ·  **Must**
-**As an** Event Organizer, **I want** a table of the latest registrations showing attendee, event, amount, payment status, and time, **so that** I can confirm money and sign-ups are flowing without leaving the overview.
+**As an** Event Organizer, **I want** the latest registrations with amount and payment status, **so that** I see money and sign-ups flowing at a glance.
 **Acceptance criteria**
-- Given recent registrations exist, when I view the dashboard, then they are listed newest-first with attendee, event, amount (฿), a Paid / Pending / Refunded status badge, and the time.
-- Given a walk-in registration was taken on-site, when it appears in the table, then it follows the same amount and status rules (and may show as Pending until settled).
-- Given I do not have finance access, when I view the table, then the amount is hidden while attendee, event, status, and time still show.
-- Given I want the full list, when I choose "View all", then I am taken to the registrations list.
-_Notes: Attendee names are only shown to team members allowed to view registrations._
+- Given registrations, then "Recent Registrations" lists the 10 newest first: attendee, event, amount in ฿ (Free if free), Paid/Pending/Refunded/Failed badge, time.
+- Given I have no finance access, then every amount shows a dash; attendee, event, status and time still show.
+- Given I may not view registrations, then the table lists no one.
+- Given I choose "View all", then the Registrations page opens.
 
 ### US-DASH-13 — Trustworthy, always-current overview  ·  **Must**
-**As an** Event Organizer, **I want** home and the dashboard to stay current, agree with each other and show only what I may see, **so that** I can trust the numbers.
+**As an** Event Organizer, **I want** home and the Dashboard current, consistent and showing only what I may see, **so that** I trust the numbers.
 **Acceptance criteria**
-- Given a new confirmed registration, then within a short refresh every figure it touches updates and agrees: on the dashboard the total, ticket-type split and recent table; on home today's registrations, recent orders and the insight's registrations.
-- Given the operational cards (today's sign-ups, recent orders, To do, selling fast), then they refresh near-real-time; analytics (ticket revenue, the rest of the insight, KPIs and trends) refresh more slowly; reloading the page refreshes everything.
-- Given one card fails to load, then only that card shows "unavailable · retry".
-- Given a figure I may not see (finance or attendee personal data), then it is hidden, never shown as 0 or a placeholder.
-- Given any date, "today", days left or time, then it is in Bangkok time and my language (English or Thai).
-_Notes: Home and the dashboard never change data; every action is a link into the module that owns it._
+- Given home is open, then registrations, orders, To do and check-in insight refresh about every 30 seconds, the rest every 5 minutes; reloading refreshes all.
+- Given a new confirmed registration, then home's count and the insight's registrations rise together; the Dashboard's total, split and Recent Registrations show it on reload.
+- Given one home card fails to load, then only that card says so and offers "Try again".
+- Given money or attendee personal data I may not see, then its card or column is dropped, or its value shows a dash, never ฿0.
+- Given any date, today, days left or time, then it's Bangkok's; home writes dates, days left and alerts in the workspace's language (English or Thai).
+_Notes: Home and the Dashboard never change data; every action is a link into the module that owns it._
 
 ### US-DASH-14 — Ticket revenue on Home  ·  **Should**
-**As an** Event Organizer, **I want** my net ticket revenue for the last 30 days against the 30 before, **so that** each morning I can tell whether sales are speeding up or slowing down.
+**As an** Event Organizer, **I want** my net ticket revenue for the last 30 days against the 30 before, **so that** I see sales momentum.
 **Acceptance criteria**
-- Given I have finance access, when I view home, then the card shows net revenue in ฿ across all events for the last 30 Bangkok days (today included), with two daily lines: these 30 days and the 30 before.
-- Given revenue changed, then a % pill shows it (for example +12.5%): positive-coloured when up, warning-coloured when down. With no revenue in the previous 30 days the change is neutral; with none in either, the card reads ฿0, neutral.
-- Given I have no finance access, then the card is not shown at all (no ฿0, blank or lock) and home lays out without it.
-- Given the same period, then the total agrees with the dashboard's ticket revenue (US-DASH-08).
-_Notes: Net of VAT and refunds, as on the dashboard._
+- Given finance access, then "Ticket revenue" shows net ฿ across all events for the last 30 days, today included, with daily lines for both periods.
+- Given revenue changed, then a pill shows the percentage change, green when up, red when down.
+- Given no revenue in the previous 30 days, then the pill shows a dash; with none in either period, the card reads ฿0.
+- Given I have no finance access, then the card is gone, with no ฿0, blank or lock, and home lays out without it.
+- Given the same 30 days, then the total equals the Dashboard's Ticket revenue for Month (US-DASH-08).
+_Notes: Net of VAT and refunds, as on the Dashboard._
 
 ### US-DASH-15 — Check-in insight on Home  ·  **Should**
-**As an** Event Organizer, **I want** one small card that shows my check-in rate, capacity filled or registrations over the last 12 days, **so that** I spot a trend without opening the dashboard.
+**As an** Event Organizer, **I want** check-in rate, capacity filled or registrations over 12 days, **so that** I spot a trend without opening the Dashboard.
 **Acceptance criteria**
-- Given I view home, then the card opens on check-in rate: today's value as the headline and one candle per day for the last 12 Bangkok days, today on the right.
-- Given a day's candle, then it runs from the day before's value to that day's: green if it rose or held, grey if it fell. Pointing at it, or a screen reader, reads that day's value.
-- Given the three dots, when I choose one, then the card switches to check-in rate (%), capacity filled (%) or registrations (a count) without a reload, and that dot is highlighted.
-- Given a day with nothing to measure (no event started that day, for check-in rate; no active event with a seat limit, for capacity filled), then it has no candle, and if it is today the headline shows "—", never 0%. A day with no registrations is a true 0.
-- Given the dashboard, then each day's check-in rate and registrations follow its KPI rules (US-DASH-08), today's capacity filled equals its capacity-filled figure, and today's registrations equal the Today's Registrations count (US-DASH-02).
-_Notes: A day's check-in rate is checked-in ÷ ticket holders, for the events that started that day. A day's capacity filled uses today's active events and capacity (as in US-DASH-05): seats sold by the end of that day ÷ that capacity; a refunded or cancelled seat counts on no day. Shown to every member who can open home: none of the three is money or personal data._
+- Given any member views home, then the card opens on check-in rate over 12 days: today's value headlines, one candle per day, today rightmost.
+- Given a candle, then it spans the prior day's value to its own: green up or level, grey down; hover or screen reader reads it.
+- Given I choose a dot, then the card switches to check-in rate, capacity filled or registrations (none counts as 0) without reloading, highlighting that dot.
+- Given a day with nothing to measure (no event started; no seat-limited active event), then no candle and, if today, a dash headline, never 0%.
+- Given the Dashboard, then today's capacity filled equals its Capacity filled card, each day's check-in rate follows its rule, and today's registrations match Today's Registrations.
+_Notes: A day's capacity filled is seats of today's active events sold by that day's end, refunds never counting, over their capacity today._
 
 ### US-DASH-16 — Recent orders on Home  ·  **Should**
-**As an** Event Organizer, **I want** my three newest orders (buyer, event, date, amount, status), sortable by date or amount, **so that** I see money coming in and catch a pending or refunded order.
+**As an** Event Organizer, **I want** my three newest orders, **so that** I see money coming in and catch a pending or refunded order.
 **Acceptance criteria**
-- Given orders exist, when I view home, then the 3 newest show, newest first, with the buyer's name and email, event, date, amount in ฿ and a Paid / Pending / Refunded badge.
-- Given the sort headings, when I choose Amount, then the three re-order largest first; when I choose Date, newest first; choosing the current sort again reverses it (so Date, as the card opens, gives oldest first). Sorting never brings in other orders.
-- Given I have no finance access, then there is no Amount column or sort. Given I may not view registrations, then there are no buyer names or emails.
-- Given I choose "View all", then the payments list opens (US-FIN-01); without finance access it is not offered.
-- Given a failed payment attempt or a free registration, then it is not an order here; a refunded order keeps its amount with a Refunded badge. With no orders, the card says "no orders yet".
-_Notes: These are the payments list's Paid, Pending and Refunded payments. The amount is what the buyer paid, VAT included, unlike Ticket revenue, which is net._
+- Given orders, then "Recent orders" shows the 3 newest, newest first: buyer's name and email, event, date, amount in ฿ and status badge.
+- Given I choose Amount or Date, then largest or newest leads; choosing the current sort (Date at first) reverses it; sorting adds no orders.
+- Given I lack finance access, then there's no Amount column or amount sort, no "View all" to Payments (US-FIN-01); without registration access, no Buyer column.
+- Given a failed payment attempt or free registration, then it's no order here; a refunded order keeps its amount under a Refunded badge.
+- Given no orders, then the card says there are none yet.
+_Notes: Orders are the Payments page's Paid, Pending and Refunded payments, at what the buyer paid, VAT included, unlike net Ticket revenue._
 
 ---
 
@@ -1809,104 +1789,107 @@ _Notes: These are the payments list's Paid, Pending and Refunded payments. The a
 
 # Epic E12 — Coordinate Meetings
 
-**Goal (business value):** Give organizers one place to schedule and keep track of every operational conversation around an event — with speakers, sponsors, venues, vendors and internal teams — so that meetings are set up in seconds, everyone gets an invite (and a video link when needed), and nothing falls through the cracks. Less time juggling calendars means events get organized faster and more reliably.
+**Goal (business value):** Give organizers one place to schedule every conversation around an event — speakers, sponsors, venues, vendors, internal teams — with invites and video links sent for them, so events get organized faster and nothing slips.
 
-**Primary users:** Event Organizer, Admin. (Staff and Attendees have no access to Meetings.)
+**Primary users:** Event Organizers; Admins also connect Google Calendar. Every console member, Staff included, can open Meetings; Attendees can't.
 
 **Success measures:**
-- Meetings scheduled per active event (adoption of the console vs. organizing calls elsewhere).
-- Share of meetings that reach the guest as a delivered invite.
-- Video-meeting join rate / meeting no-show rate.
+- Meetings scheduled per active event.
+- Share of guests holding a delivered, up-to-date invite.
+- Video-call join rate and meeting no-show rate.
 - Median time to schedule a meeting.
-- Share of meetings that stay in sync with the organizer's calendar (fewer stale or missing invites).
 
 ---
 
 ## User stories
 
 ### US-MTG-01 — See meetings organized by Today / Upcoming / Past  ·  **Must**
-**As an** Event Organizer, **I want** all my event meetings laid out in Today, Upcoming and Past groups with a live count on each, **so that** I can instantly see what needs my attention today and what is already behind me.
+**As an** Event Organizer, **I want** meetings sorted into Today, Upcoming and Past, **so that** I see at once what needs me today.
 **Acceptance criteria**
-- Given a meeting scheduled for today (Bangkok time), when I open Meetings, then it appears under **Today**, marked as today, with its time shown as "Today · start – end".
-- Given several meetings on the same future day, when I look at **Upcoming**, then they are listed earliest-start first.
-- Given I switch between the All / Today / Upcoming / Past tabs, then each tab shows how many meetings fall in that group.
-- Given each meeting row, then I can see at a glance its title, who it is with and their role, the related event, the meeting type, whether it is video / in person / phone, and where it takes place (join link, venue, or "Phone call").
+- Given today's meeting, then it's under "Today" with a green Today badge, its time prefixed Today; past ones show a grey Past badge.
+- Given the "All", "Today", "Upcoming" and "Past" tabs, then each shows its count and lists meetings earliest first, by date then start time.
+- Given a row, then it shows title, type icon, mode badge, time, role · person · event, and place: Meet link, venue or Phone call.
+- Given a meeting has no role, then its row shows the type instead; with no event, it shows "All events".
+- Given the workspace has no meetings yet, then the page says none are scheduled and offers "Schedule a meeting".
 
-_Notes: Which group a meeting falls into is always worked out from its date in Bangkok time, so it is correct no matter where the viewer is._
+_Notes: Tabs follow the meeting's Bangkok date, wherever the viewer is._
 
 ### US-MTG-02 — Find a specific meeting in a long list  ·  **Must**
-**As an** Event Organizer, **I want** to search my meetings by title, person, role, event or type and filter by meeting type, with the list paged into manageable chunks, **so that** I can find one conversation quickly even when I have many booked.
+**As an** Event Organizer, **I want** to search, filter and page through meetings, **so that** I find one conversation fast.
 **Acceptance criteria**
-- Given I type a search term, when it is applied, then only meetings whose title, person, role, event or type match remain, and the list returns to the first page.
-- Given I choose a type (Venue, Sponsor, Vendor, Speaker or Internal), then only meetings of that type are shown, combined with whichever time tab I am on.
-- Given search and filters return nothing, then I see a clear "No meetings match your filters" message.
-- Given a long list, when I choose how many rows to show per page and move between pages, then I always see a "showing X–Y of N meetings" summary.
+- Given I type in the search box, then only meetings whose title, person, role, type or event match remain, and I'm back on page 1.
+- Given I filter by type (Venue, Sponsor, Vendor, Speaker, Internal) or event, then it combines with tab and search, and tab counts follow.
+- Given nothing matches, then I'm told no meetings match, and "Clear filters" brings the whole list back.
+- Given many meetings, then "Prev" and "Next" page through them, 10, 20, 30 or 50 a page, summarized like 11–20 of 23.
 
-_Notes: Search works equally for Thai and English content._
+_Notes: Search works for Thai and English text alike; a new page size goes back to page 1._
 
 ### US-MTG-03 — Schedule a meeting with a speaker, sponsor, venue or vendor  ·  **Must**
-**As an** Event Organizer, **I want** to book a meeting in a few simple fields — title, date, start/end time, type, mode, who it is with, their email, the related event and any notes — **so that** I can set up calls and walkthroughs without leaving the console.
+**As an** Event Organizer, **I want** to book meetings from one short panel, **so that** I set up calls and walkthroughs without leaving the console.
 **Acceptance criteria**
-- Given I open the schedule panel and fill in the required details, when I save, then a new meeting is created with status Scheduled and appears in the correct time group.
-- Given I open the schedule panel, then no mode is chosen for me: Mode reads "Choose how you'll meet", and I cannot save until I choose Video call (Google Meet), In person or Phone call — the same words the meeting's badge shows once it is saved. The panel mentions a Meet link — under Mode, and in the note above the Schedule button — only once I choose Video call. When I edit a meeting, its saved mode is already chosen.
-- Given I leave the title blank or too short, choose a date in the past, or set an end time that is not after the start, then I am told exactly what to fix before I can save.
-- Given I choose In person, then the meeting shows the related event's venue as its location; given Phone call, then it shows "Phone call".
-- Given I double-submit the form by accident, then only one meeting is created, not two.
+- Given I fill Title, Date, Starts, Ends, Mode, who I'm meeting and Guest email, then "Schedule meeting" confirms it and lists it in its tab.
+- Given a new meeting, then Type starts on Internal and Mode empty; Mode must be "Video call (Google Meet)", "In person" or "Phone call".
+- Given In person or Phone call, then the card's place reads the event's venue or Phone call; the badge always repeats the mode.
+- Given a title under 3 characters, a past date (Bangkok) or an end not after the start, then nothing saves; I'm told what to fix.
+- Given I click "Schedule meeting" twice quickly, then only one meeting is created.
 
-_Notes: A meeting can be tied to a specific event or to "General (all events)". A guest email is needed so the invite can be sent._
+_Notes: Their role, Event and Notes are optional; Event "All events" makes a general meeting._
 
 ### US-MTG-04 — Have invites, video links and reminders handled automatically  ·  **Must**
-**As an** Event Organizer, **I want** scheduling a meeting to automatically send the guest a calendar invite, generate a Google Meet link for video meetings, and set a 15-minute reminder, **so that** I never create or paste join links by hand and the guest always has what they need.
+**As an** Event Organizer, **I want** invites, Meet links and reminders handled for me, **so that** I never send them by hand.
 **Acceptance criteria**
-- Given I schedule a video meeting, when I save, then a Google Meet link is created for me, added to the meeting, and included in the invite sent to the guest.
-- Given any meeting I schedule, then the guest receives a calendar invite for the correct Bangkok time and both of us get a 15-minute reminder before it starts.
-- Given my calendar is not connected, when I save a meeting, then the meeting is still kept and I am prompted to connect my calendar to send the invite and link — nothing is lost.
-- Given the calendar service is briefly unavailable, when I save a meeting, then the meeting is kept and marked as not yet synced, with a way to retry, and the invite goes out once the service is reachable.
+- Given the "Schedule meeting" panel, then a note promises a Google Calendar invite with a 15-minute reminder, plus a Meet link only for Video call.
+- Given a connected calendar, then the guest is emailed the invite at Bangkok time; for video, it carries a Meet link, shown on the card.
+- Given the invite is still on its way, then the card says it isn't sent yet and updates by itself once it is.
+- Given no connected calendar, then the panel warns, the meeting saves, and its card says no invite was sent: Admins may connect, others ask one.
+- Given Google is briefly down, then the meeting stays, its card says the invite failed, and "Send it now" or an automatic retry sends it.
 
-_Notes: The resilience/retry behaviour is the safety net; the automatic invite and Meet link are the core value of scheduling from the console. "My calendar" is the workspace calendar of US-MTG-08; organizers without the Manage integrations permission are told to ask an Admin to connect it. The 15-minute reminder is set on the workspace calendar the invite is sent from; a guest's own reminder follows the guest's calendar settings, which an invite cannot set._
+_Notes: The 15-minute reminder sits on the workspace calendar's copy; guests' reminders follow their own settings._
 
 ### US-MTG-05 — Reschedule or edit a meeting  ·  **Must**
-**As an** Event Organizer, **I want** to change a meeting's time or details and have the guest's invite updated in place, **so that** the invitation on everyone's calendar is never stale.
+**As an** Event Organizer, **I want** to change a meeting and have the guest's invite follow, **so that** nobody's calendar is out of date.
 **Acceptance criteria**
-- Given I move a video meeting to a new time, when I save, then the guest's existing invite is updated (not duplicated), the reminder shifts to the new start, and the guest is re-notified of the new time.
-- Given I change the mode from video to in person, when I save, then the Meet link is removed and the location shows the event's venue instead.
-- Given someone else has changed the same meeting since I opened it, when I try to save, then I am told the meeting changed and asked to reload, so no one's edit is silently overwritten.
-- Given a meeting is already cancelled, then it cannot be edited.
+- Given a scheduled meeting, when I choose its pencil, then "Reschedule meeting" opens filled in, mode included, and "Save changes" saves and confirms it.
+- Given I move a meeting, then the guest's existing invite moves too (no second invite), keeps its 15-minute reminder, and the guest is notified.
+- Given I change Video call to In person, then the Meet link and "Join" go, and the card shows the event's venue.
+- Given someone else saved the meeting after I opened it, when I save, then I'm told to reload and try again, and their change stands.
+- Given a cancelled meeting, then it has no pencil and cannot be edited.
 
 ### US-MTG-06 — Cancel a meeting  ·  **Should**
-**As an** Event Organizer, **I want** to cancel a scheduled meeting, optionally with a reason, and have the guest told it is off, **so that** no one shows up to a meeting that is no longer happening.
+**As an** Event Organizer, **I want** to cancel a meeting with an optional reason, **so that** nobody turns up to a meeting that's off.
 **Acceptance criteria**
-- Given a scheduled meeting, when I cancel and confirm, then it is marked Cancelled, removed from the guest's calendar, and the guest receives a cancellation notice.
-- Given I add a reason, then it is included in the cancellation the guest sees.
-- Given a meeting is cancelled, when the list loads, then it no longer counts toward Today or Upcoming and offers no Join or Edit.
-- Given I open the cancel confirmation but dismiss it, then nothing changes.
+- Given I choose "Cancel meeting" in a meeting's panel and confirm, then it's badged red Cancelled and the guest's invite is withdrawn by email.
+- Given I give a Reason, then the card shows it after Cancelled, and the guest's cancellation email carries it.
+- Given a cancelled meeting, then it leaves Today and Upcoming and their counts, stays in All and, after its date, Past, without "Join" or pencil.
+- Given the "Cancel this meeting?" dialog, when I choose "Keep it" or close it, then nothing changes.
 
-_Notes: Cancelling keeps the meeting on record (as Cancelled) rather than erasing it; cancel is only offered for scheduled meetings that have not yet happened._
+_Notes: Cancelling keeps the meeting on record as Cancelled._
 
 ### US-MTG-07 — Join a video meeting in one click  ·  **Must**
-**As an** Event Organizer running between tasks, **I want** a Join button on today's and upcoming video meetings, **so that** I can jump straight into the call from the console.
+**As an** Event Organizer, **I want** a "Join" button on today's and upcoming video calls, **so that** I can jump straight into the call.
 **Acceptance criteria**
-- Given a today or upcoming video meeting with a ready link, when I click Join, then the meeting opens in a new tab.
-- Given a past video meeting, then no Join button is shown.
-- Given a video meeting whose link is not ready yet, then Join is unavailable with a hint to retry the calendar sync.
+- Given a today or upcoming video call whose Meet link is ready, when I choose "Join", then the call opens in a new tab.
+- Given a past or cancelled video call, then there is no "Join".
+- Given a video call with no Meet link yet, then there's no "Join", and its card says why and offers a next step (US-MTG-04).
 
 ### US-MTG-08 — Connect and manage the workspace Google Calendar  ·  **Should**
-**As an** Admin, **I want** to connect, reconnect or disconnect the workspace's Google Calendar, **so that** meeting sync, invites and reminders are governed centrally and I control access.
+**As an** Admin, **I want** to manage the workspace's Google Calendar in Settings → Integrations, **so that** invites go out from one account I control.
 **Acceptance criteria**
-- Given I complete the Google connection, when it succeeds, then the workspace is marked connected and the Meetings header shows a connected status.
-- Given the workspace is disconnected, when organizers schedule meetings, then those meetings are saved but flagged as not synced until the calendar is reconnected.
-- Given the connection later expires or is revoked, then I am prompted to reconnect rather than sync failing silently.
-- Given a non-Admin opens Meetings, then no connect/disconnect control is available to them.
+- Given I choose "Connect Google Calendar" and allow access, then I'm told it's connected, and the card shows Connected with the account and date.
+- Given I connect, then meetings saved while disconnected, dated today or later, go out automatically, and the wide-screen Meetings header's connect link becomes Google Calendar.
+- Given I confirm "Disconnect", then the card reads Not connected and new meetings get no invite, but sent invites stay; "Keep it connected" changes nothing.
+- Given Google stops accepting the connection, then the card and Meetings header say to reconnect, and Admins get a reconnect button or link.
+- Given a member without Manage integrations, then Settings hides Integrations; opened directly, the page shows status only, saying only an Admin can change it.
 
-_Notes: Disconnecting stops future sync but does not remove meetings already on people's calendars. Admins connect, reconnect and disconnect Google Calendar from Settings → Integrations; the Meetings header shows the status and links Admins there._
+_Notes: Admins hold Manage integrations by default; the server refuses anyone without it._
 
 ### US-MTG-09 — Be warned about overlapping meetings  ·  **Could**
-**As an** Event Organizer, **I want** a gentle warning when a new meeting overlaps one I already have, **so that** I can avoid accidental double-booking while still deciding for myself.
+**As an** Event Organizer, **I want** a warning when a new meeting overlaps another, **so that** I avoid double-booking but still decide for myself.
 **Acceptance criteria**
-- Given I schedule a meeting that overlaps another of mine at the same time, when I save, then I see a "this overlaps another meeting — schedule anyway?" warning.
-- Given I choose to continue, then the meeting is saved normally.
+- Given a new meeting overlaps one already booked, when I save, then I'm warned and asked whether to schedule anyway.
+- Given I choose to continue, then the meeting saves normally; the warning never blocks saving.
 
-_Notes: The warning never blocks saving — the organizer stays in control._
+_Not in the web app yet._
 
 
 ---
@@ -1915,126 +1898,137 @@ _Notes: The warning never blocks saving — the organizer stays in control._
 
 # Epic E13 — Measure Performance (Reports)
 
-**Goal (business value):** Give organizers and admins a single, trustworthy place to see how their events perform — money collected, money settled, sign-ups, show-ups, and promotion payback — across all events or one, for any period, and to take those numbers offline to share with finance and stakeholders.
+**Goal (business value):** Give organizers and admins one trusted place to see how their events perform (money collected and settled, sign-ups, show-ups, promotion payback) for one event or all, over any period, and export it for finance.
 
-**Primary users:** Event Organizer, Admin, Staff/Team member (registration and attendance figures only).
+**Primary users:** Event Organizer and Admin (every report); Staff/Team member (Overview, Registrations and Attendance only, no money figures).
 
 **Success measures:**
-- Organizers can answer "how are we doing?" without opening each event one by one (time-to-insight).
-- Reported revenue reconciles with money that actually settles to the bank (finance trust / zero reconciliation disputes).
-- Reports are used to steer decisions: no-show rate, refund rate, and promotion payback are actively tracked period-over-period.
-- Numbers can be exported and shared in the format finance needs (self-serve export adoption).
+- Organizers see how events are doing without opening each one.
+- Reported revenue reconciles with money that settles to the bank.
+- No-show rate, refund rate and promotion payback are tracked period over period.
+- Finance gets self-serve exports in the format it needs.
 
 ---
 
 ## User stories
 
 ### US-RPT-01 — Workspace health at a glance  ·  **Should**
-**As an** Event Organizer, **I want** a single overview showing revenue, registrations, attendance rate, average ticket price, and refund rate for a period I choose — with a revenue trend I can switch between 7 days, 30 days, 90 days, and the year — **so that** I can read the health of all my events in one screen and see whether things are improving or slipping.
+**As an** Event Organizer, **I want** headline figures and a revenue trend for any period, **so that** I see my events' health on one screen.
 **Acceptance criteria**
-- Given I open the overview, when it loads, then I see the current revenue, registration count, attendance rate, average ticket price, and refund rate for the default period, each with an up-or-down change versus the previous equal period.
-- Given I switch the revenue trend from "Year" to "7 days", when the view updates, then the chart, its headline total, and the "vs previous period" change all recompute for the shorter window.
-- Given a favorable movement (revenue up, or refund rate down), when the change is shown, then it appears in the positive colour; an unfavorable movement appears in the warning colour — direction of "good" fits each metric, not just the sign of the number.
-- Given there was no revenue in the chosen window, when the panel renders, then it shows a zero total and a neutral "—" change instead of an error.
-_Notes: "Revenue" here means money collected minus refunds within the period (VAT-inclusive), and it should match the Income report's Net for the same scope._
+- Given I open Insights › Overview, then Revenue, Registrations, Attendance rate, Avg ticket and Refund rate show for "Year", each with its change.
+- Given I pick "7 days", "30 days", "90 days" or "Year" (365 days), then every tile and the whole "Revenue trend" recompute for that window.
+- Given a change, then it compares with the previous equal period, positive-coloured when better (revenue up, refund rate down), warning-coloured when worse.
+- Given the previous period has nothing to compare (฿0 or no data), then the change shows a dash, never a made-up percentage.
+- Given no revenue in the window, then the trend total reads ฿0 and a no-revenue message replaces the chart.
+_Notes: Revenue is Income's Net; Avg ticket is gross ÷ paid seats; Refund rate is refunds ÷ gross._
 
 ### US-RPT-02 — Filter and search every report  ·  **Should**
-**As an** Admin, **I want** to narrow any report by date range, by a specific event or all events, by status, and by a free-text search, **so that** I can focus on exactly the slice I need without wading through everything.
+**As an** Admin, **I want** to narrow any report by search, event and dates, **so that** I see exactly the slice I need.
 **Acceptance criteria**
-- Given any report, when I pick one event and type a search term, then the totals, charts, and table all recompute to show only matching rows for that event — not just the table.
-- Given I set an end date earlier than the start date, when I apply it, then I'm told "End date must be on or after the start date" and no broken result is shown.
-- Given I choose a date span longer than 24 months, when I apply it, then it is trimmed to 24 months with a note explaining the limit.
-- Given a filter combination that matches nothing, when it applies, then I see a friendly empty message and zeroed figures, not an error.
-- Given I change any filter, when the results refresh, then I'm returned to the first page of results.
+- Given any report except Overview, then it opens on the last 365 days with search, dates, "Apply" and an event picker (status on Event performance).
+- Given I change any filter, then the tiles and table update together, never the table alone, and the table goes back to page 1.
+- Given an end date before the start, when I choose "Apply", then I'm told the dates are reversed and the report stays as it was.
+- Given a span over 24 months, then only the most recent 24 are used, and a note says the range was trimmed.
+- Given nothing matches, then the table says so and offers "Clear filters", and the tiles read 0, ฿0 or a dash.
+_Notes: Search matches event names; on Transactions the payer or reference, on Payouts the reference or event, on Discounts the code._
 
 ### US-RPT-03 — Registration mix and sales-channel breakdown  ·  **Could**
-**As an** Event Organizer, **I want** to see how registrations split by ticket type, which events draw the most sign-ups, and which channels (website, email, social, partner) bring people in, **so that** I understand where my audience and demand actually come from.
+**As an** Event Organizer, **I want** registrations split by ticket type and by top event, **so that** I know what draws people.
 **Acceptance criteria**
-- Given the overview, when the ticket-type breakdown renders, then each ticket type shows its share of total registrations, the shares add up to the whole, and the centre shows the same registration total as the headline registrations figure.
-- Given the "registrations by event" list, when it renders, then it shows my top events by sign-ups with a visual bar for relative size.
-- Given the "sales by channel" breakdown, when it renders, then each channel shows its share of registrations and the shares add up to the whole.
-- Given I filter to a single event, when the breakdowns refresh, then they reflect only that event.
+- Given the Overview's "Registrations by Ticket Type", then each type shows count and share (totalling 100%), largest first; the centre total matches the Registrations tile.
+- Given "Registrations by event", then my top 6 events show sign-ups, busiest first; the busiest fills its bar and the rest scale to it.
+- Given I switch the range tab, then both panels follow the new window.
+- Given nothing sold in the window, then the ticket-type panel says nothing has sold and the events panel says there are no sign-ups.
+_Notes: How people found an event isn't recorded, so there is no sales-channel breakdown._
 
 ### US-RPT-04 — Rank and explore event performance  ·  **Should**
-**As an** Event Organizer, **I want** a ranked list of my events by registrations — with revenue, attendance rate, and status — that I can search, filter by status, and click into an event's detail, **so that** I can quickly spot my best and worst performers and dig deeper.
+**As an** Event Organizer, **I want** my events ranked by registrations, with revenue, attendance and status, **so that** I spot my best and worst events.
 **Acceptance criteria**
-- Given the full event-performance report, when it loads, then events are listed best-first by registrations, showing registrations, revenue, attendance rate, and a status badge (Upcoming, Live, or Completed).
-- Given I filter to status "Live", when it applies, then only live events remain, still ranked by registrations, starting from the first page.
-- Given an event that hasn't happened yet, when its row renders, then attendance shows "—" rather than a misleading zero.
-- Given I click an event's name, when the link opens, then I land on that event's detail page.
-- Given the overview's "top events" summary, when I click "View all", then I reach this full ranked report.
+- Given Insights › Event performance, then events run most registrations first, showing Registrations, Revenue ฿, Attendance % and status: Upcoming, Live, Completed or Cancelled.
+- Given I pick a status such as Live, then only those events remain, still ranked, from page 1.
+- Given an event that hasn't started, then its Attendance % shows a dash, not 0%.
+- Given I choose an event's name, then that event's page opens.
+- Given the Overview's "Top events" (the top 6), when I choose "View all", then this full "All events" list opens.
+_Notes: It lists non-draft events starting in the period; Registrations are confirmed seats, Revenue the event's Net to date._
 
 ### US-RPT-05 — Income and reconciliation report  ·  **Should**
-**As an** Admin, **I want** an income report that separates gross revenue, refunds, processing fees, and net per event, **so that** I can reconcile what was collected against what actually settles.
+**As an** Admin, **I want** income split into gross, refunds, fees and net per event, **so that** I reconcile what was collected with what settles.
 **Acceptance criteria**
-- Given any event row, when it renders, then Net equals Gross minus Refunds minus Fees for that row.
-- Given the summary tiles, when they render, then the Net tile equals Gross minus Refunds minus Fees overall, and it matches the overview's revenue figure for the same period and events.
-- Given prices include 7% VAT, when I need it for tax, then the report lets me see the VAT portion of gross for reconciliation.
-- Given a free event with no revenue, when its row renders, then all money columns show ฿0 rather than being hidden or erroring.
-- Given no income matches my filters, when the report renders, then I see "No income for this selection" and zeroed tiles.
+- Given Insights › Income, then event rows, highest Net first, show Gross, Refunds, Fees and Net, where Net = Gross − Refunds − Fees.
+- Given the tiles Gross revenue, Refunds, Processing fees and Net revenue, then Net follows the same rule and equals Overview Revenue for that period.
+- Given I export Income, then each row adds VAT (฿6,542 of a VAT-inclusive ฿100,000) and Settled (Net minus VAT), neither shown on screen.
+- Given an event took no money in the period, like a free event, then Income skips it while Event performance shows it at ฿0.
+- Given nothing matches, then the table says no events match and offers "Clear filters", and the tiles read ฿0.
+_Notes: Income counts payments made in the period, VAT included, minus completed refunds only._
 
 ### US-RPT-06 — Transaction ledger for investigations  ·  **Could**
-**As an** Admin, **I want** a searchable ledger of every payment and refund — with its reference, date, attendee, event, method, amount, and status — **so that** I can investigate a specific charge, refund, or dispute.
+**As an** Admin, **I want** a ledger of every payment and refund, **so that** I can investigate a specific charge, refund or dispute.
 **Acceptance criteria**
-- Given a refund of ฿1,250, when its row renders, then the amount shows as "-฿1,250" in the negative colour with a "Refund" label, while payments show as positive.
-- Given the summary tiles, when they render, then I see the number of transactions, total successful payments, number of refunds, and the payment success rate.
-- Given a failed charge, when it appears, then it is clearly marked as failed and is excluded from the payments total but still counted when calculating success rate.
-- Given a refund is issued, when the ledger updates, then the refund appears as a new entry and the original payment is marked "Refunded" — the original amount is never rewritten.
-- Given I click a transaction reference, when it opens, then I reach that payment's detail where refund actions live (this report itself never changes money).
+- Given Insights › Transactions, then entries run newest first with Reference, Date, Payer, Event, Method, Amount, Type (Payment, Refund) and Status (Succeeded, Pending, Refunded, Failed).
+- Given a ฿1,250 payment is refunded, then a new entry reads -฿1,250 in red, while the payment still reads ฿1,250 with Status Refunded.
+- Given the tiles, then I see Transactions (every entry), Payments (total of every charge that didn't fail), Refunds (a count) and Success rate.
+- Given a Failed charge, then it is left out of Payments but counts against Success rate: 9 good charges and 1 failure read 90%.
+- Given I choose a reference, then Payments opens searched to it, where refunds are issued; this report changes nothing.
+_Notes: A refund gets its own reference, like TXN-8842-R1._
 
 ### US-RPT-07 — Payouts and settlement visibility  ·  **Should**
-**As an** Event Organizer, **I want** a payouts report showing what has been paid to our bank, what is in transit, and what is still pending, **so that** I know exactly how much money has actually reached the organization's account.
+**As an** Event Organizer, **I want** to see payouts paid, in transit and pending, **so that** I know what has actually reached our bank.
 **Acceptance criteria**
-- Given the payouts report, when it loads, then each payout shows its reference, date, bank, the events it covers, amount, and status (Paid, In transit, or Pending).
-- Given the summary tiles, when they render, then I see total paid out, total pending, total in transit, and the average payout.
-- Given any payout row, when the bank is shown, then only the masked last four digits of the account appear — never the full account number.
-- Given a payout that covers several events, when I filter to any one of those events, then that payout still appears.
-- Given no payouts match my filters, when the report renders, then I see "No payouts for this selection".
+- Given Insights › Payouts, then each payout shows Reference, Date, Bank, Events covered (a name or count), Amount and Status: Paid, In transit or Pending.
+- Given the tiles, then I see Paid out, Pending, In transit and Avg payout (over every listed payout, a dash when none).
+- Given any row, then the bank shows only its last four digits (•••• 6789), never the full account number.
+- Given a payout covering several events, when I pick any one of them, then it still appears at its full amount.
+- Given nothing matches, then the table says there are no payouts and offers "Clear filters".
+_Notes: Failed payouts aren't listed here; they sit on Finance › Payouts with their retry._
 
 ### US-RPT-08 — Registrations report by event and status  ·  **Should**
-**As a** Staff/Team member, **I want** a per-event breakdown of registrations into confirmed, pending, waitlist, and cancelled, **so that** I can judge sign-up quality and see the true picture for each event.
+**As a** Staff/Team member, **I want** each event's registrations split into confirmed, pending, waitlist and cancelled, **so that** I see the true sign-up picture.
 **Acceptance criteria**
-- Given any event row, when it renders, then confirmed, pending, waitlist, and cancelled add up exactly to that event's total registrations.
-- Given the summary tiles, when they render, then the total matches the overview's registrations figure for the same period and events.
-- Given I am a Staff member, when I open this report, then I can view it fully (registration data is available to my role).
-- Given no registrations match my filters, when the report renders, then I see "No registrations for this selection".
+- Given Insights › Registrations, then each event row's Confirmed, Pending, Waitlist and Cancelled add up to its Registrations.
+- Given the tiles Total registrations, Confirmed, Pending and Cancelled, then Total registrations equals the Overview's Registrations for the same period.
+- Given I am Staff, then I can open this report in full, as it holds counts per event, not attendee names.
+- Given nothing matches, then the table says no registrations match and offers "Clear filters", and the tiles read 0.
+_Notes: It counts seats (a booking for 3 counts 3) by registration date, leaving out rejected and expired bookings._
 
 ### US-RPT-09 — Attendance and no-show report  ·  **Should**
-**As an** Event Organizer, **I want** a per-event view of registered vs checked-in, no-shows, attendance rate, and on-time rate, **so that** I can measure show-up quality and reduce no-shows over time.
+**As an** Event Organizer, **I want** each event's registered vs checked-in, no-shows and attendance rate, **so that** I can measure show-up and reduce no-shows.
 **Acceptance criteria**
-- Given an event with 400 registered and 320 checked in, when its row renders, then no-shows show as 80 and attendance rate as 80%.
-- Given an upcoming event with no check-ins yet, when its row renders, then attendance shows "—" and that event is left out of the overall attendance rate.
-- Given the summary tiles, when they render, then I see total checked in, overall attendance rate, total no-shows, and the on-time share — and the attendance rate matches the overview's attendance figure for the same scope.
-- Given no attendance matches my filters, when the report renders, then I see "No attendance for this selection".
+- Given an event on Insights › Attendance with 400 Registered (tickets issued) and 320 checked in, then No-shows read 80 and Attendance % 80%.
+- Given an event that hasn't started, then its No-shows and Attendance % show a dash, and it's left out of the overall Attendance rate.
+- Given the Attendance rate tile, then it matches the Overview's for the same period: a whole number here, one decimal there.
+- Given the tiles Checked in, Attendance rate, No-shows and On-time, then On-time is the share of check-ins made before the event began.
+- Given nothing matches, then the table says no events match and offers "Clear filters".
+_Notes: An event counts in the period it starts in._
 
 ### US-RPT-10 — Promotion and discount payback  ·  **Could**
-**As an** Event Organizer, **I want** a discounts report showing, per code, how many times it was redeemed, how much discount was given, and the revenue it influenced, **so that** I can judge which promotions actually drive sales.
+**As an** Event Organizer, **I want** each discount code's redemptions, discount given and revenue influenced, **so that** I can tell which promotions drive sales.
 **Acceptance criteria**
-- Given a discount code, when its row renders, then I see its type (e.g. "25% off" or "฿200 off"), redemptions, total discount given, revenue influenced, and status (Active, Scheduled, or Expired).
-- Given the summary tiles, when they render, then I see the count of active codes, total redemptions, total discount given, and total revenue influenced.
-- Given a scheduled code that hasn't started, when its row renders, then redemptions, discount, and revenue all read zero and it is not counted among active codes.
-- Given an expired code, when it renders, then it is marked expired but its historical redemptions, discount, and revenue still count in the totals.
+- Given Insights › Discounts, then each code shows Type (25% off or ฿200 off), Redemptions, Discount, Revenue, Return and Status: Active, Scheduled, Expired or Disabled.
+- Given a date range, then it only decides which codes are listed (those valid in it); figures are lifetime totals from confirmed orders only.
+- Given the tiles, then I see Active codes, Redemptions, Discount given and Revenue influenced (order value after discount, not settled cash).
+- Given a Scheduled code that hasn't started, then its figures read 0, its Return shows a dash, and Active codes doesn't count it.
+- Given an Expired code, then it is badged Expired but its figures still count in the totals.
+_Notes: Return is revenue ÷ discount, so ฿90,000 on ฿12,000 reads ×7.5._
 
 ### US-RPT-11 — Export the current view  ·  **Should**
-**As an** Admin, **I want** to export the report exactly as I've filtered it to CSV, Excel, or PDF, **so that** I can share the numbers with finance and stakeholders offline.
+**As an** Admin, **I want** to export a filtered report to CSV, Excel or PDF, **so that** I can share the numbers with finance offline.
 **Acceptance criteria**
-- Given I've filtered a report to one event, when I export, then the file contains only that event's rows plus the summary figures I see on screen — nothing more.
-- Given I choose Excel, when the file is produced, then it contains a summary of the key figures plus the detailed rows, with money and percentages properly formatted.
-- Given I choose CSV, when the file is produced, then Thai text reads correctly and dates and raw numbers are in a machine-friendly form.
-- Given I choose PDF, when the file is produced, then it is a tidy, branded, readable document showing the key figures, the table, the applied filters, and the generation time.
-- Given a very large export, when I request it, then I'm told it's being prepared and I'm notified with a secure, time-limited download link when it's ready.
-- Given I click the same export twice within a few seconds, when the second click is handled, then I get the same file rather than a duplicate.
-_Notes: Every export reflects the exact figures on screen at the moment of request; the file records that timestamp._
+- Given I choose "Export", then the file holds every row matching my filters, not just this page, up to the first 5,000.
+- Given Excel, then a Summary sheet holds key figures, filters, generation time (Bangkok) and, if cut, how many rows matched; ฿ and % are formatted.
+- Given PDF, then an Eventa-branded document shows key figures, filters, the table, generation time (Bangkok) and, if cut, how many rows matched.
+- Given CSV, then Thai text opens correctly and values are plain (2026-07-18, 1250.00), with no summary above the table.
+- Given an export is being prepared, then the button reads "Preparing…" and can't be used again until the file arrives.
+_Notes: Every report but the Overview has "Export", and a file shows figures as of the moment it was made._
 
 ### US-RPT-12 — Role-appropriate access and safe finance sharing  ·  **Should**
-**As an** Admin, **I want** finance reports limited to finance-permitted roles, registration and attendance reports available to staff, and every export recorded, **so that** sensitive money and attendee data is only seen and taken by the right people.
+**As an** Admin, **I want** money reports limited to finance access and every export logged, **so that** sensitive data reaches only the right people.
 **Acceptance criteria**
-- Given a Staff member with registration access only, when they open the registrations or attendance report, then it works; but when they try a finance report (income, transactions, payouts, discounts, event performance), then they are not shown it and the option is hidden or disabled.
-- Given a Staff member on a report containing attendee names, when they try to export, then they are told they don't have permission to export attendee data and no file is produced.
-- Given anyone exports any report, when the file is produced, then a record of who exported what, when, and for which scope is kept.
-- Given an attendee (a non-admin) tries to reach any report, when they attempt it, then they are refused access to the admin console entirely.
-- Given the same period and events, when I compare screens, then the totals agree across reports (overview registrations equals the registrations report total; overview revenue matches income net) so I can trust the numbers.
-_Notes: Viewing a report never changes any event, registration, payment, payout, or discount — reports are read-only; bank account numbers are always masked to the last four digits._
+- Given Staff (no finance access), then Insights offers only Overview, Registrations and Attendance, and opening another report by its address is refused.
+- Given Staff on the Overview, then Revenue, Avg ticket and Refund rate show a dash, the trend says it's finance-only, and per-event panels are hidden.
+- Given a member without "Export attendee data" exports Transactions, which names payers, then they're refused and no file is saved.
+- Given anyone exports a report, then Settings › Security › Audit log records it with the report, format, row count, filters, who and when.
+- Given an attendee opens any report, then they're sent to the organizer sign-in and see no figures.
+_Notes: Reports are read-only, and for the same period Overview, Registrations and Income agree._
 
 
 ---

@@ -10,7 +10,7 @@ Verifies the software meets its requirements — owned by QA, following the 7-st
   priority, lifecycle diagram, report template), and the **test-closure / summary-report** template.
 - **[test-cases.md](test-cases.md)** — **374 test cases** across 13 epics, each derived from a
   story's Given/When/Then acceptance criteria and traced to its `US-*` id (priority breakdown:
-  204 High / 146 Medium / 22 Low / 2 Won't). Includes a coverage table proving **all 165 user stories** have
+  200 High / 132 Medium / 18 Low / 24 Won't). Includes a coverage table proving **all 165 user stories** have
   test cases.
 
 ## Traceability

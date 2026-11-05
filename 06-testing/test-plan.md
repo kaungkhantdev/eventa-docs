@@ -86,7 +86,7 @@ Detailed, executable test cases live in **[test-cases.md](test-cases.md)** — o
 derived from a story's acceptance criteria and business rules, with ID, traceability (`US-*`),
 priority, type, preconditions, test data, steps, and expected result. Coverage: a happy path plus the
 key negative/edge/validation cases per story. Priority defaults from MoSCoW (Must→High, Should→Medium,
-Could→Low); a Won't story's cases take priority Won't and are not run. Beyond these, exploratory testing supplements scripted cases in high-risk areas.
+Could→Low); a withdrawn case (its story is Won't, or what it tested is not in the web app) takes priority Won't and is not run. Beyond these, exploratory testing supplements scripted cases in high-risk areas.
 
 ## 5. Test environment setup (step 4)
 
@@ -158,7 +158,7 @@ At each milestone, evaluate the cycle and issue a **Test Summary Report**.
 **Test Summary Report template**
 - **Scope & build tested** (milestone, version).
 - **Metrics:** test cases planned / executed / passed / failed / blocked; **requirement coverage %**
-  (stories & NFRs with ≥1 executed case; Won't stories, whose cases are not run, are left out); defects by severity (found / fixed / open); regression result.
+  (stories & NFRs with ≥1 executed case; withdrawn cases, which are not run, are left out); defects by severity (found / fixed / open); regression result.
 - **Quality assessment** vs exit criteria; launch-critical NFR results.
 - **Open risks & known issues** (with severity and mitigation).
 - **Go / No-Go recommendation.**
